@@ -1,14 +1,24 @@
-# SPEC-PROVIDER (draft, Phase 0 subject)
+# SPEC-PROVIDER
 
-Status: draft. This interface is a strict subset of the Bessel StateProvider contract (AGE-19). Argelander consumes states; it never computes them.
+Status: frozen (Phase 0, 2026-07-11). Changes to this contract require an ADR. This interface is a strict subset of the Bessel StateProvider contract (AGE-19) plus two additive Argelander facets (`id` and `coverage`, section 1). Argelander consumes states; it never computes them.
 
-## 1. Interface (normative shape in `types.ts`)
+## 1. Interface (normative shape in `packages/argelander-core/src/types.ts`)
 
-A `StateProvider` exposes `id`, `frame` (the frame its states are expressed in), and `getState(etSec)` returning a `StateSample`: `etSec`, `positionKm`, `velocityKmS`, optional `attitude` quaternion. An optional batch `sample(t0, t1, dtSec)` exists for worker-side prefetch. Providers are pull-based and pure; caching is the provider's business.
+The seam is async and flat-batch. A provider answers a `StateQuery` with a `StateBatch` and answers a separate `orientation` call with a `QuatBatch`; the TypeScript declarations in `types.ts` transcribe the pinned Bessel contract quoted in section 3, and where prose and code could ever disagree, the code governs.
+
+A `StateQuery` names `targets`, an `observer`, the `frame` the answer must be expressed in, an explicit and never-defaulted `correction`, and `epochs` as either an explicit `Et[]` list or an inclusive `{start, end, step}` range. Frame rides the request, not the provider: Argelander asks for the body-fixed frame directly, so no frame math occurs above the seam. Argelander queries platform state with `observer` set to the target body center, and rendering-grade body-fixed footprints request `correction: 'NONE'`; the requested value is recorded in strip provenance (SPEC-STRIP section 5).
+
+A `StateBatch` is the wire shape: flat, transferable `Float64Array`s (AGE-05). `states` holds `targets.length` blocks of `n` samples of 6 doubles (x, y, z in kilometers then vx, vy, vz in kilometers per second); the state of `targets[t]` at `epochs[i]` begins at `states[(t * n + i) * 6]`, and `lightTimes[t * n + i]` holds one-way light time in seconds. Epochs are `Et`, TDB seconds past J2000, the one time scale of the seam. Units are km and km/s at the contract; conversions stay at the render boundary.
+
+Orientation is a separate, scalar-first call: `orientation(body, frame, epochs)` returns a `QuatBatch` of quaternions in the SPICE m2q layout (w, x, y, z), each rotating vectors expressed in `frame` into the body-fixed frame named by `bodyFrame`. Platform attitude arrives as a CK-frame `bodyFrame`; mount and scan-law composition happen above the seam in Argelander.
+
+`StateSample` is a decoder view over a batch, not the seam: `decodeState(batch, targetIndex, epochIndex)` in `provider.ts` materializes one object-shaped sample for call sites that want it, and `decodeQuat` does the same for orientation. Nothing above the seam holds arrays of samples as the wire form.
+
+Two facets are additive relative to the Bessel contract and are not subset violations. `id` names the provider instance and feeds `Strip.provenance.authority`. `coverage(body)` is optional and advertises validity windows (section 4). Providers are pull-based and pure; caching is the provider's business.
 
 ## 2. Standalone providers (Phase 1)
 
-SGP4/TLE in a worker; pre-sampled SPICE states from a service (CSV or CZML ingestion); CZML document playback. Never an embedded CSPICE (ADR-0002).
+SGP4/TLE in a worker; pre-sampled SPICE states from a service (CSV or CZML ingestion); CZML document playback. Never an embedded CSPICE (ADR-0002). Standalone providers implement the same subset shape: single-target queries, geometric correction, flat batches. Convergence to a live Bessel binding is then the Phase 3 diff this section exists to keep small.
 
 ## 3. Bessel contract alignment
 
@@ -77,13 +87,14 @@ Adjacent in the same file and relevant to provenance: `KernelSetInfo.setHash`, t
 of the sorted per-kernel content hashes, order-independent. When a Bessel-backed provider
 serves a strip, `Strip.provenance.inputs` carries that setHash.
 
-Subset and delta register:
+Subset and delta register (historical record of the Phase 0 alignment; section 1 is the
+frozen result):
 
 | Facet | Bessel contract | Argelander seed | Resolution |
 | --- | --- | --- | --- |
 | Epoch | `Et`, TDB seconds past J2000 | `etSec`, same scale | Aligned; `etSec` is a field-name spelling of `Et`, no conversion |
 | Units | km, km/s at the contract (iron rule 9) | km, km/s | Aligned; conversions stay at the render boundary |
-| Call shape | Async, batch, multi-target | Sync `getState`, optional batch | Argelander adopts the async batch as the seam; synchronous access exists only as an internal window over a prefetched batch (Phase 0 revision of section 1 and `types.ts`) |
+| Call shape | Async, batch, multi-target | Sync `getState`, optional batch | Argelander adopts the async batch as the seam; synchronous access exists only as an internal window over a prefetched batch |
 | Batch layout | Flat `Float64Array`, transferable, indexed blocks | Array of sample objects | Adopt the flat layout as the wire shape (serves AGE-05 worker transfer); `StateSample` becomes a decoder view, not the seam |
 | Epoch spec | `Et[]` or `{start, end, step}` | `(t0, t1, dt)` | Adopt the union verbatim |
 | Observer | Required, explicit | Absent | Argelander queries platform state with `observer` = the target body center |
@@ -93,30 +104,10 @@ Subset and delta register:
 | Provider identity | None on the interface | `id` field | Keep `id` on the Argelander wrapper for `provenance.authority`; it is additive, not a subset violation |
 | Provenance | `KernelSetInfo.setHash` | `provenance.inputs: string[]` | `inputs` carries the setHash when Bessel-backed |
 
-Standalone providers (SGP4, pre-sampled, CZML) implement the same subset shape:
-single-target queries, geometric correction, flat batches. Convergence to a live Bessel
-binding is then the Phase 3 diff this section exists to keep small.
+## 4. Resolutions (Phase 0; previously the open items)
 
+Error semantics outside validity windows: when requested epochs fall outside kernel coverage, the TLE fence, or the pre-sampled span, the provider rejects with a structured refusal naming the covered windows, never silent NaN fills and never clamping, because a clamped state renders as a confidently wrong footprint. The normative shape is `CoverageRefusalError` in `provider.ts`: the `body`, the `requested` window, the `covered` windows (empty when none are advertised), and a human-readable message. A query is atomic: either every requested epoch is covered or the whole query refuses; partial batches are never returned.
 
-## 4. Open items
+Coverage advertisement: the provider interface carries an optional `coverage(body)` returning valid windows as `CoverageWindow[]` (`start` and `end` in `Et`), mapping to spkcov and ckcov when Bessel-backed and to epoch fences for SGP4 and pre-sampled providers. A provider that omits `coverage` is treated as unbounded until it refuses. This is what lets the engine paint planned strips amber beyond coverage instead of failing there.
 
-Resolved by the section 3 pin (668ed07): attitude conventions, adopted as the separate
-orientation call with SPICE scalar-first quaternions rotating `frame` into `bodyFrame`;
-aberration flags, adopted as the explicit never-defaulted `Correction` at every call
-site, `'NONE'` for rendering-grade body-fixed footprints, recorded in strip provenance.
-
-Still open for Phase 0:
-
-Error semantics outside validity windows: what a provider returns when requested epochs
-fall outside kernel coverage, TLE fence, or pre-sampled span. Candidate resolution: a
-structured refusal naming the covered window, never silent NaN fills or clamping,
-because a clamped state renders as a confidently wrong footprint.
-
-Coverage advertisement: whether the provider interface carries an optional
-`coverage(body)` returning valid windows, mapping to spkcov and ckcov when
-Bessel-backed and to epoch fences for SGP4 and pre-sampled providers. This is what
-lets the engine paint planned strips amber beyond coverage instead of failing there.
-
-Batch sizing: chunking guidance for long passes so Float64Array transfers to workers
-stay within frame budget (AGE-05); a soft ceiling per transfer and a streaming pattern
-for multi-orbit spans.
+Batch sizing: a soft ceiling of 65536 epochs per query, exported as `SOFT_MAX_EPOCHS_PER_QUERY` in `provider.ts`; at 6 doubles per sample that is 3 MiB of state data per target, comfortably one worker transfer inside a frame budget (AGE-05). Engines chunk longer spans into successive queries over adjacent windows and stitch strips at the boundary (SPEC-STRIP section 7); providers may refuse oversized queries, using the same structured refusal with the ceiling named in the message. The ceiling is sizing guidance with teeth on the provider side, not a wire-format constant: a batch of any size remains structurally valid.
