@@ -1,0 +1,14 @@
+{
+  "kind": "bilateral-swath",
+  "name": "Atlas tile 12 bilateral-swath",
+  "instrumentId": "atlas-tile-12",
+  "mount": [],
+  "timing": {
+    "segmentStepSec": 0.25
+  },
+  "params": {
+    "gapHalfWidthKm": 10.8,
+    "outerEdgeKm": 57.6,
+    "nadirBeadStepKm": 7
+  }
+}

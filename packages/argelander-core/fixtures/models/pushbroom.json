@@ -1,0 +1,12 @@
+{
+  "kind": "pushbroom",
+  "name": "Atlas tile 1 pushbroom",
+  "instrumentId": "atlas-tile-01",
+  "mount": [],
+  "timing": {
+    "segmentStepSec": 0.25
+  },
+  "params": {
+    "swathHalfWidthKm": 62.4
+  }
+}

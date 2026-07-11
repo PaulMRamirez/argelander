@@ -1,0 +1,19 @@
+{
+  "kind": "geo-raster",
+  "name": "Atlas tile 15 geo-raster",
+  "instrumentId": "atlas-tile-15",
+  "mount": [
+    {
+      "kind": "scan-mirror"
+    }
+  ],
+  "timing": {
+    "segmentStepSec": 2
+  },
+  "params": {
+    "diskRadiusKm": 96,
+    "fullDiskSec": 14,
+    "mesoHalfWidthKm": 9,
+    "mesoRevisitSec": 0.5
+  }
+}

@@ -1,0 +1,234 @@
+{
+  "id": "fixture-sweepsar-dbf",
+  "body": "EARTH",
+  "frame": "ITRF93",
+  "instrumentId": "atlas-tile-20",
+  "missionId": "atlas-fixtures",
+  "mode": "nominal",
+  "passId": "pass-0",
+  "segments": [
+    {
+      "etSec": 0,
+      "left": [
+        6370.899163387201,
+        23.999620141468032,
+        -26.624578594441097
+      ],
+      "right": [
+        6369.98807267434,
+        110.3824647972449,
+        -26.620771061835555
+      ],
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ],
+      "state": "committed"
+    },
+    {
+      "etSec": 0.25,
+      "left": [
+        6370.934767865395,
+        23.999754266013102,
+        -15.974836433314973
+      ],
+      "right": [
+        6370.023661879438,
+        110.38308150549207,
+        -15.972551875455036
+      ],
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ],
+      "state": "committed"
+    },
+    {
+      "etSec": 0.5,
+      "left": [
+        6370.952570328347,
+        23.999821329128917,
+        -5.324960357400479
+      ],
+      "right": [
+        6370.041456705681,
+        110.38338986349196,
+        -5.32419883173093
+      ],
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ],
+      "state": "committed"
+    },
+    {
+      "etSec": 0.75,
+      "left": [
+        6370.952570328347,
+        23.999821329128917,
+        5.324960357400479
+      ],
+      "right": [
+        6370.041456705681,
+        110.38338986349196,
+        5.32419883173093
+      ],
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ],
+      "state": "committed"
+    },
+    {
+      "etSec": 1,
+      "left": [
+        6370.934767865395,
+        23.999754266013102,
+        15.974836433314973
+      ],
+      "right": [
+        6370.023661879438,
+        110.38308150549207,
+        15.972551875455036
+      ],
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ],
+      "state": "acquiring"
+    },
+    {
+      "etSec": 1.25,
+      "left": [
+        6370.899163387201,
+        23.999620141468032,
+        26.624578594441097
+      ],
+      "right": [
+        6369.98807267434,
+        110.3824647972449,
+        26.620771061835555
+      ],
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ],
+      "state": "planned"
+    }
+  ],
+  "provenance": {
+    "authority": "argelander-core@0.0.1",
+    "generatedBy": "phase-0-authoring",
+    "inputs": [
+      "model:atlas-tile-20"
+    ]
+  }
+}

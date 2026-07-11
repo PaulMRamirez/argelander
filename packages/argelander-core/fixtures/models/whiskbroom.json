@@ -1,0 +1,21 @@
+{
+  "kind": "whiskbroom",
+  "name": "Atlas tile 2 whiskbroom",
+  "instrumentId": "atlas-tile-02",
+  "mount": [
+    {
+      "kind": "scan-mirror"
+    }
+  ],
+  "timing": {
+    "segmentStepSec": 0.25,
+    "subStepSec": 0.1
+  },
+  "params": {
+    "swathHalfWidthKm": 64.8,
+    "scanRateHz": 1.9,
+    "footprintSemiMajorKm": 3.4,
+    "footprintSemiMinorKm": 2.1,
+    "footprintGrowthFactor": 0.9
+  }
+}

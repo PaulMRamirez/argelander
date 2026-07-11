@@ -1,0 +1,20 @@
+{
+  "kind": "scansar-tops",
+  "name": "Atlas tile 8 scansar-tops",
+  "instrumentId": "atlas-tile-08",
+  "mount": [],
+  "timing": {
+    "segmentStepSec": 0.55
+  },
+  "params": {
+    "subSwathRangesKm": [
+      31.2,
+      56.4,
+      60,
+      85.2,
+      88.8,
+      114
+    ],
+    "burstPeriodSec": 0.55
+  }
+}

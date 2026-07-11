@@ -1,0 +1,18 @@
+{
+  "kind": "spotlight-sar",
+  "name": "Atlas tile 9 spotlight-sar",
+  "instrumentId": "atlas-tile-09",
+  "mount": [
+    {
+      "kind": "gimbal"
+    }
+  ],
+  "timing": {
+    "segmentStepSec": 0.425
+  },
+  "params": {
+    "patchHalfAlongKm": 12,
+    "patchHalfCrossKm": 9,
+    "dwellSec": 1.7
+  }
+}

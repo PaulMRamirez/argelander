@@ -1,0 +1,204 @@
+{
+  "id": "fixture-multi-angle",
+  "body": "EARTH",
+  "frame": "ITRF93",
+  "instrumentId": "atlas-tile-17",
+  "missionId": "atlas-fixtures",
+  "mode": "nominal",
+  "passId": "pass-0",
+  "segments": [
+    {
+      "etSec": 0,
+      "left": [
+        6370.763559652755,
+        -47.998218625542656,
+        -26.62401189385569
+      ],
+      "right": [
+        6370.763559652755,
+        47.998218625542656,
+        -26.62401189385569
+      ],
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        }
+      ],
+      "quality": {
+        "lookCount": 3
+      },
+      "state": "committed"
+    },
+    {
+      "etSec": 0.25,
+      "left": [
+        6370.799161857476,
+        -47.99848685750414,
+        -15.974496407263098
+      ],
+      "right": [
+        6370.799161857476,
+        47.99848685750414,
+        -15.974496407263098
+      ],
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        }
+      ],
+      "quality": {
+        "lookCount": 3
+      },
+      "state": "committed"
+    },
+    {
+      "etSec": 0.5,
+      "left": [
+        6370.816963183666,
+        -47.998620975171235,
+        -5.324847014433059
+      ],
+      "right": [
+        6370.816963183666,
+        47.998620975171235,
+        -5.324847014433059
+      ],
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        }
+      ],
+      "quality": {
+        "lookCount": 3
+      },
+      "state": "committed"
+    },
+    {
+      "etSec": 0.75,
+      "left": [
+        6370.816963183666,
+        -47.998620975171235,
+        5.324847014433059
+      ],
+      "right": [
+        6370.816963183666,
+        47.998620975171235,
+        5.324847014433059
+      ],
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        }
+      ],
+      "quality": {
+        "lookCount": 3
+      },
+      "state": "committed"
+    },
+    {
+      "etSec": 1,
+      "left": [
+        6370.799161857476,
+        -47.99848685750414,
+        15.974496407263098
+      ],
+      "right": [
+        6370.799161857476,
+        47.99848685750414,
+        15.974496407263098
+      ],
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        }
+      ],
+      "quality": {
+        "lookCount": 3
+      },
+      "state": "acquiring"
+    },
+    {
+      "etSec": 1.25,
+      "left": [
+        6370.763559652755,
+        -47.998218625542656,
+        26.62401189385569
+      ],
+      "right": [
+        6370.763559652755,
+        47.998218625542656,
+        26.62401189385569
+      ],
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        }
+      ],
+      "quality": {
+        "lookCount": 3
+      },
+      "state": "planned"
+    }
+  ],
+  "provenance": {
+    "authority": "argelander-core@0.0.1",
+    "generatedBy": "phase-0-authoring",
+    "inputs": [
+      "model:atlas-tile-17"
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "kind": "fan-beam-scatterometer",
+  "name": "Atlas tile 10 fan-beam-scatterometer",
+  "instrumentId": "atlas-tile-10",
+  "mount": [],
+  "timing": {
+    "segmentStepSec": 0.12
+  },
+  "params": {
+    "nearRangeKm": 40.8,
+    "farRangeKm": 80.4,
+    "azimuthLooksRad": [
+      0.7853981633974483,
+      1.5707963267948966,
+      2.356194490192345
+    ],
+    "beamPeriodSec": 0.12
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "kind": "flyby-swath",
+  "name": "Atlas tile 21 flyby-swath",
+  "instrumentId": "atlas-tile-21",
+  "mount": [],
+  "timing": {
+    "segmentStepSec": 0.25
+  },
+  "params": {
+    "nearEdgeOffsetKm": 5,
+    "minWidthKm": 7,
+    "widthGrowthKm": 31.2,
+    "widthExponent": 1.2
+  }
+}

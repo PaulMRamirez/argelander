@@ -1,0 +1,22 @@
+{
+  "kind": "agile-tasking",
+  "name": "Atlas tile 14 agile-tasking",
+  "instrumentId": "atlas-tile-14",
+  "mount": [
+    {
+      "kind": "gimbal"
+    }
+  ],
+  "timing": {
+    "segmentStepSec": 2.5
+  },
+  "params": {
+    "fieldOfRegardHalfKm": 81.6,
+    "taskTypes": [
+      "point",
+      "strip",
+      "stereo",
+      "corridor"
+    ]
+  }
+}
