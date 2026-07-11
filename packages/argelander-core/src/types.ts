@@ -70,6 +70,15 @@ export interface InstrumentModel {
   params: Readonly<Record<string, number | string | boolean>>;
 }
 
+/**
+ * STALE SEAM, do not build against this shape. Superseded by the Bessel pin
+ * (SPEC-PROVIDER section 3, contracts.ts at 668ed07): the seam is async and
+ * flat-batch (StateQuery with an epoch union and explicit never-defaulted
+ * Correction, frame on the request rather than the provider, Float64Array
+ * batches as the wire shape, separate scalar-first orientation call).
+ * StateSample survives only as a decoder view over a batch. Phase 0 revises
+ * this file to that shape; see goals/PHASE-0.md and the delta register.
+ */
 export interface StateSample {
   etSec: number;
   positionKm: Vec3;
