@@ -6,3 +6,4 @@ catalog:
   vitest: ^3.0.0
   leaflet: ^1.9.4
   '@types/leaflet': ^1.9.12
+  '@types/node': ^22.0.0
