@@ -1,0 +1,19 @@
+{
+  "kind": "pencil-beam-scatterometer",
+  "name": "Atlas tile 11 pencil-beam-scatterometer",
+  "instrumentId": "atlas-tile-11",
+  "mount": [
+    {
+      "kind": "spin"
+    }
+  ],
+  "timing": {
+    "segmentStepSec": 0.125
+  },
+  "params": {
+    "innerRadiusKm": 50.4,
+    "outerRadiusKm": 72,
+    "spinPeriodSec": 0.305,
+    "beamPhaseOffsetRad": 2.3
+  }
+}

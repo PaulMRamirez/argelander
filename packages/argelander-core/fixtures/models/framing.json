@@ -1,0 +1,15 @@
+{
+  "kind": "framing",
+  "name": "Atlas tile 5 framing",
+  "instrumentId": "atlas-tile-05",
+  "mount": [],
+  "timing": {
+    "segmentStepSec": 0.72
+  },
+  "params": {
+    "framePeriodSec": 0.72,
+    "frameHalfAlongKm": 16,
+    "frameHalfCrossKm": 22,
+    "overlapFactor": 1.12
+  }
+}

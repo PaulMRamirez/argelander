@@ -1,0 +1,14 @@
+{
+  "kind": "limb-occultation",
+  "name": "Atlas tile 13 limb-occultation",
+  "instrumentId": "atlas-tile-13",
+  "mount": [],
+  "timing": {
+    "segmentStepSec": 0.25
+  },
+  "params": {
+    "tangentLeadSec": 1.6,
+    "tangentBeadStepKm": 6,
+    "eventRadiusKm": 3.4
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "kind": "stripmap-sar",
+  "name": "Atlas tile 7 stripmap-sar",
+  "instrumentId": "atlas-tile-07",
+  "mount": [],
+  "timing": {
+    "segmentStepSec": 0.25
+  },
+  "params": {
+    "nearRangeKm": 43.2,
+    "farRangeKm": 81.6,
+    "side": "right"
+  }
+}

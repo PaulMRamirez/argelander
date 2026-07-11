@@ -1,0 +1,15 @@
+{
+  "kind": "bistatic-formation",
+  "name": "Atlas tile 19 bistatic-formation",
+  "instrumentId": "atlas-tile-19",
+  "mount": [],
+  "timing": {
+    "segmentStepSec": 0.25
+  },
+  "params": {
+    "nearRangeKm": 38.4,
+    "farRangeKm": 100.8,
+    "alongTrackSepKm": 12,
+    "crossTrackAmpKm": 7
+  }
+}

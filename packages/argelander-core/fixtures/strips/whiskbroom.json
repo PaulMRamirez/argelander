@@ -1,0 +1,361 @@
+{
+  "id": "fixture-whiskbroom",
+  "body": "EARTH",
+  "frame": "ITRF93",
+  "instrumentId": "atlas-tile-02",
+  "missionId": "atlas-fixtures",
+  "mode": "nominal",
+  "passId": "pass-0",
+  "segments": [
+    {
+      "etSec": 0,
+      "left": [
+        6370.590383056135,
+        -64.7958337501236,
+        -31.947945807352614
+      ],
+      "right": [
+        6370.590383056135,
+        64.7958337501236,
+        -31.947945807352614
+      ],
+      "sub": [
+        {
+          "kind": "footprint",
+          "center": [
+            6370.708999055102,
+            -51.83763216308532,
+            -31.948540656068207
+          ],
+          "semiMajorKm": 5.3584000000000005,
+          "semiMinorKm": 3.3096,
+          "rotationRad": 0
+        },
+        {
+          "kind": "footprint",
+          "center": [
+            6370.919888302777,
+            0,
+            -31.94959824694298
+          ],
+          "semiMajorKm": 3.4,
+          "semiMinorKm": 2.1,
+          "rotationRad": 0
+        },
+        {
+          "kind": "footprint",
+          "center": [
+            6370.708999055102,
+            51.83763216308532,
+            -31.948540656068207
+          ],
+          "semiMajorKm": 5.3584000000000005,
+          "semiMinorKm": 3.3096,
+          "rotationRad": 0
+        }
+      ],
+      "state": "committed"
+    },
+    {
+      "etSec": 0.25,
+      "left": [
+        6370.634882276206,
+        -64.79628635559537,
+        -21.298779311329962
+      ],
+      "right": [
+        6370.634882276206,
+        64.79628635559537,
+        -21.298779311329962
+      ],
+      "sub": [
+        {
+          "kind": "footprint",
+          "center": [
+            6370.753500760872,
+            -51.83799426768853,
+            -21.299175885450726
+          ],
+          "semiMajorKm": 5.3584000000000005,
+          "semiMinorKm": 3.3096,
+          "rotationRad": 0
+        },
+        {
+          "kind": "footprint",
+          "center": [
+            6370.964394428135,
+            0,
+            -21.29988096080981
+          ],
+          "semiMajorKm": 3.4,
+          "semiMinorKm": 2.1,
+          "rotationRad": 0
+        },
+        {
+          "kind": "footprint",
+          "center": [
+            6370.753500760872,
+            51.83799426768853,
+            -21.299175885450726
+          ],
+          "semiMajorKm": 5.3584000000000005,
+          "semiMinorKm": 3.3096,
+          "rotationRad": 0
+        }
+      ],
+      "state": "committed"
+    },
+    {
+      "etSec": 0.5,
+      "left": [
+        6370.66158225585,
+        -64.79655792343102,
+        -10.649434288341673
+      ],
+      "right": [
+        6370.66158225585,
+        64.79655792343102,
+        -10.649434288341673
+      ],
+      "sub": [
+        {
+          "kind": "footprint",
+          "center": [
+            6370.780202231976,
+            -51.83821153409286,
+            -10.649632577895236
+          ],
+          "semiMajorKm": 5.3584000000000005,
+          "semiMinorKm": 3.3096,
+          "rotationRad": 0
+        },
+        {
+          "kind": "footprint",
+          "center": [
+            6370.991098551068,
+            0,
+            -10.64998512000767
+          ],
+          "semiMajorKm": 3.4,
+          "semiMinorKm": 2.1,
+          "rotationRad": 0
+        },
+        {
+          "kind": "footprint",
+          "center": [
+            6370.780202231976,
+            51.83821153409286,
+            -10.649632577895236
+          ],
+          "semiMajorKm": 5.3584000000000005,
+          "semiMinorKm": 3.3096,
+          "rotationRad": 0
+        }
+      ],
+      "state": "committed"
+    },
+    {
+      "etSec": 0.75,
+      "left": [
+        6370.670482323666,
+        -64.79664844680168,
+        0
+      ],
+      "right": [
+        6370.670482323666,
+        64.79664844680168,
+        0
+      ],
+      "sub": [
+        {
+          "kind": "footprint",
+          "center": [
+            6370.789102796953,
+            -51.83828395683472,
+            0
+          ],
+          "semiMajorKm": 5.3584000000000005,
+          "semiMinorKm": 3.3096,
+          "rotationRad": 0
+        },
+        {
+          "kind": "footprint",
+          "center": [
+            6371,
+            0,
+            0
+          ],
+          "semiMajorKm": 3.4,
+          "semiMinorKm": 2.1,
+          "rotationRad": 0
+        },
+        {
+          "kind": "footprint",
+          "center": [
+            6370.789102796953,
+            51.83828395683472,
+            0
+          ],
+          "semiMajorKm": 5.3584000000000005,
+          "semiMinorKm": 3.3096,
+          "rotationRad": 0
+        }
+      ],
+      "state": "committed"
+    },
+    {
+      "etSec": 1,
+      "left": [
+        6370.66158225585,
+        -64.79655792343102,
+        10.649434288341673
+      ],
+      "right": [
+        6370.66158225585,
+        64.79655792343102,
+        10.649434288341673
+      ],
+      "sub": [
+        {
+          "kind": "footprint",
+          "center": [
+            6370.780202231976,
+            -51.83821153409286,
+            10.649632577895236
+          ],
+          "semiMajorKm": 5.3584000000000005,
+          "semiMinorKm": 3.3096,
+          "rotationRad": 0
+        },
+        {
+          "kind": "footprint",
+          "center": [
+            6370.991098551068,
+            0,
+            10.64998512000767
+          ],
+          "semiMajorKm": 3.4,
+          "semiMinorKm": 2.1,
+          "rotationRad": 0
+        },
+        {
+          "kind": "footprint",
+          "center": [
+            6370.780202231976,
+            51.83821153409286,
+            10.649632577895236
+          ],
+          "semiMajorKm": 5.3584000000000005,
+          "semiMinorKm": 3.3096,
+          "rotationRad": 0
+        }
+      ],
+      "state": "committed"
+    },
+    {
+      "etSec": 1.25,
+      "left": [
+        6370.634882276206,
+        -64.79628635559537,
+        21.298779311329962
+      ],
+      "right": [
+        6370.634882276206,
+        64.79628635559537,
+        21.298779311329962
+      ],
+      "sub": [
+        {
+          "kind": "footprint",
+          "center": [
+            6370.753500760872,
+            -51.83799426768853,
+            21.299175885450726
+          ],
+          "semiMajorKm": 5.3584000000000005,
+          "semiMinorKm": 3.3096,
+          "rotationRad": 0
+        },
+        {
+          "kind": "footprint",
+          "center": [
+            6370.964394428135,
+            0,
+            21.29988096080981
+          ],
+          "semiMajorKm": 3.4,
+          "semiMinorKm": 2.1,
+          "rotationRad": 0
+        },
+        {
+          "kind": "footprint",
+          "center": [
+            6370.753500760872,
+            51.83799426768853,
+            21.299175885450726
+          ],
+          "semiMajorKm": 5.3584000000000005,
+          "semiMinorKm": 3.3096,
+          "rotationRad": 0
+        }
+      ],
+      "state": "acquiring"
+    },
+    {
+      "etSec": 1.5,
+      "left": [
+        6370.590383056135,
+        -64.7958337501236,
+        31.947945807352614
+      ],
+      "right": [
+        6370.590383056135,
+        64.7958337501236,
+        31.947945807352614
+      ],
+      "sub": [
+        {
+          "kind": "footprint",
+          "center": [
+            6370.708999055102,
+            -51.83763216308532,
+            31.948540656068207
+          ],
+          "semiMajorKm": 5.3584000000000005,
+          "semiMinorKm": 3.3096,
+          "rotationRad": 0
+        },
+        {
+          "kind": "footprint",
+          "center": [
+            6370.919888302777,
+            0,
+            31.94959824694298
+          ],
+          "semiMajorKm": 3.4,
+          "semiMinorKm": 2.1,
+          "rotationRad": 0
+        },
+        {
+          "kind": "footprint",
+          "center": [
+            6370.708999055102,
+            51.83763216308532,
+            31.948540656068207
+          ],
+          "semiMajorKm": 5.3584000000000005,
+          "semiMinorKm": 3.3096,
+          "rotationRad": 0
+        }
+      ],
+      "state": "planned"
+    }
+  ],
+  "provenance": {
+    "authority": "argelander-core@0.0.1",
+    "generatedBy": "phase-0-authoring",
+    "inputs": [
+      "model:atlas-tile-02"
+    ]
+  }
+}

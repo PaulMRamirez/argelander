@@ -1,0 +1,21 @@
+{
+  "kind": "conical-radiometer",
+  "name": "Atlas tile 4 conical-radiometer",
+  "instrumentId": "atlas-tile-04",
+  "mount": [
+    {
+      "kind": "spin"
+    }
+  ],
+  "timing": {
+    "segmentStepSec": 0.28,
+    "subStepSec": 0.01
+  },
+  "params": {
+    "scanRadiusKm": 72,
+    "sectorHalfAngleRad": 1.2217304763960306,
+    "spinPeriodSec": 0.28,
+    "footprintSemiMajorKm": 6.4,
+    "footprintSemiMinorKm": 3.9
+  }
+}

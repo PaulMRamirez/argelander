@@ -1,0 +1,15 @@
+{
+  "kind": "push-frame",
+  "name": "Atlas tile 16 push-frame",
+  "instrumentId": "atlas-tile-16",
+  "mount": [],
+  "timing": {
+    "segmentStepSec": 0.3
+  },
+  "params": {
+    "swathHalfWidthKm": 55.2,
+    "frameletHalfAlongKm": 7,
+    "bandCount": 3,
+    "framePeriodSec": 0.3
+  }
+}

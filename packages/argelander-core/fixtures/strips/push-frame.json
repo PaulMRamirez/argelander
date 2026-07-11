@@ -1,0 +1,186 @@
+{
+  "id": "fixture-push-frame",
+  "body": "MOON",
+  "frame": "IAU_MOON",
+  "instrumentId": "atlas-tile-16",
+  "missionId": "atlas-fixtures",
+  "mode": "nominal",
+  "passId": "pass-0",
+  "segments": [
+    {
+      "etSec": 0,
+      "left": [
+        1736.2305123430924,
+        -55.16284349104334,
+        -31.928493651065846
+      ],
+      "right": [
+        1736.2305123430924,
+        55.16284349104334,
+        -31.928493651065846
+      ],
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        }
+      ],
+      "state": "committed"
+    },
+    {
+      "etSec": 0.3,
+      "left": [
+        1736.4181780831632,
+        -55.16880593426419,
+        -19.159166843475443
+      ],
+      "right": [
+        1736.4181780831632,
+        55.16880593426419,
+        -19.159166843475443
+      ],
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        }
+      ],
+      "state": "committed"
+    },
+    {
+      "etSec": 0.6,
+      "left": [
+        1736.51203377605,
+        -55.17178788099341,
+        -6.3867341405715194
+      ],
+      "right": [
+        1736.51203377605,
+        55.17178788099341,
+        -6.3867341405715194
+      ],
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        }
+      ],
+      "state": "committed"
+    },
+    {
+      "etSec": 0.8999999999999999,
+      "left": [
+        1736.51203377605,
+        -55.17178788099341,
+        6.3867341405715194
+      ],
+      "right": [
+        1736.51203377605,
+        55.17178788099341,
+        6.3867341405715194
+      ],
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        }
+      ],
+      "state": "committed"
+    },
+    {
+      "etSec": 1.2,
+      "left": [
+        1736.4181780831632,
+        -55.16880593426419,
+        19.159166843475443
+      ],
+      "right": [
+        1736.4181780831632,
+        55.16880593426419,
+        19.159166843475443
+      ],
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        }
+      ],
+      "state": "acquiring"
+    },
+    {
+      "etSec": 1.5,
+      "left": [
+        1736.2305123430924,
+        -55.16284349104334,
+        31.928493651065846
+      ],
+      "right": [
+        1736.2305123430924,
+        55.16284349104334,
+        31.928493651065846
+      ],
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        }
+      ],
+      "state": "planned"
+    }
+  ],
+  "provenance": {
+    "authority": "argelander-core@0.0.1",
+    "generatedBy": "phase-0-authoring",
+    "inputs": [
+      "model:atlas-tile-16"
+    ]
+  }
+}

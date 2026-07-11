@@ -2,103 +2,176 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://argelander.dev/schemas/strip.schema.json",
   "title": "Strip",
-  "description": "Draft seed; Phase 0 completes this against SPEC-STRIP. TODO markers are Phase 0 items.",
+  "description": "Acquisition strip, the AGE data spine (SPEC-STRIP, frozen Phase 0). Closed schema: unknown fields are invalid. Cross-field rules (monotonic time, ordered ranges) live in validateStrip.",
   "type": "object",
-  "required": [
-    "id",
-    "body",
-    "frame",
-    "instrumentId",
-    "segments",
-    "provenance"
-  ],
+  "additionalProperties": false,
+  "required": ["id", "body", "frame", "instrumentId", "segments", "provenance"],
   "properties": {
-    "id": {
-      "type": "string",
-      "minLength": 1
-    },
-    "body": {
-      "type": "string",
-      "minLength": 1
-    },
-    "frame": {
-      "type": "string",
-      "minLength": 1
-    },
-    "instrumentId": {
-      "type": "string",
-      "minLength": 1
-    },
-    "missionId": {
-      "type": "string"
-    },
-    "mode": {
-      "type": "string"
-    },
-    "passId": {
-      "type": "string"
-    },
+    "id": { "type": "string", "minLength": 1 },
+    "body": { "type": "string", "minLength": 1 },
+    "frame": { "type": "string", "minLength": 1 },
+    "instrumentId": { "type": "string", "minLength": 1 },
+    "missionId": { "type": "string", "minLength": 1 },
+    "mode": { "type": "string", "minLength": 1 },
+    "passId": { "type": "string", "minLength": 1 },
     "segments": {
       "type": "array",
       "minItems": 1,
-      "items": {
-        "type": "object",
-        "required": [
-          "etSec",
-          "left",
-          "right",
-          "state"
-        ],
-        "properties": {
-          "etSec": {
-            "type": "number"
-          },
-          "left": {
-            "type": "array",
-            "items": {
-              "type": "number"
-            },
-            "minItems": 3,
-            "maxItems": 3
-          },
-          "right": {
-            "type": "array",
-            "items": {
-              "type": "number"
-            },
-            "minItems": 3,
-            "maxItems": 3
-          },
-          "state": {
-            "enum": [
-              "planned",
-              "acquiring",
-              "committed"
-            ]
-          }
+      "items": { "$ref": "#/definitions/segment" }
+    },
+    "provenance": { "$ref": "#/definitions/provenance" }
+  },
+  "definitions": {
+    "vec3": {
+      "type": "array",
+      "items": { "type": "number" },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "rangeTuple": {
+      "type": "array",
+      "items": { "type": "number" },
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "segment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["etSec", "left", "right", "state"],
+      "properties": {
+        "etSec": { "type": "number" },
+        "left": { "$ref": "#/definitions/vec3" },
+        "right": { "$ref": "#/definitions/vec3" },
+        "state": { "enum": ["planned", "acquiring", "committed"] },
+        "sub": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/subStructure" }
+        },
+        "quality": { "$ref": "#/definitions/quality" }
+      }
+    },
+    "quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "incidenceDeg": { "$ref": "#/definitions/rangeTuple" },
+        "resolutionM": { "$ref": "#/definitions/rangeTuple" },
+        "lookCount": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "subStructure": {
+      "oneOf": [
+        { "$ref": "#/definitions/subSwath" },
+        { "$ref": "#/definitions/subBeads" },
+        { "$ref": "#/definitions/subFootprint" },
+        { "$ref": "#/definitions/subFrame" },
+        { "$ref": "#/definitions/subEvent" },
+        { "$ref": "#/definitions/subLook" },
+        { "$ref": "#/definitions/subBaseline" },
+        { "$ref": "#/definitions/subSector" }
+      ]
+    },
+    "subSwath": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "index"],
+      "properties": {
+        "kind": { "const": "sub-swath" },
+        "index": { "type": "integer", "minimum": 0 },
+        "burstId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "subBeads": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "points"],
+      "properties": {
+        "kind": { "const": "beads" },
+        "points": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/vec3" }
         }
+      }
+    },
+    "subFootprint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "center", "semiMajorKm", "semiMinorKm", "rotationRad"],
+      "properties": {
+        "kind": { "const": "footprint" },
+        "center": { "$ref": "#/definitions/vec3" },
+        "semiMajorKm": { "type": "number", "minimum": 0 },
+        "semiMinorKm": { "type": "number", "minimum": 0 },
+        "rotationRad": { "type": "number" }
+      }
+    },
+    "subFrame": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "corners"],
+      "properties": {
+        "kind": { "const": "frame" },
+        "corners": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": { "$ref": "#/definitions/vec3" }
+        },
+        "frameId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "subEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "center"],
+      "properties": {
+        "kind": { "const": "event" },
+        "center": { "$ref": "#/definitions/vec3" },
+        "eventId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "subLook": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "index", "azimuthRad"],
+      "properties": {
+        "kind": { "const": "look" },
+        "index": { "type": "integer", "minimum": 0 },
+        "azimuthRad": { "type": "number" }
+      }
+    },
+    "subBaseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "companion"],
+      "properties": {
+        "kind": { "const": "baseline" },
+        "companion": { "$ref": "#/definitions/vec3" }
+      }
+    },
+    "subSector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "sectorId"],
+      "properties": {
+        "kind": { "const": "sector" },
+        "sectorId": { "type": "string", "minLength": 1 },
+        "refreshSec": { "type": "number", "exclusiveMinimum": 0 }
       }
     },
     "provenance": {
       "type": "object",
-      "required": [
-        "authority",
-        "generatedBy"
-      ],
+      "additionalProperties": false,
+      "required": ["authority", "generatedBy"],
       "properties": {
-        "authority": {
-          "type": "string",
-          "minLength": 1
-        },
-        "generatedBy": {
-          "type": "string",
-          "minLength": 1
-        },
+        "authority": { "type": "string", "minLength": 1 },
+        "generatedBy": { "type": "string", "minLength": 1 },
+        "correction": { "enum": ["NONE", "LT", "LT+S", "CN", "CN+S"] },
         "inputs": {
           "type": "array",
-          "items": {
-            "type": "string"
-          }
+          "items": { "type": "string", "minLength": 1 }
         }
       }
     }

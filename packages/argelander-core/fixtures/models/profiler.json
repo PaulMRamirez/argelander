@@ -1,0 +1,18 @@
+{
+  "kind": "profiler",
+  "name": "Atlas tile 6 profiler",
+  "instrumentId": "atlas-tile-06",
+  "mount": [],
+  "timing": {
+    "segmentStepSec": 0.13
+  },
+  "params": {
+    "beamOffsetsKm": [
+      -30,
+      0,
+      30
+    ],
+    "pairSplitKm": 2.2,
+    "beadStepKm": 5.5
+  }
+}

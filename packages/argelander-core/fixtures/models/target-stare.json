@@ -1,0 +1,20 @@
+{
+  "kind": "target-stare",
+  "name": "Atlas tile 18 target-stare",
+  "instrumentId": "atlas-tile-18",
+  "mount": [
+    {
+      "kind": "gimbal"
+    }
+  ],
+  "timing": {
+    "segmentStepSec": 1
+  },
+  "params": {
+    "patchHalfAlongKm": 11,
+    "patchHalfCrossKm": 8,
+    "dwellStartSec": 3,
+    "dwellEndSec": 7,
+    "stretchMaxFactor": 2.6
+  }
+}

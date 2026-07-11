@@ -1,0 +1,21 @@
+{
+  "kind": "step-scan-sounder",
+  "name": "Atlas tile 3 step-scan-sounder",
+  "instrumentId": "atlas-tile-03",
+  "mount": [
+    {
+      "kind": "scan-mirror"
+    }
+  ],
+  "timing": {
+    "segmentStepSec": 0.6,
+    "subStepSec": 0.04
+  },
+  "params": {
+    "swathHalfWidthKm": 67.2,
+    "positionsPerRow": 15,
+    "footprintRadiusKm": 4.6,
+    "crossGrowthFactor": 1.7,
+    "alongGrowthFactor": 0.45
+  }
+}

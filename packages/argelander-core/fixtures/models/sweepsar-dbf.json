@@ -1,0 +1,14 @@
+{
+  "kind": "sweepsar-dbf",
+  "name": "Atlas tile 20 sweepsar-dbf",
+  "instrumentId": "atlas-tile-20",
+  "mount": [],
+  "timing": {
+    "segmentStepSec": 0.25
+  },
+  "params": {
+    "nearRangeKm": 24,
+    "farRangeKm": 110.4,
+    "beamCount": 5
+  }
+}

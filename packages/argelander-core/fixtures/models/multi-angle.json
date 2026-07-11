@@ -1,0 +1,17 @@
+{
+  "kind": "multi-angle",
+  "name": "Atlas tile 17 multi-angle",
+  "instrumentId": "atlas-tile-17",
+  "mount": [],
+  "timing": {
+    "segmentStepSec": 0.25
+  },
+  "params": {
+    "swathHalfWidthKm": 48,
+    "stationLeadsSec": [
+      1.4,
+      0,
+      -1.4
+    ]
+  }
+}
