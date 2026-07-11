@@ -1,0 +1,10 @@
+{
+  "entryPoints": [
+    "packages/argelander-core/src/index.ts"
+  ],
+  "tsconfig": "packages/argelander-core/tsconfig.json",
+  "out": "dist/site/api",
+  "name": "argelander-core",
+  "readme": "packages/argelander-core/README.md",
+  "excludeInternal": true
+}

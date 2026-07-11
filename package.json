@@ -1,0 +1,24 @@
+{
+  "name": "argelander-workspace",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@10.4.1",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "verify": "node scripts/check-style.mjs && pnpm -r typecheck && pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "docs:build": "node scripts/build-docs.mjs"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  },
+  "devDependencies": {
+    "typedoc": "^0.28.0",
+    "marked": "^15.0.0"
+  }
+}

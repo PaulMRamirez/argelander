@@ -1,0 +1,6 @@
+{
+  "name": "@app/atlas",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Acquisition Geometry Atlas: day-one demo and visual regression corpus. Behavior changes only via engine re-render (Phase 1)."
+}

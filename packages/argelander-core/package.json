@@ -1,0 +1,22 @@
+{
+  "name": "argelander-core",
+  "version": "0.0.1",
+  "description": "Acquisition Geometry Engine core: time-tagged footprint strips from instrument models and state providers. Renderer-agnostic, zero runtime dependencies. Reserved pre-release.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "files": [
+    "src",
+    "fixtures",
+    "README.md"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run --passWithNoTests"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

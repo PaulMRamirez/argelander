@@ -1,0 +1,3 @@
+# docs
+
+`acquisition-geometry-survey.md` is the foundational reference: taxonomy of the 21 geometry families across past, current, and upcoming missions, the six rendering treatments, the AGE component architecture, requirements AGE-01 through 20, and the decision register A through G. Phase 0 extracts the strip and instrument model schemas from Sections 9.1 through 9.6. The living contracts are `../specs/`; when spec and survey disagree, the spec wins and the survey gets a delta note. The interactive atlas at `../apps/atlas/index.html` is the visual companion and the regression corpus. `pnpm docs:build` assembles all of it, plus the TypeDoc API reference and the atlas, into the static site at `dist/site`, which the Pages job publishes.

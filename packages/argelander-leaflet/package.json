@@ -1,0 +1,26 @@
+{
+  "name": "argelander-leaflet",
+  "version": "0.0.1",
+  "description": "Leaflet adapter for argelander-core strips: MMGIS 2D Map layer with trail-decay canvas. Reserved pre-release.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "argelander-core": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "leaflet": "catalog:",
+    "@types/leaflet": "catalog:"
+  }
+}

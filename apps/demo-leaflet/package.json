@@ -1,0 +1,16 @@
+{
+  "name": "@app/demo-leaflet",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "argelander-core": "workspace:*",
+    "argelander-leaflet": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  }
+}

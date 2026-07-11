@@ -1,0 +1,8 @@
+packages:
+  - 'packages/*'
+  - 'apps/*'
+catalog:
+  typescript: ^5.5.4
+  vitest: ^3.0.0
+  leaflet: ^1.9.4
+  '@types/leaflet': ^1.9.12

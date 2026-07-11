@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acquisition Geometry Atlas</title>
+<style>
+  :root{
+    --ink:#0A0F16; --panel:#0D141D; --card:#0F1721; --line:#22303F;
+    --txt:#D9E4EE; --dim:#7E90A4; --faint:#54677C;
+    --cyan:#66DBF8; --teal:#4FAEBC; --amber:#F0B255; --peri:#93A7FF; --mint:#82DFAF;
+    --mono:ui-monospace,'SF Mono','Cascadia Mono','JetBrains Mono',Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{background:var(--ink)}
+  body{
+    background:
+      radial-gradient(1200px 600px at 70% -10%, rgba(50,90,120,0.10), transparent 60%),
+      var(--ink);
+    color:var(--txt); font-family:var(--sans);
+    -webkit-font-smoothing:antialiased; padding:20px 16px 60px; max-width:1180px; margin:0 auto;
+  }
+  .eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--faint)}
+  header h1{font-size:clamp(22px,4.4vw,32px);font-weight:650;letter-spacing:-0.02em;margin:6px 0 8px}
+  header .thesis{color:var(--dim);font-size:14px;line-height:1.55;max-width:70ch}
+  header .thesis b{color:var(--txt);font-weight:600}
+
+  .bar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin:16px 0 6px;padding:10px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;font-family:var(--mono);font-size:10.5px;color:var(--dim)}
+  .legend span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+  .sw{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+  .sw.now{background:var(--cyan);box-shadow:0 0 6px rgba(102,219,248,.7)}
+  .sw.acc{background:rgba(79,174,188,.55);border-radius:2px}
+  .sw.plan{background:transparent;border:1.5px dashed var(--amber);border-radius:2px}
+  .sw.aid{background:transparent;border-top:1.5px dashed rgba(148,176,205,.6);height:0;width:14px;border-radius:0}
+  .ctrls{display:flex;gap:8px;margin-left:auto}
+  button{
+    font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--txt);
+    background:transparent;border:1px solid var(--line);border-radius:5px;padding:6px 12px;cursor:pointer
+  }
+  button:hover{border-color:var(--dim)}
+  button:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+
+  section{margin-top:34px}
+  .sechead{display:flex;align-items:baseline;gap:12px;margin-bottom:4px}
+  .sechead .rule{flex:1;height:1px;background:var(--line)}
+  .secnote{color:var(--dim);font-size:13px;line-height:1.5;margin:6px 0 16px;max-width:78ch}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(295px,1fr));gap:14px}
+  figure.tile{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
+  .cwrap{position:relative;background:var(--panel)}
+  .tile canvas{display:block;width:100%;aspect-ratio:4/3}
+  #treat .tile canvas{aspect-ratio:16/10}
+  figcaption{padding:10px 12px 12px;border-top:1px solid var(--line)}
+  .trow{display:flex;align-items:center;gap:8px;justify-content:space-between}
+  .tname{font-family:var(--mono);font-size:12.5px;font-weight:600;letter-spacing:.05em}
+  .chip{font-family:var(--mono);font-size:9px;letter-spacing:.14em;padding:2.5px 7px;border:1px solid var(--line);border-radius:99px;color:var(--dim);white-space:nowrap}
+  .chip.opt{color:var(--cyan);border-color:rgba(102,219,248,.35)}
+  .chip.rad{color:var(--peri);border-color:rgba(147,167,255,.35)}
+  .chip.uw{color:var(--mint);border-color:rgba(130,223,175,.35)}
+  .chip.pro{color:var(--mint);border-color:rgba(130,223,175,.35)}
+  .chip.evt{color:var(--amber);border-color:rgba(240,178,85,.4)}
+  .chip.tsk{color:var(--amber);border-color:rgba(240,178,85,.4)}
+  .chip.geo{color:#C9A7F5;border-color:rgba(201,167,245,.4)}
+  .chip.plnt{color:#F2A0B5;border-color:rgba(242,160,181,.4)}
+  .filters{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0 2px}
+  .fbtn{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--dim);background:transparent;border:1px solid var(--line);border-radius:999px;padding:4px 11px;cursor:pointer}
+  .fbtn:hover{color:var(--txt);border-color:rgba(148,176,205,.5)}
+  .fbtn.on{color:#0C131C;background:var(--dim);border-color:var(--dim)}
+  .miss{font-family:var(--mono);font-size:10px;color:var(--faint);margin-top:5px;letter-spacing:.02em}
+  .note{font-size:12px;color:var(--dim);line-height:1.5;margin-top:6px}
+  .ans{font-size:12px;color:var(--dim);line-height:1.5;margin-top:6px}
+  .ans b{color:var(--txt);font-weight:600}
+
+  .decision{margin-top:36px;border:1px solid var(--line);border-radius:10px;padding:16px 18px;background:linear-gradient(180deg,rgba(30,45,60,.25),transparent)}
+  .decision p{color:var(--dim);font-size:13px;line-height:1.65;max-width:90ch}
+  .decision p+p{margin-top:8px}
+  .decision b{color:var(--txt);font-weight:600}
+  .decision .eyebrow{margin-bottom:8px;display:block}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Swath / FOV rendering study &middot; 2D surface &middot; live simulation</div>
+  <h1>Acquisition Geometry Atlas</h1>
+  <p class="thesis">Twenty-one ways instruments actually touch the ground, past, current, and upcoming, animated on a neutral map, then <b>six ways to paint the same coverage</b>. Geometry and treatment are independent decisions; the target is a renderer-agnostic component for MMGIS, with Leaflet and three.js adapters. This page exists so those decisions get made deliberately.</p>
+  <div class="bar">
+    <div class="legend">
+      <span><i class="sw now"></i>instantaneous aperture</span>
+      <span><i class="sw acc"></i>accumulated coverage</span>
+      <span><i class="sw plan"></i>tasked / planned</span>
+      <span><i class="sw aid"></i>geometry aid</span>
+    </div>
+    <div class="ctrls">
+      <button id="btnPause">Pause</button>
+      <button id="btnSpeed">Speed &times;1</button>
+      <button id="btnReset">Restart</button>
+    </div>
+  </div>
+</header>
+
+<section id="geo">
+  <div class="sechead"><span class="eyebrow">A &middot; Geometry: how the instrument touches the ground</span><span class="rule"></span></div>
+  <p class="secnote">Every tile is the same orbit clock. Repeat passes shift cross-track, as they do on orbit, so persistence shows how coverage accrues. The bright cyan element is the thing the instrument is doing <i>right now</i>; teal is what it has already committed to disk.</p>
+  <div class="filters" id="filters"></div>
+  <div class="grid" id="geoGrid"></div>
+</section>
+
+<section id="treat">
+  <div class="sechead"><span class="eyebrow">B &middot; Treatment: how the same coverage is painted</span><span class="rule"></span></div>
+  <p class="secnote">Six canvases, one clock, identical crossing passes (an ascending and a descending pushbroom). Only the paint differs. Each treatment answers a different operator question, and that question, not taste, is how you pick.</p>
+  <div class="grid" id="treatGrid"></div>
+</section>
+
+<div class="decision">
+  <span class="eyebrow">The decisions on the table</span>
+  <p><b>Decision A is geometry fidelity.</b> Envelope ribbons are cheap and read instantly; beam-level beads, burst quilts, and arc stacks are honest to the sampling but cost geometry generation and clutter at small scale. A sane default: envelope at low zoom, mechanism detail past a zoom threshold, always with the instantaneous aperture drawn live.</p>
+  <p><b>Decision B is treatment, chosen per question the layer answers:</b> boundaries (outline), coverage and look-count (flat fill), what is being sensed now (leading edge plus fading trail), which instrument (mechanism texture), sample quality (edge gradient), or acquisition time (hue ramp). They compose freely with any geometry above.</p>
+  <p>One rule worth keeping global: reserve <b>hue for state</b> (cyan now, teal accumulated, amber planned) and let <b>texture carry instrument identity</b>. That keeps a ten-layer footprint display legible instead of rainbow soup.</p>
+  <p><b>Decision C is the integration surface.</b> The engine stays renderer-agnostic: instrument models and ephemerides in, time-tagged footprint strips out. Adapters bind it to MMGIS: a Leaflet canvas-overlay layer first (the mature 2D Map), a three.js layer for the Globe second, both fed by the same strips. Planned-versus-executed state (amber to teal) drops directly onto plan-aware map state, and coverage accrual becomes a computed layer in the SPEC-02 sense. The companion survey document carries the full mission catalog, the requirements draft, and the phased plan. The same core is written to be hosted beyond MMGIS: Bessel as the state provider on the way in, strips typed as analysis products on the way out, Cosmolabe drawing them as geometry drapes; standalone first, convergence by contract. Component proper name: <b>Argelander</b>, for Bessel's pupil whose Bonner Durchmusterung surveyed the sky in drift-scan zones; AGE stays the functional identity.</p>
+</div>
+
+<script>
+'use strict';
+const TAU = Math.PI*2;
+const $ = s => document.querySelector(s);
+
+/* ---------- palette ---------- */
+const C = {
+  cyan:'#66DBF8',
+  cyanA:a=>`rgba(102,219,248,${a})`,
+  teal:a=>`rgba(79,174,188,${a})`,
+  tealS:'#4FAEBC',
+  amber:'#F0B255',
+  amberA:a=>`rgba(240,178,85,${a})`,
+  aid:a=>`rgba(148,176,205,${a})`,
+  land:'#121D28', landEdge:'rgba(70,110,135,.28)',
+  grid:'rgba(126,158,192,'
+};
+
+/* ---------- globals ---------- */
+const P = 10;                 // seconds per pass
+let SPEED = 1, PAUSED = false, G = 0, lastTs = null;
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const add=(p,q)=>({x:p.x+q.x,y:p.y+q.y});
+const mul=(p,k)=>({x:p.x*k,y:p.y*k});
+const sub=(p,q)=>({x:p.x-q.x,y:p.y-q.y});
+const norm=v=>{const m=Math.hypot(v.x,v.y)||1;return{x:v.x/m,y:v.y/m};};
+
+/* ---------- tile machinery ---------- */
+const tiles = [];
+
+function makeTile(host, def){
+  const fig=document.createElement('figure'); fig.className='tile'; fig.dataset.cat=def.cat||'';
+  fig.innerHTML=`<div class="cwrap"><canvas aria-hidden="true"></canvas></div>
+    <figcaption><div class="trow"><span class="tname">${def.name}</span>${def.chip?`<span class="chip ${def.chipCls||''}">${def.chip}</span>`:''}</div>
+    ${def.miss?`<p class="miss">${def.miss}</p>`:''}
+    <p class="${def.ans?'ans':'note'}">${def.ans||def.note||''}</p></figcaption>`;
+  host.appendChild(fig);
+  const cv=fig.querySelector('canvas');
+  const t={def, cv, ctx:cv.getContext('2d'), seed:def.seed||1, vis:true, passK:-1, st:{}, off:0};
+  t.rng = mulberry32(t.seed*2654435761);
+  t.resize = ()=>{
+    const r=cv.getBoundingClientRect(); if(r.width<10) return;
+    const dpr=Math.min(window.devicePixelRatio||1,2);
+    t.w=Math.round(r.width); t.h=Math.round(r.height);
+    for(const key of ['cv']){ cv.width=t.w*dpr; cv.height=t.h*dpr; }
+    t.ctx.setTransform(dpr,0,0,dpr,0,0);
+    t.bgC=document.createElement('canvas'); t.bgC.width=t.w*dpr; t.bgC.height=t.h*dpr;
+    t.bg=t.bgC.getContext('2d'); t.bg.setTransform(dpr,0,0,dpr,0,0);
+    t.trC=document.createElement('canvas'); t.trC.width=t.w*dpr; t.trC.height=t.h*dpr;
+    t.tg=t.trC.getContext('2d'); t.tg.setTransform(dpr,0,0,dpr,0,0);
+    const tilt = def.tilt!==undefined?def.tilt:0.20;
+    t.dir={x:Math.sin(tilt),y:Math.cos(tilt)};
+    t.nrm={x:-t.dir.y,y:t.dir.x};
+    t.L=t.h*1.4+90; t.vA=t.L/P;
+    t.cx=t.w/2; t.cy=t.h/2;
+    drawBG(t);
+    t.st={}; t.passK=-1;
+    def.setup && def.setup(t);
+  };
+  t.satAt = sf => ({x:t.cx+(sf-0.5)*t.L*t.dir.x + t.off*t.nrm.x,
+                    y:t.cy+(sf-0.5)*t.L*t.dir.y + t.off*t.nrm.y});
+  tiles.push(t);
+  return t;
+}
+
+function drawBG(t){
+  const g=t.bg,w=t.w,h=t.h;
+  g.clearRect(0,0,w,h);
+  g.fillStyle='#0C131C'; g.fillRect(0,0,w,h);
+  // graticule
+  const step=26;
+  for(let x=step,i=1;x<w;x+=step,i++){g.strokeStyle=C.grid+(i%4?0.045:0.09)+')';g.beginPath();g.moveTo(x+.5,0);g.lineTo(x+.5,h);g.stroke();}
+  for(let y=step,i=1;y<h;y+=step,i++){g.strokeStyle=C.grid+(i%4?0.045:0.09)+')';g.beginPath();g.moveTo(0,y+.5);g.lineTo(w,y+.5);g.stroke();}
+  // terrain blobs (seeded)
+  const r=mulberry32(t.seed*97+13);
+  const nb=2+Math.floor(r()*2);
+  for(let b=0;b<nb;b++){
+    const bx=r()*w, by=r()*h, br=28+r()*Math.min(w,h)*0.30, np=11;
+    g.beginPath();
+    for(let i=0;i<=np;i++){
+      const a=i/np*TAU, rr=br*(0.62+0.38*Math.abs(Math.sin(a*2.7+b)))*(0.8+0.35*r());
+      const px=bx+Math.cos(a)*rr, py=by+Math.sin(a)*rr*0.8;
+      i?g.lineTo(px,py):g.moveTo(px,py);
+    }
+    g.closePath(); g.fillStyle=C.land; g.fill();
+    g.strokeStyle=C.landEdge; g.lineWidth=1; g.stroke();
+  }
+  // nominal ground track(s)
+  const trks = t.def.tracks || [{dir:t.dir}];
+  g.setLineDash([3,5]); g.lineWidth=1;
+  for(const tr of trks){
+    const d=tr.dir, cx=t.cx+(tr.ox||0)+(tr.oxf?tr.oxf*t.w:0), cy=t.cy;
+    g.strokeStyle=C.aid(0.16);
+    g.beginPath();
+    g.moveTo(cx-d.x*t.L*0.6, cy-d.y*t.L*0.6);
+    g.lineTo(cx+d.x*t.L*0.6, cy+d.y*t.L*0.6);
+    g.stroke();
+  }
+  g.setLineDash([]);
+}
+
+/* ---------- draw helpers ---------- */
+function quad(g,a,b,c2,d,fill,stroke,lw){
+  g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);g.lineTo(c2.x,c2.y);g.lineTo(d.x,d.y);g.closePath();
+  if(fill){g.fillStyle=fill;g.fill()} if(stroke){g.strokeStyle=stroke;g.lineWidth=lw||1;g.stroke()}
+}
+function ell(g,x,y,rx,ry,rot,fill,stroke,lw){
+  g.save();g.translate(x,y);g.rotate(rot);g.beginPath();g.ellipse(0,0,rx,ry,0,0,TAU);
+  if(fill){g.fillStyle=fill;g.fill()} if(stroke){g.strokeStyle=stroke;g.lineWidth=lw||1;g.stroke()}
+  g.restore();
+}
+function line(g,a,b,style,lw,dash){
+  g.save(); if(dash)g.setLineDash(dash);
+  g.strokeStyle=style;g.lineWidth=lw||1;g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);g.stroke();g.restore();
+}
+function dot(g,p,r,fill,glow){
+  if(glow){g.save();g.shadowColor=fill;g.shadowBlur=8;}
+  g.fillStyle=fill;g.beginPath();g.arc(p.x,p.y,r,0,TAU);g.fill();
+  if(glow)g.restore();
+}
+function edge(t,sf,u1,u2){const c=t.satAt(sf);return [add(c,mul(t.nrm,u1)),add(c,mul(t.nrm,u2))];}
+// contiguous ribbon painter, keyed prev edge
+function ribbon(t,sf,u1,u2,fill,key){
+  const [L,R]=edge(t,sf,u1,u2);
+  const st=t.st['rib_'+key]||(t.st['rib_'+key]={});
+  if(st.L) quad(t.tg,st.L,st.R,R,L,fill);
+  st.L=L;st.R=R; return [L,R];
+}
+function stepper(t,key,interval,dt,fn){
+  let a=(t.st['acc_'+key]||0)+dt;
+  let guard=0;
+  while(a>=interval && guard++<80){a-=interval; fn();}
+  t.st['acc_'+key]=a;
+}
+function fadeTrail(t,amount){
+  t.tg.save();t.tg.globalCompositeOperation='destination-out';
+  t.tg.fillStyle=`rgba(0,0,0,${amount})`;t.tg.fillRect(0,0,t.w,t.h);t.tg.restore();
+}
+function rot(v,a){const c=Math.cos(a),s=Math.sin(a);return{x:v.x*c-v.y*s,y:v.x*s+v.y*c};}
+function rectAt(c2,fwd,halfA,halfC,keyF){
+  const n={x:-fwd.y,y:fwd.x}, kf=keyF||1;
+  return [ add(add(c2,mul(fwd,halfA)),mul(n,-halfC*kf)),
+           add(add(c2,mul(fwd,halfA)),mul(n, halfC*kf)),
+           add(add(c2,mul(fwd,-halfA)),mul(n, halfC)),
+           add(add(c2,mul(fwd,-halfA)),mul(n,-halfC)) ];
+}
+
+/* ================= GEOMETRY PATTERNS ================= */
+const GEO = [];
+
+/* 1 PUSHBROOM */
+GEO.push({
+  name:'PUSHBROOM', chip:'OPTICAL', chipCls:'opt', seed:11, tau:8, shift:12,
+  miss:'Past: Landsat 4/5 TM era &middot; Now: Sentinel-2 MSI, Landsat 8/9 OLI, EMIT &middot; Next: CHIME, Landsat Next',
+  note:'Continuous ribbon; the bright cross-track line is the linear detector array itself.',
+  setup(t){t.W=Math.min(t.w,t.h)*0.26;},
+  step(t,sf,dt){ t.st.LE = ribbon(t,sf,-t.W,t.W,C.teal(0.10),'m'); },
+  overlay(t,sf,g){ if(!t.st.LE)return; const [L,R]=t.st.LE;
+    line(g,L,R,C.cyanA(0.95),2); dot(g,t.satAt(sf),3,C.cyan,true); }
+});
+
+/* 2 WHISKBROOM */
+GEO.push({
+  name:'WHISKBROOM', chip:'OPTICAL', chipCls:'opt', seed:23, tau:8, shift:12,
+  miss:'Past: Landsat MSS/TM, ETM+ &middot; Now: MODIS, AVHRR, VIIRS (scan variants) &middot; sunset with the Terra/Aqua era',
+  note:'A mirror paints the swath line by line; footprints fatten off-nadir, the bowtie effect.',
+  setup(t){t.W=Math.min(t.w,t.h)*0.27; t.f=1.9;},
+  step(t,sf,dt){
+    const sub=3;
+    for(let i=1;i<=sub;i++){
+      const tt=G-dt+dt*i/sub, sff=((tt%P)+P)%P/P;
+      const ph=tt*t.f, tri=Math.abs(((ph%1)+1)%1*2-1)*2-1;
+      const u=t.W*tri, c2=add(t.satAt(sff),mul(t.nrm,u));
+      const grw=1+0.9*(u/t.W)*(u/t.W);
+      ell(t.tg,c2.x,c2.y,3.4*grw,2.1*grw,Math.atan2(t.nrm.y,t.nrm.x),C.teal(0.45));
+      t.st.fp={c:c2,g:grw};
+    }
+  },
+  overlay(t,sf,g){
+    const [L,R]=edge(t,sf,-t.W,t.W);
+    line(g,L,R,C.aid(0.25),1,[2,4]);
+    if(t.st.fp) ell(g,t.st.fp.c.x,t.st.fp.c.y,3.6*t.st.fp.g,2.3*t.st.fp.g,Math.atan2(t.nrm.y,t.nrm.x),C.cyanA(0.9));
+    dot(g,t.satAt(sf),3,C.cyan,true);
+  }
+});
+
+/* 3 STEP-SCAN SOUNDER */
+GEO.push({
+  name:'STEP-SCAN SOUNDER', chip:'&micro;WAVE', chipCls:'uw', seed:37, tau:9, shift:14,
+  miss:'Past: MSU, HIRS &middot; Now: ATMS, AMSU-A, IASI, CrIS &middot; Next: IASI-NG on MetOp-SG',
+  note:'Discrete beam positions: near-circles at nadir stretch to fat ellipses at the scan edge.',
+  setup(t){t.W=Math.min(t.w,t.h)*0.28; t.N=15; t.r0=4.6; t.i=0;
+    t.posT = 9/(t.vA*t.N);},
+  step(t,sf,dt){
+    stepper(t,'row',t.posT,dt,()=>{
+      const u=-t.W + (t.i+0.5)*2*t.W/t.N, q=Math.abs(u)/t.W;
+      const c2=add(t.satAt(sf),mul(t.nrm,u));
+      const rx=t.r0*(1+1.7*q*q), ry=t.r0*(1+0.45*q*q);
+      ell(t.tg,c2.x,c2.y,rx,ry,Math.atan2(t.nrm.y,t.nrm.x),C.teal(0.15),C.teal(0.35),1);
+      t.st.cur={c:c2,rx,ry};
+      t.i=(t.i+1)%t.N;
+    });
+  },
+  overlay(t,sf,g){
+    const s=t.satAt(sf);
+    if(t.st.cur){ line(g,s,t.st.cur.c,C.aid(0.35),1);
+      ell(g,t.st.cur.c.x,t.st.cur.c.y,t.st.cur.rx,t.st.cur.ry,Math.atan2(t.nrm.y,t.nrm.x),null,C.cyanA(0.9),1.4);}
+    dot(g,s,3,C.cyan,true);
+  }
+});
+
+/* 4 CONICAL SCAN */
+GEO.push({
+  name:'CONICAL SCAN', chip:'&micro;WAVE', chipCls:'uw', seed:41, tau:9, shift:14,
+  miss:'Past: SMMR, SSM/I &middot; Now: GMI (885 km), AMSR2/AMSR3, SSMIS &middot; Next: CIMR wide-swath (~2029)',
+  note:'Fixed incidence swept through a forward sector; the swath is a stack of crescent arcs.',
+  setup(t){t.R=Math.min(t.w,t.h)*0.30; t.sw=0.28; t.half=70*Math.PI/180;},
+  step(t,sf,dt){
+    stepper(t,'arc',t.sw/26,dt,()=>{
+      const ph=(G/t.sw)%1, psi=-t.half+ph*2*t.half;
+      const c2=add(t.satAt(sf),add(mul(t.nrm,t.R*Math.sin(psi)),mul(t.dir,t.R*Math.cos(psi))));
+      const rv=Math.atan2(c2.y-t.satAt(sf).y,c2.x-t.satAt(sf).x);
+      ell(t.tg,c2.x,c2.y,6.4,3.9,rv,C.teal(0.15),C.teal(0.3),1);
+      t.st.fp={c:c2,rv};
+    });
+  },
+  overlay(t,sf,g){
+    const s=t.satAt(sf);
+    g.save();g.strokeStyle=C.aid(0.22);g.lineWidth=1;g.setLineDash([2,4]);
+    g.beginPath();
+    const a0=Math.atan2(t.dir.y,t.dir.x);
+    g.arc(s.x,s.y,t.R,a0-t.half,a0+t.half);g.stroke();g.restore();
+    if(t.st.fp){ line(g,s,t.st.fp.c,C.aid(0.4),1);
+      ell(g,t.st.fp.c.x,t.st.fp.c.y,6.6,4.1,t.st.fp.rv,null,C.cyanA(0.9),1.4);}
+    dot(g,s,3,C.cyan,true);
+  }
+});
+
+/* 5 FRAMING CAMERA */
+GEO.push({
+  name:'FRAMING CAMERA', chip:'OPTICAL', chipCls:'opt', seed:53, tau:9, shift:14,
+  miss:'Past: film-return and Viking-era framers &middot; Now: SkySat, PlanetScope, S-1 WV vignettes &middot; onboard-AI framers next',
+  note:'Discrete exposures with overlap, mosaicked on the ground; Sentinel-1 WV leapfrogs the same way.',
+  setup(t){t.fT=0.72; t.rr=mulberry32(t.seed);},
+  step(t,sf,dt){
+    stepper(t,'frame',t.fT,dt,()=>{
+      const jit=(t.rr()-0.5)*0.09;
+      const fwd=rot(t.dir,jit);
+      const c2=t.satAt(sf);
+      const q=rectAt(c2,fwd,16,22,1.12);
+      quad(t.tg,q[0],q[1],q[2],q[3],C.teal(0.13),C.aid(0.35),1);
+      t.st.flash={q,at:G};
+    });
+  },
+  overlay(t,sf,g){
+    const f=t.st.flash;
+    if(f && G-f.at<0.3){ const a=1-(G-f.at)/0.3;
+      quad(g,f.q[0],f.q[1],f.q[2],f.q[3],null,C.cyanA(0.9*a),2);}
+    dot(g,t.satAt(sf),3,C.cyan,true);
+  }
+});
+
+/* 6 NADIR PROFILERS */
+GEO.push({
+  name:'NADIR PROFILERS', chip:'LIDAR / ALT', chipCls:'pro', seed:61, tau:22, shift:26,
+  miss:'Past: ICESat GLAS, Envisat RA &middot; Now: ICESat-2 (3&times;2 beams), GEDI, Sentinel-6, SHARAD/MARSIS at Mars &middot; Next: CRISTAL (~2028)',
+  note:'Not imagery: bead chains and beam pairs. Coverage accrues pass by pass; the shift is the point.',
+  setup(t){t.pairs=[-30,0,30]; t.split=2.2;},
+  step(t,sf,dt){
+    stepper(t,'bead',5.5/t.vA,dt,()=>{
+      for(const u of t.pairs) for(const s2 of [-t.split,t.split]){
+        const c2=add(t.satAt(sf),mul(t.nrm,u+s2));
+        dot(t.tg,c2,1.0,C.teal(0.8));
+      }
+    });
+    stepper(t,'alt',9/t.vA,dt,()=>{
+      const c2=add(t.satAt(sf),mul(t.nrm,52));
+      dot(t.tg,c2,2.3,C.teal(0.55));
+      t.tg.strokeStyle=C.teal(0.35);t.tg.lineWidth=1;
+      t.tg.beginPath();t.tg.arc(c2.x,c2.y,2.3,0,TAU);t.tg.stroke();
+    });
+  },
+  overlay(t,sf,g){
+    const s=t.satAt(sf);
+    for(const u of t.pairs) dot(g,add(s,mul(t.nrm,u)),1.6,C.cyanA(0.9));
+    dot(g,add(s,mul(t.nrm,52)),2.6,C.cyanA(0.8));
+    dot(g,s,3,C.cyan,true);
+  }
+});
+
+/* 7 SAR STRIPMAP */
+GEO.push({
+  name:'SAR STRIPMAP', chip:'RADAR', chipCls:'rad', seed:71, tau:8, shift:12,
+  miss:'Past: Seasat (1978), ERS, Magellan at Venus &middot; Now: Sentinel-1 SM, TerraSAR-X, ICEYE &middot; Next: EnVision VenSAR',
+  note:'Side-looking: an offset ribbon. Nadir is never imaged; left or right is a mode decision.',
+  setup(t){const m=Math.min(t.w,t.h); t.u1=m*0.18; t.u2=m*0.34;},
+  step(t,sf,dt){
+    t.st.LE=ribbon(t,sf,t.u1,t.u2,C.teal(0.11),'m');
+    const st=t.st.near||(t.st.near={});
+    const p=add(t.satAt(sf),mul(t.nrm,t.u1));
+    if(st.p) line(t.tg,st.p,p,C.teal(0.5),1);
+    st.p=p;
+  },
+  overlay(t,sf,g){
+    if(!t.st.LE)return;
+    const s=t.satAt(sf), [L,R]=t.st.LE;
+    quad(g,s,s,R,L,C.cyanA(0.05),C.aid(0.2),1);
+    line(g,L,R,C.cyanA(0.95),2);
+    dot(g,s,3,C.cyan,true);
+  }
+});
+
+/* 8 TOPS WIDE SWATH */
+GEO.push({
+  name:'TOPS / SCANSAR', chip:'RADAR', chipCls:'rad', seed:73, tau:9, shift:12,
+  miss:'Past: Radarsat-1 ScanSAR, SRTM 225 km &middot; Now: Sentinel-1 IW (3 sub-swaths, 250 km), EW (5), ALOS-4 &middot; Next: Sentinel-1 NG',
+  note:'The beam hops across sub-swaths in bursts; render the burst seams, they exist in the products.',
+  setup(t){
+    const m=Math.min(t.w,t.h);
+    t.subs=[[m*0.13,m*0.235],[m*0.25,m*0.355],[m*0.37,m*0.475]];
+    t.bT=0.55;
+  },
+  onPass(t){
+    t.st.e=[0,0,0].map(()=>((G%P)/P));
+    // sub-swath rails
+    t.tg.save();t.tg.setLineDash([2,5]);t.tg.lineWidth=1;t.tg.strokeStyle=C.aid(0.16);
+    for(const [a,b] of t.subs) for(const u of [a,b]){
+      const p1=add(t.satAt(-0.1),mul(t.nrm,u)),p2=add(t.satAt(1.1),mul(t.nrm,u));
+      t.tg.beginPath();t.tg.moveTo(p1.x,p1.y);t.tg.lineTo(p2.x,p2.y);t.tg.stroke();
+    }
+    t.tg.restore();
+  },
+  step(t,sf,dt){
+    if(!t.st.e) this.onPass(t);
+    const k=Math.floor(G/t.bT)%3;
+    if(t.st.k!==k){ // seam at end of previous burst
+      if(t.st.k!==undefined){
+        const pk=t.st.k,[a,b]=t.subs[pk];
+        const [L,R]=edge(t,t.st.e[pk],a,b);
+        line(t.tg,L,R,C.aid(0.5),1);
+        delete t.st['rib_s'+pk];
+      }
+      t.st.k=k;
+    }
+    const adv=dt/P*3.0;
+    t.st.e[k]=Math.min(t.st.e[k]+adv, sf+0.055);
+    const [a,b]=t.subs[k];
+    t.st.LE=ribbon(t,t.st.e[k],a,b,C.teal(0.12),'s'+k);
+    t.st.kk=k;
+  },
+  overlay(t,sf,g){
+    const s=t.satAt(sf);
+    if(t.st.LE){ const [L,R]=t.st.LE;
+      quad(g,s,s,R,L,C.cyanA(0.05));
+      line(g,L,R,C.cyanA(0.95),2);}
+    dot(g,s,3,C.cyan,true);
+  }
+});
+
+/* 9 SPOTLIGHT SAR */
+GEO.push({
+  name:'SPOTLIGHT SAR', chip:'RADAR', chipCls:'rad', seed:79, tau:12, shift:0,
+  miss:'Now: TerraSAR-X ST, ICEYE Spot/Dwell, Capella, Umbra &middot; the growth mode of commercial SAR tasking',
+  note:'The beam stares while the platform moves: small, isolated, high-value patches. Amber before, cyan during, teal after.',
+  onPass(t,k){
+    const r=mulberry32(t.seed*7919+k);
+    t.st.tg=[0.3,0.72].map(s0=>({sf:s0+(r()-0.5)*0.06, u:44+r()*34, done:false}));
+  },
+  step(t,sf,dt){
+    if(!t.st.tg) this.onPass(t,t.passK);
+    for(const q of t.st.tg){
+      const d=sf-q.sf;
+      q.dwell = Math.abs(d)<0.085;
+      if(q.dwell){
+        const c2=add(t.satAt(q.sf),mul(t.nrm,q.u));
+        const qd=rectAt(c2,t.dir,12,9);
+        quad(t.tg,qd[0],qd[1],qd[2],qd[3],C.teal(0.030));
+        q.c=c2;q.qd=qd;
+      } else if(d>0.085 && !q.done){
+        q.done=true;
+        if(q.qd) quad(t.tg,q.qd[0],q.qd[1],q.qd[2],q.qd[3],null,C.teal(0.6),1);
+      }
+    }
+  },
+  overlay(t,sf,g){
+    const s=t.satAt(sf);
+    if(t.st.tg) for(const q of t.st.tg){
+      const c2=q.c||add(t.satAt(q.sf),mul(t.nrm,q.u));
+      const qd=q.qd||rectAt(c2,t.dir,12,9);
+      if(q.dwell){
+        line(g,s,c2,C.cyanA(0.5),1);
+        quad(g,qd[0],qd[1],qd[2],qd[3],null,C.cyanA(0.9),1.5);
+      } else if(!q.done){
+        quad(g,qd[0],qd[1],qd[2],qd[3],null,C.amberA(0.7),1);
+        g.setLineDash([]);
+        dot(g,c2,1.6,C.amber);
+      }
+    }
+    dot(g,s,3,C.cyan,true);
+  }
+});
+
+/* 10 FAN-BEAM SCATTEROMETER */
+GEO.push({
+  name:'FAN-BEAM SCAT', chip:'RADAR', chipCls:'rad', seed:83, tau:9, shift:0,
+  miss:'Past: ERS AMI scatt, NSCAT &middot; Now: ASCAT/MetOp, two 550 km swaths, fore-mid-aft looks &middot; Next: SCA on MetOp-SG B',
+  note:'Three azimuth looks per side build twin ribbons around a nadir gap; the crosshatch is the sampling.',
+  setup(t){const m=Math.min(t.w,t.h); t.u1=m*0.17;t.u2=m*0.335;
+    t.beams=[]; for(const sg of [1,-1]) for(const az of [45,90,135]) t.beams.push({sg,az:az*Math.PI/180});
+  },
+  onPass(t){
+    t.tg.save();t.tg.setLineDash([2,5]);t.tg.lineWidth=1;t.tg.strokeStyle=C.aid(0.16);
+    for(const sg of [1,-1]) for(const u of [t.u1,t.u2]){
+      const p1=add(t.satAt(-0.1),mul(t.nrm,sg*u)),p2=add(t.satAt(1.1),mul(t.nrm,sg*u));
+      t.tg.beginPath();t.tg.moveTo(p1.x,p1.y);t.tg.lineTo(p2.x,p2.y);t.tg.stroke();
+    }
+    t.tg.restore();
+  },
+  step(t,sf,dt){
+    stepper(t,'beam',0.12,dt,()=>{
+      t.st.bi=((t.st.bi||0)+1)%6;
+      const b=t.beams[t.st.bi], s=t.satAt(sf);
+      const e=add(mul(t.dir,Math.cos(b.az)),mul(t.nrm,Math.sin(b.az)*b.sg));
+      const l1=t.u1/Math.sin(b.az), l2=t.u2/Math.sin(b.az);
+      const p1=add(s,mul(e,l1)), p2=add(s,mul(e,l2));
+      t.tg.strokeStyle=C.teal(0.09);t.tg.lineWidth=7;t.tg.lineCap='round';
+      t.tg.beginPath();t.tg.moveTo(p1.x,p1.y);t.tg.lineTo(p2.x,p2.y);t.tg.stroke();
+      t.st.cur={p1,p2};
+    });
+  },
+  overlay(t,sf,g){
+    const s=t.satAt(sf);
+    if(t.st.cur){ line(g,s,t.st.cur.p1,C.aid(0.3),1);
+      line(g,t.st.cur.p1,t.st.cur.p2,C.cyanA(0.85),2);}
+    dot(g,s,3,C.cyan,true);
+  }
+});
+
+/* 11 ROTATING PENCIL BEAMS */
+GEO.push({
+  name:'ROTATING PENCIL BEAMS', chip:'RADAR', chipCls:'rad', seed:89, tau:8, shift:0,
+  miss:'Past: QuikSCAT SeaWinds (18 rpm, 46&deg;/54&deg;) &middot; Now: OSCAT-3, HY-2 series, CFOSAT SWIM (6-beam)',
+  note:'Two spinning beams trace a dual helix; the mesh density is the sampling density. No nadir gap.',
+  setup(t){const m=Math.min(t.w,t.h); t.R1=m*0.21;t.R2=m*0.30;
+    t.revT=13/t.vA;},
+  step(t,sf,dt){
+    const sub=4;
+    for(let i=1;i<=sub;i++){
+      const tt=G-dt+dt*i/sub, sff=((tt%P)+P)%P/P, s=t.satAt(sff);
+      const psi=TAU*tt/t.revT;
+      const A=add(s,add(mul(t.nrm,t.R1*Math.cos(psi)),mul(t.dir,t.R1*Math.sin(psi))));
+      const B=add(s,add(mul(t.nrm,t.R2*Math.cos(psi+2.3)),mul(t.dir,t.R2*Math.sin(psi+2.3))));
+      dot(t.tg,A,1.9,C.teal(0.30)); dot(t.tg,B,1.9,C.teal(0.24));
+      t.st.A=A;t.st.B=B;
+    }
+  },
+  overlay(t,sf,g){
+    const s=t.satAt(sf);
+    g.save();g.strokeStyle=C.aid(0.14);g.setLineDash([2,5]);g.lineWidth=1;
+    for(const R of [t.R1,t.R2]){g.beginPath();g.arc(s.x,s.y,R,0,TAU);g.stroke();}
+    g.restore();
+    if(t.st.A){line(g,s,t.st.A,C.aid(0.35),1);dot(g,t.st.A,2.4,C.cyanA(0.95));}
+    if(t.st.B){line(g,s,t.st.B,C.aid(0.3),1);dot(g,t.st.B,2.4,C.cyanA(0.8));}
+    dot(g,s,3,C.cyan,true);
+  }
+});
+
+/* 12 BILATERAL SWATHS + NADIR GAP */
+GEO.push({
+  name:'BILATERAL + NADIR GAP', chip:'RADAR', chipCls:'rad', seed:97, tau:8, shift:12,
+  miss:'Now: SWOT KaRIn, two 50 km swaths, 20 km nadir gap, Poseidon-3C in the gap &middot; first of its class (2022)',
+  note:'Twin near-nadir swaths and a gap a nadir altimeter stitches. Render the gap honestly; do not heal it.',
+  setup(t){const m=Math.min(t.w,t.h); t.g1=m*0.045;t.g2=m*0.24;},
+  step(t,sf,dt){
+    t.st.R1=ribbon(t,sf,t.g1,t.g2,C.teal(0.12),'r');
+    t.st.R2=ribbon(t,sf,-t.g2,-t.g1,C.teal(0.12),'l');
+    stepper(t,'alt',7/t.vA,dt,()=>{
+      dot(t.tg,t.satAt(sf),1.5,C.teal(0.8));
+    });
+  },
+  overlay(t,sf,g){
+    if(t.st.R1){line(g,t.st.R1[0],t.st.R1[1],C.cyanA(0.9),2);}
+    if(t.st.R2){line(g,t.st.R2[0],t.st.R2[1],C.cyanA(0.9),2);}
+    dot(g,t.satAt(sf),3,C.cyan,true);
+  }
+});
+
+/* 13 LIMB + OCCULTATION */
+GEO.push({
+  name:'LIMB / OCCULTATION', chip:'EVENT', chipCls:'evt', seed:101, tau:13, shift:0,
+  miss:'Past: SAGE II, GPS/MET &middot; Now: MLS, OMPS-LP, COSMIC-2 and commercial GNSS-RO fleets &middot; Past: Aeolus slant lidar',
+  note:'The measurement is not at the subsatellite point: forward tangent chains and pop-up sounding events.',
+  onPass(t,k){
+    const r=mulberry32(t.seed*7919+k);
+    t.st.ev=[0,1,2].map(()=>({sf:0.15+r()*0.7, u:(r()-0.5)*160, az:r()*TAU, hit:false}));
+  },
+  step(t,sf,dt){
+    if(!t.st.ev) this.onPass(t,t.passK);
+    const tp=t.satAt(Math.min(sf+0.16,1.12));
+    stepper(t,'tan',6/t.vA,dt,()=>{
+      const pulse=0.4+0.35*Math.sin(G*5);
+      dot(t.tg,tp,1.9,C.teal(pulse));
+    });
+    t.st.tp=tp;
+    for(const e of t.st.ev){
+      if(!e.hit && sf>=e.sf){
+        e.hit=true; e.at=G;
+        const c2=add(t.satAt(e.sf),mul(t.nrm,e.u));
+        e.c=c2;
+        t.tg.strokeStyle=C.amberA(0.8);t.tg.lineWidth=1.4;
+        t.tg.beginPath();t.tg.arc(c2.x,c2.y,3.4,0,TAU);t.tg.stroke();
+        const d={x:Math.cos(e.az),y:Math.sin(e.az)};
+        line(t.tg,add(c2,mul(d,-11)),add(c2,mul(d,11)),C.amberA(0.55),1);
+      }
+    }
+  },
+  overlay(t,sf,g){
+    const s=t.satAt(sf);
+    if(t.st.tp){line(g,s,t.st.tp,C.aid(0.4),1,[3,4]); dot(g,t.st.tp,2.6,C.cyanA(0.9));}
+    if(t.st.ev) for(const e of t.st.ev){
+      if(e.hit && G-e.at<0.5 && e.c){const a=1-(G-e.at)/0.5;
+        g.strokeStyle=C.amberA(a);g.lineWidth=1.5;
+        g.beginPath();g.arc(e.c.x,e.c.y,3.4+10*(1-a),0,TAU);g.stroke();}
+    }
+    dot(g,s,3,C.cyan,true);
+  }
+});
+
+/* 14 AGILE FIELD OF REGARD */
+GEO.push({
+  name:'AGILE FIELD OF REGARD', chip:'TASKED', chipCls:'tsk', seed:113, tau:16, shift:0,
+  miss:'Past: Ikonos, first agile tasking &middot; Now: Pl&eacute;iades Neo, WorldView Legion: target, strip, stereo, corridor &middot; Next: onboard-autonomy tasking',
+  note:'The dashed band is the plannable field of regard; footprints are commitments made inside it.',
+  setup(t){t.F=Math.min(t.w,t.h)*0.34;},
+  onPass(t,k){
+    const r=mulberry32(t.seed*7919+k);
+    const types=['point','strip','stereo','corridor'];
+    for(let i=types.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[types[i],types[j]]=[types[j],types[i]];}
+    t.st.tasks=types.map((ty,i)=>{
+      const task={ty, sf:0.16+i*0.21+r()*0.08, u:(r()-0.5)*2*(t.F-26), done:false, r:r()};
+      if(ty==='corridor'){
+        const c0=add(t.satAt(task.sf),mul(t.nrm,task.u));
+        let hd=r()*TAU; task.pts=[c0];
+        for(let s2=0;s2<3;s2++){hd+=(r()-0.5)*1.4; task.pts.push(add(task.pts[s2],mul({x:Math.cos(hd),y:Math.sin(hd)},22)));}
+      }
+      return task;
+    });
+    // field-of-regard band
+    const [L1,R1]=edge(t,-0.1,-t.F,t.F),[L2,R2]=edge(t,1.1,-t.F,t.F);
+    quad(t.tg,L1,R1,R2,L2,C.aid(0.045));
+    t.tg.save();t.tg.setLineDash([4,5]);t.tg.strokeStyle=C.aid(0.28);t.tg.lineWidth=1;
+    t.tg.beginPath();t.tg.moveTo(L1.x,L1.y);t.tg.lineTo(L2.x,L2.y);
+    t.tg.moveTo(R1.x,R1.y);t.tg.lineTo(R2.x,R2.y);t.tg.stroke();t.tg.restore();
+  },
+  shapeOf(t,q){
+    const c2=add(t.satAt(q.sf),mul(t.nrm,q.u));
+    if(q.ty==='point') return {kind:'quad',q:rectAt(c2,rot(t.dir,(q.r-0.5)*0.3),12,9)};
+    if(q.ty==='strip') return {kind:'quad',q:rectAt(c2,rot(t.dir,0.5+(q.r-0.5)*0.4),28,7)};
+    if(q.ty==='stereo')return {kind:'stereo',a:rectAt(c2,rot(t.dir,0.22),13,10),b:rectAt(c2,rot(t.dir,-0.22),13,10)};
+    return {kind:'path',pts:q.pts};
+  },
+  step(t,sf,dt){
+    if(!t.st.tasks) this.onPass(t,t.passK);
+    for(const q of t.st.tasks){
+      if(!q.done && sf>=q.sf){
+        q.done=true;
+        const sh=this.shapeOf(t,q);
+        const paintQuad=(qq)=>quad(t.tg,qq[0],qq[1],qq[2],qq[3],C.teal(0.16),C.amberA(0.55),1);
+        if(sh.kind==='quad') paintQuad(sh.q);
+        else if(sh.kind==='stereo'){paintQuad(sh.a);paintQuad(sh.b);}
+        else {t.tg.strokeStyle=C.teal(0.16);t.tg.lineWidth=11;t.tg.lineJoin='round';t.tg.lineCap='round';
+          t.tg.beginPath();sh.pts.forEach((p,i)=>i?t.tg.lineTo(p.x,p.y):t.tg.moveTo(p.x,p.y));t.tg.stroke();
+          t.tg.strokeStyle=C.amberA(0.5);t.tg.lineWidth=1;t.tg.stroke();}
+      }
+    }
+  },
+  overlay(t,sf,g){
+    const s=t.satAt(sf);
+    if(t.st.tasks) for(const q of t.st.tasks){
+      if(!q.done){
+        const c2=add(t.satAt(q.sf),mul(t.nrm,q.u));
+        const sh=this.shapeOf(t,q);
+        g.save();g.setLineDash([3,3]);g.strokeStyle=C.amberA(0.65);g.lineWidth=1;
+        const strokeQuad=(qq)=>{g.beginPath();qq.forEach((p,i)=>i?g.lineTo(p.x,p.y):g.moveTo(p.x,p.y));g.closePath();g.stroke();};
+        if(sh.kind==='quad')strokeQuad(sh.q);
+        else if(sh.kind==='stereo'){strokeQuad(sh.a);strokeQuad(sh.b);}
+        else {g.beginPath();sh.pts.forEach((p,i)=>i?g.lineTo(p.x,p.y):g.moveTo(p.x,p.y));g.stroke();}
+        g.restore();
+        dot(g,c2,1.7,C.amber);
+        if(q.sf-sf>0 && q.sf-sf<0.12) line(g,s,c2,C.amberA(0.55),1);
+      }
+    }
+    dot(g,s,3,C.cyan,true);
+  }
+});
+
+/* 15 GEOSTATIONARY RASTER */
+GEO.push({
+  name:'GEO RASTER + MESO BOX', chip:'GEO', chipCls:'geo', seed:127, tau:14, shift:0, tracks:[],
+  miss:'Now: GOES-R ABI, Himawari AHI, MTG FCI &middot; GEO air quality: TEMPO, GEMS, Sentinel-4 &middot; Past: GOES VISSR spin scan',
+  note:'The platform never moves: a mirror rasters the fixed disk (full disk each cycle) while a 1000 km mesoscale box revisits every few beats.',
+  setup(t){
+    t.Rd=Math.min(t.w,t.h)*0.40; t.gc={x:t.cx,y:t.cy};
+  },
+  chord(t,y){
+    const dy=y-t.gc.y, h2=t.Rd*t.Rd-dy*dy;
+    if(h2<=0) return null;
+    const hw=Math.sqrt(h2);
+    return [{x:t.gc.x-hw,y},{x:t.gc.x+hw,y}];
+  },
+  onPass(t,k){
+    const r=mulberry32(t.seed*53+k);
+    // faint disk base + limb
+    ell(t.tg,t.gc.x,t.gc.y,t.Rd,t.Rd,0,C.aid(0.05),C.aid(0.35),1);
+    // two mesoscale sites inside the disk
+    t.st.meso=[0,1].map(()=>{
+      const a=r()*TAU, rr=r()*t.Rd*0.55;
+      return {x:t.gc.x+Math.cos(a)*rr, y:t.gc.y+Math.sin(a)*rr*0.8, side:9};
+    });
+    t.st.mi=0;
+  },
+  step(t,sf,dt){
+    if(!t.st.meso) this.onPass(t,t.passK);
+    const y=t.gc.y-t.Rd+sf*2*t.Rd;
+    const ch=this.chord(t,y), prev=t.st.gp;
+    if(ch&&prev) quad(t.tg,prev[0],prev[1],ch[1],ch[0],C.teal(0.10));
+    t.st.gp=ch;
+    stepper(t,'meso',0.5,dt,()=>{
+      const m=t.st.meso[t.st.mi%2]; t.st.mi++;
+      t.tg.fillStyle=C.teal(0.16);
+      t.tg.fillRect(m.x-m.side,m.y-m.side,m.side*2,m.side*2);
+      t.tg.strokeStyle=C.amberA(0.5); t.tg.lineWidth=1;
+      t.tg.strokeRect(m.x-m.side,m.y-m.side,m.side*2,m.side*2);
+      t.st.flashM={m,age:0};
+    });
+    if(t.st.flashM) t.st.flashM.age+=dt;
+  },
+  overlay(t,sf,g){
+    g.strokeStyle=C.aid(0.4);g.lineWidth=1;
+    g.beginPath();g.arc(t.gc.x,t.gc.y,t.Rd,0,TAU);g.stroke();
+    const y=t.gc.y-t.Rd+sf*2*t.Rd, ch=this.chord(t,y);
+    if(ch) line(g,ch[0],ch[1],C.cyanA(0.95),2);
+    if(t.st.meso) for(const m of t.st.meso){
+      g.save();g.setLineDash([3,3]);g.strokeStyle=C.amberA(0.6);g.lineWidth=1;
+      g.strokeRect(m.x-m.side,m.y-m.side,m.side*2,m.side*2);g.restore();
+    }
+    if(t.st.flashM && t.st.flashM.age<0.16){
+      const m=t.st.flashM.m;
+      g.strokeStyle=C.cyanA(0.9);g.lineWidth=1.6;
+      g.strokeRect(m.x-m.side,m.y-m.side,m.side*2,m.side*2);
+    }
+  }
+});
+
+/* 16 PUSH-FRAME */
+GEO.push({
+  name:'PUSH-FRAME (FRAMELETS)', chip:'OPTICAL', chipCls:'opt', seed:131, tau:9, shift:12,
+  miss:'Now: LROC WAC 7-band framelets (Moon), MARCI &middot; spin push-frame: JunoCam &middot; the CubeSat butted-frame default',
+  note:'A 2D detector with filter strips bonded on: each exposure yields narrow color framelets that butt into a swath as the platform moves.',
+  setup(t){t.W=Math.min(t.w,t.h)*0.23; t.hA=7;},
+  step(t,sf,dt){
+    stepper(t,'pf',0.30,dt,()=>{
+      const c2=t.satAt(sf);
+      for(let b=0;b<3;b++){
+        const off=(b-1)*t.hA*0.66;
+        const cc=add(c2,mul(t.dir,off));
+        const q=rectAt(cc,t.dir,t.hA/3,t.W);
+        quad(t.tg,q[0],q[1],q[2],q[3],`hsla(${172+b*24},55%,55%,0.10)`,C.teal(0.22),0.5);
+      }
+      t.st.cur={c:c2};
+    });
+  },
+  overlay(t,sf,g){
+    const c2=t.satAt(sf);
+    const q=rectAt(c2,t.dir,t.hA,t.W);
+    g.strokeStyle=C.cyanA(0.9);g.lineWidth=1.4;
+    g.beginPath();q.forEach((p,i)=>i?g.lineTo(p.x,p.y):g.moveTo(p.x,p.y));g.closePath();g.stroke();
+    for(const off of [-t.hA/3,t.hA/3]){
+      const a=add(add(c2,mul(t.dir,off)),mul(t.nrm,-t.W));
+      const b=add(add(c2,mul(t.dir,off)),mul(t.nrm,t.W));
+      line(g,a,b,C.cyanA(0.4),1);
+    }
+    dot(g,c2,3,C.cyan,true);
+  }
+});
+
+/* 17 MULTI-ANGLE ALONG-TRACK */
+GEO.push({
+  name:'MULTI-ANGLE ALONG-TRACK', chip:'OPTICAL', chipCls:'opt', seed:137, tau:11, shift:12,
+  miss:'Now: Terra MISR, 9 fixed cameras to &plusmn;70.5&deg;, same ground within 7 min &middot; Mars Express HRSC 9-line &middot; ASTER stereo',
+  note:'Fore, nadir, and aft stations image the same corridor minutes apart; every point accrues one look per station, stereo and BRDF for free.',
+  setup(t){t.W=Math.min(t.w,t.h)*0.20; t.D=0.14;},
+  step(t,sf,dt){
+    ribbon(t,sf+t.D,-t.W,t.W,C.teal(0.055),'fo');
+    ribbon(t,sf,     -t.W,t.W,C.teal(0.10),'na');
+    ribbon(t,sf-t.D, -t.W,t.W,C.teal(0.055),'af');
+  },
+  overlay(t,sf,g){
+    const s=t.satAt(sf);
+    const stations=[{d:t.D,a:0.5},{d:0,a:0.95},{d:-t.D,a:0.5}];
+    for(const st2 of stations){
+      const [L,R]=edge(t,sf+st2.d,-t.W,t.W);
+      line(g,L,R,C.cyanA(st2.a),st2.d===0?2:1.2,st2.d===0?null:[4,3]);
+      if(st2.d!==0){
+        const c2=t.satAt(sf+st2.d);
+        line(g,s,c2,C.aid(0.3),1,[2,3]);
+      }
+    }
+    dot(g,s,3,C.cyan,true);
+  }
+});
+
+/* 18 TARGET TRACK / STARE */
+GEO.push({
+  name:'TARGET TRACK / STARE', chip:'TASKED', chipCls:'tsk', seed:139, tau:16, shift:0,
+  miss:'Now: SkySat video, GHGSat point spectrometers &middot; gimballed: MRO CRISM targeted (Mars) &middot; agile dwell modes everywhere',
+  note:'The mount tracks one ground point while the platform flies past; the footprint rotates and stretches with slant range, dwell accumulates.',
+  setup(t){t.hA=11;t.hC=8;},
+  onPass(t,k){
+    const r=mulberry32(t.seed*97+k);
+    t.st.T=add(t.satAt(0.5),mul(t.nrm,(r()-0.5)*Math.min(t.w,t.h)*0.4));
+    t.st.done=false;
+  },
+  fp(t,sf){
+    const s=t.satAt(sf), fwd=norm(sub(s,t.st.T));
+    const kf=1+1.6*Math.min(1,Math.abs(sf-0.5)/0.2);
+    return rectAt(t.st.T,fwd,t.hA*kf,t.hC);
+  },
+  step(t,sf,dt){
+    if(!t.st.T) this.onPass(t,t.passK);
+    if(sf>=0.30&&sf<=0.70){
+      const q=this.fp(t,sf);
+      quad(t.tg,q[0],q[1],q[2],q[3],C.teal(0.022));
+    }
+    if(sf>0.70&&!t.st.done){
+      t.st.done=true;
+      const q=this.fp(t,0.70);
+      quad(t.tg,q[0],q[1],q[2],q[3],null,C.teal(0.5),1);
+    }
+  },
+  overlay(t,sf,g){
+    if(!t.st.T)return;
+    const s=t.satAt(sf), T=t.st.T;
+    if(sf<0.30){
+      g.save();g.setLineDash([3,3]);g.strokeStyle=C.amberA(0.6);g.lineWidth=1;
+      const q=rectAt(T,t.dir,t.hA,t.hC);
+      g.beginPath();q.forEach((p,i)=>i?g.lineTo(p.x,p.y):g.moveTo(p.x,p.y));g.closePath();g.stroke();g.restore();
+      dot(g,T,1.8,C.amber);
+    }else if(sf<=0.70){
+      const q=this.fp(t,sf);
+      g.strokeStyle=C.cyanA(0.95);g.lineWidth=1.6;
+      g.beginPath();q.forEach((p,i)=>i?g.lineTo(p.x,p.y):g.moveTo(p.x,p.y));g.closePath();g.stroke();
+      line(g,s,T,C.cyanA(0.45),1);
+      dot(g,T,2,C.cyan);
+    }
+    dot(g,s,3,C.cyan,true);
+  }
+});
+
+/* 19 BISTATIC FORMATION */
+GEO.push({
+  name:'BISTATIC FORMATION', chip:'RADAR', chipCls:'rad', seed:149, tau:8, shift:12,
+  miss:'Now: TanDEM-X helix pair, 250&ndash;1000 m baselines, single-pass InSAR &middot; Past: SRTM 60 m mast &middot; Next: ESA Harmony receive-only pair',
+  note:'One illuminator, two receivers: the inter-platform baseline is the measurement, the swath is shared, and repeat passes stack into a DEM.',
+  setup(t){const s=Math.min(t.w,t.h);t.u1=0.16*s;t.u2=0.42*s;},
+  step(t,sf,dt){ t.st.LE=ribbon(t,sf,t.u1,t.u2,C.teal(0.10),'bi'); },
+  overlay(t,sf,g){
+    if(!t.st.LE)return;
+    const [L,R]=t.st.LE;
+    const s=t.satAt(sf);
+    const comp=add(add(s,mul(t.nrm,7*Math.sin(sf*TAU*2))),mul(t.dir,12));
+    line(g,L,R,C.cyanA(0.95),2);
+    line(g,s,L,C.aid(0.3),1); line(g,s,R,C.aid(0.3),1);
+    line(g,comp,L,C.aid(0.3),1,[2,3]); line(g,comp,R,C.aid(0.3),1,[2,3]);
+    line(g,s,comp,C.cyanA(0.55),1.2);
+    dot(g,s,3,C.cyan,true); dot(g,comp,2.1,C.cyan);
+  }
+});
+
+/* 20 SWEEPSAR / DIGITAL BEAMFORMING */
+GEO.push({
+  name:'SWEEPSAR WIDE SWATH (DBF)', chip:'RADAR', chipCls:'rad', seed:151, tau:8, shift:14,
+  miss:'Now: NISAR L/S-band, 242 km at full resolution, first spaceborne SweepSAR (2025) &middot; Next: ROSE-L, Sentinel-1 NG',
+  note:'Transmit floods the whole swath off a 12 m reflector; receive beams sweep electronically across it, so width no longer costs resolution.',
+  setup(t){const s=Math.min(t.w,t.h);t.u1=0.10*s;t.u2=0.46*s;t.nb=5;},
+  step(t,sf,dt){
+    for(let i=0;i<t.nb;i++){
+      const a=t.u1+(t.u2-t.u1)*i/t.nb, b=t.u1+(t.u2-t.u1)*(i+1)/t.nb;
+      ribbon(t,sf,a,b,C.teal(i%2?0.075:0.115),'db'+i);
+    }
+  },
+  overlay(t,sf,g){
+    const [L,R]=edge(t,sf,t.u1,t.u2);
+    const s=t.satAt(sf);
+    line(g,s,L,C.aid(0.35),1); line(g,s,R,C.aid(0.35),1);
+    line(g,L,R,C.cyanA(0.75),1.6);
+    const i=Math.floor((sf*40)%t.nb);
+    const a=t.u1+(t.u2-t.u1)*i/t.nb, b=t.u1+(t.u2-t.u1)*(i+1)/t.nb;
+    const [sa,sb]=edge(t,sf,a,b);
+    line(g,sa,sb,C.cyanA(1),3);
+    dot(g,s,3,C.cyan,true);
+  }
+});
+
+/* 21 FLYBY SWATH (VARIABLE RANGE) */
+GEO.push({
+  name:'FLYBY SWATH (NOODLE)', chip:'PLANETARY', chipCls:'plnt', seed:157, tau:18, shift:0, tracks:[],
+  miss:'Past: Cassini RADAR Titan strips, 100&ndash;200 km wide, thousands of km long &middot; Next: Europa Clipper REASON, EIS, MISE flybys',
+  note:'No repeat track: a hyperbolic pass where range, speed, and swath width all vary along the arc; global coverage is a mosaic of noodles.',
+  setup(t){
+    t.bod={x:t.cx,y:t.h*1.18}; t.bodR=t.h*0.62;
+    const g=t.bg;
+    g.beginPath();g.arc(t.bod.x,t.bod.y,t.bodR,0,TAU);
+    g.fillStyle=C.land;g.fill();g.strokeStyle=C.landEdge;g.lineWidth=1.2;g.stroke();
+  },
+  bez(t,u){
+    const po=t.st.po||0;
+    const P0={x:-30,y:t.h*0.18+po}, P1={x:t.w*0.5,y:t.h*0.50+po}, P2={x:t.w+30,y:t.h*0.18+po};
+    const a=(1-u)*(1-u), b=2*u*(1-u), c2=u*u;
+    return {x:a*P0.x+b*P1.x+c2*P2.x, y:a*P0.y+b*P1.y+c2*P2.y};
+  },
+  uOf(sf){ return sf - 0.6/(TAU)*Math.sin(TAU*sf); },
+  onPass(t,k){
+    const r=mulberry32(t.seed*31+k);
+    t.st.po=(r()-0.5)*t.h*0.16;
+    t.tg.save();t.tg.setLineDash([3,5]);t.tg.strokeStyle=C.aid(0.25);t.tg.lineWidth=1;
+    t.tg.beginPath();
+    for(let i=0;i<=40;i++){const p=this.bez(t,i/40); i?t.tg.lineTo(p.x,p.y):t.tg.moveTo(p.x,p.y);}
+    t.tg.stroke();t.tg.restore();
+  },
+  chord(t,sf){
+    const u=this.uOf(sf);
+    const p=this.bez(t,u), q=this.bez(t,Math.min(1,u+0.002));
+    const tan=norm(sub(q,p)); let n={x:-tan.y,y:tan.x};
+    if(((t.bod.x-p.x)*n.x+(t.bod.y-p.y)*n.y)<0) n=mul(n,-1);
+    const nd=Math.min(1,Math.abs(u-0.5)*2);
+    const W=7+Math.min(t.w,t.h)*0.13*Math.pow(nd,1.2);
+    return {p, e1:add(p,mul(n,5)), e2:add(p,mul(n,5+W))};
+  },
+  step(t,sf,dt){
+    if(t.st.po===undefined) this.onPass(t,t.passK);
+    const c2=this.chord(t,sf), st=t.st['rib_fb']||(t.st['rib_fb']={});
+    if(st.e1) quad(t.tg,st.e1,st.e2,c2.e2,c2.e1,C.teal(0.10));
+    st.e1=c2.e1; st.e2=c2.e2;
+  },
+  overlay(t,sf,g){
+    const c2=this.chord(t,sf);
+    line(g,c2.e1,c2.e2,C.cyanA(0.95),2);
+    dot(g,c2.p,3,C.cyan,true);
+  }
+});
+
+/* ================= TREATMENTS ================= */
+/* shared crossing-pass geometry, computed once per frame */
+const TS = {
+  W:24, tiltA:0.42, tiltB:-0.42,
+  passes:{A:{ph:0},B:{ph:0.5}},
+  segs:null,
+  compute(w,h,sfRaw){
+    const out={};
+    for(const id of ['A','B']){
+      const tilt=id==='A'?this.tiltA:this.tiltB;
+      const dir={x:Math.sin(tilt),y:Math.cos(tilt)}, nrm={x:-dir.y,y:dir.x};
+      const L=h*1.5+90;
+      const sf=(sfRaw+this.passes[id].ph)%1;
+      const ox=id==='A'?-w*0.10:w*0.10;
+      const c2={x:w/2+ox+(sf-0.5)*L*dir.x, y:h/2+(sf-0.5)*L*dir.y};
+      out[id]={sf, dir, nrm,
+        L:add(c2,mul(nrm,-this.W)), R:add(c2,mul(nrm,this.W)), c:c2};
+    }
+    return out;
+  }
+};
+
+function treatTile(host,def){
+  const t=makeTile(host,{...def, tilt:0.42,
+    tracks:[{dir:{x:Math.sin(0.42),y:Math.cos(0.42)},oxf:-0.10},{dir:{x:Math.sin(-0.42),y:Math.cos(-0.42)},oxf:0.10}]});
+  t.isTreat=true;
+  return t;
+}
+
+function passSt(t,K,s){
+  const st=t.st[K]||(t.st[K]={});
+  if(st.sf!==undefined && s.sf<st.sf-0.5){delete st.L;delete st.R;}
+  st.sf=s.sf;
+  return st;
+}
+
+const TREAT=[
+ {name:'OUTLINE ONLY', seed:201, tau:9,
+  ans:'<b>Answers:</b> where are the boundaries. Survives dozens of stacked layers; overlap reads as a lattice.',
+  paint(t,S){for(const id of ['A','B']){const s=S[id],st=passSt(t,'e'+id,s);
+    if(st.L){line(t.tg,st.L,s.L,C.teal(0.6),1);line(t.tg,st.R,s.R,C.teal(0.6),1);}
+    st.L=s.L;st.R=s.R;}},
+  over(t,S,g){for(const id of ['A','B'])line(g,S[id].L,S[id].R,C.cyanA(0.9),1.6);}},
+
+ {name:'FLAT FILL', seed:202, tau:9,
+  ans:'<b>Answers:</b> what is covered and how many looks. Overlap darkens automatically via alpha stacking.',
+  paint(t,S){for(const id of ['A','B']){const s=S[id],st=passSt(t,'f'+id,s);
+    if(st.L)quad(t.tg,st.L,st.R,s.R,s.L,C.teal(0.10));
+    st.L=s.L;st.R=s.R;}},
+  over(t,S,g){for(const id of ['A','B'])line(g,S[id].L,S[id].R,C.cyanA(0.7),1.4);}},
+
+ {name:'NOW + FADING TRAIL', seed:203, tau:1.6,
+  ans:'<b>Answers:</b> what is being sensed right now. The live ops console default; history is a comet tail.',
+  paint(t,S){for(const id of ['A','B']){const s=S[id],st=passSt(t,'n'+id,s);
+    if(st.L)quad(t.tg,st.L,st.R,s.R,s.L,C.teal(0.30));
+    st.L=s.L;st.R=s.R;}},
+  over(t,S,g){for(const id of ['A','B']){line(g,S[id].L,S[id].R,C.cyanA(1),2.6);dot(g,S[id].c,3,C.cyan,true);}}},
+
+ {name:'MECHANISM TEXTURE', seed:204, tau:9,
+  ans:'<b>Answers:</b> which instrument made this. Hatch orientation encodes the scan; overlaps crosshatch.',
+  paint(t,S,dt){for(const id of ['A','B']){const s=S[id],st=passSt(t,'t'+id,s);
+    if(st.L)quad(t.tg,st.L,st.R,s.R,s.L,C.teal(0.045));
+    st.L=s.L;st.R=s.R;
+    stepper(t,'hx'+id,4.5/((t.h*1.5+90)/P),dt,()=>{line(t.tg,s.L,s.R,C.teal(0.4),1);});}},
+  over(t,S,g){for(const id of ['A','B'])line(g,S[id].L,S[id].R,C.cyanA(0.8),1.4);}},
+
+ {name:'QUALITY GRADIENT', seed:205, tau:9,
+  ans:'<b>Answers:</b> how good is the sample here. Edge fade encodes incidence or off-nadir degradation.',
+  paint(t,S){for(const id of ['A','B']){const s=S[id],st=passSt(t,'q'+id,s);
+    if(st.L){const gr=t.tg.createLinearGradient(s.L.x,s.L.y,s.R.x,s.R.y);
+      gr.addColorStop(0,C.teal(0));gr.addColorStop(0.5,C.teal(0.22));gr.addColorStop(1,C.teal(0));
+      quad(t.tg,st.L,st.R,s.R,s.L,gr);}
+    st.L=s.L;st.R=s.R;}},
+  over(t,S,g){for(const id of ['A','B'])line(g,S[id].L,S[id].R,C.cyanA(0.7),1.4);}},
+
+ {name:'TIME GRADIENT', seed:206, tau:9,
+  ans:'<b>Answers:</b> when was it collected. Hue runs along track from early to late in the pass.',
+  paint(t,S){for(const id of ['A','B']){const s=S[id],st=passSt(t,'h'+id,s);
+    if(st.L)quad(t.tg,st.L,st.R,s.R,s.L,`hsla(${196+92*s.sf},65%,60%,0.13)`);
+    st.L=s.L;st.R=s.R;}},
+  over(t,S,g){for(const id of ['A','B'])line(g,S[id].L,S[id].R,C.cyanA(0.7),1.4);}},
+];
+
+/* ---------- build ---------- */
+const geoHost=$('#geoGrid'), trHost=$('#treatGrid');
+const CATS=['opt','opt','uw','uw','opt','lidar','rad','rad','rad','uw','uw','rad','limb','agile','geo','opt','opt','agile','rad','rad','plnt'];
+GEO.forEach((d,i)=>d.cat=CATS[i]||'x');
+for(const def of GEO) makeTile(geoHost,def);
+for(const def of TREAT) treatTile(trHost,def);
+
+/* ---------- category filters ---------- */
+const FILTERS=[['all','ALL 21'],['opt','OPTICAL'],['rad','RADAR'],['uw','MICROWAVE'],['lidar','LIDAR / ALT'],['limb','LIMB / RO'],['geo','GEO'],['agile','TASKED'],['plnt','PLANETARY']];
+const fEl=$('#filters');
+for(const [k,lab] of FILTERS){
+  const b=document.createElement('button');
+  b.className='fbtn'+(k==='all'?' on':''); b.textContent=lab; b.dataset.f=k;
+  b.addEventListener('click',()=>{
+    fEl.querySelectorAll('.fbtn').forEach(x=>x.classList.toggle('on',x.dataset.f===k));
+    geoHost.querySelectorAll('.tile').forEach(fig=>{fig.style.display=(k==='all'||fig.dataset.cat===k)?'':'none';});
+  });
+  fEl.appendChild(b);
+}
+
+/* ---------- frame loop ---------- */
+function frame(dt){
+  G+=dt;
+  const k=Math.floor(G/P), sf=(G%P)/P;
+  const TSEG={}; // per-size cache for treatment tiles
+  for(const t of tiles){
+    if(!t.w) continue;
+    if(t.passK!==k){
+      const first=t.passK<0;
+      t.passK=k;
+      fadeTrail(t,first?1:0.55);
+      // clear per-pass state, keep accumulators
+      if(!t.isTreat) for(const key of Object.keys(t.st)) if(key.startsWith('rib_')||key==='near'||key==='e'||key==='k'||key==='tg'||key==='tasks'||key==='ev'||key==='flash'||key==='cur'||key==='LE'||key==='R1'||key==='R2'||key==='meso'||key==='mi'||key==='gp'||key==='flashM'||key==='T'||key==='done'||key==='po') delete t.st[key];
+      const shift=t.def.shift!==undefined?t.def.shift:12;
+      t.off=shift*[0,1,-1][((k%3)+3)%3];
+      t.def.onPass && t.def.onPass(t,k);
+    }
+    if(!t.vis) continue;
+    fadeTrail(t,1-Math.exp(-dt/(t.def.tau||8)));
+    if(t.isTreat){
+      const key=t.w+'x'+t.h;
+      const S=TSEG[key]||(TSEG[key]=TS.compute(t.w,t.h,sf));
+      t.def.paint(t,S,dt);
+      t.ctx.clearRect(0,0,t.w,t.h);
+      t.ctx.drawImage(t.bgC,0,0,t.w,t.h);
+      t.ctx.drawImage(t.trC,0,0,t.w,t.h);
+      t.def.over(t,S,t.ctx);
+    }else{
+      t.def.step(t,sf,dt);
+      t.ctx.clearRect(0,0,t.w,t.h);
+      t.ctx.drawImage(t.bgC,0,0,t.w,t.h);
+      t.ctx.drawImage(t.trC,0,0,t.w,t.h);
+      t.def.overlay(t,sf,t.ctx);
+    }
+  }
+}
+
+function raf(ts){
+  requestAnimationFrame(raf);
+  if(PAUSED){lastTs=ts;return;}
+  if(lastTs==null){lastTs=ts;return;}
+  let dt=(ts-lastTs)/1000; lastTs=ts;
+  if(dt>0.1)dt=0.1;
+  frame(dt*SPEED);
+}
+
+/* ---------- controls ---------- */
+$('#btnPause').addEventListener('click',e=>{
+  PAUSED=!PAUSED; e.target.textContent=PAUSED?'Play':'Pause';
+});
+const speeds=[1,2,0.5];let si=0;
+$('#btnSpeed').addEventListener('click',e=>{
+  si=(si+1)%speeds.length;SPEED=speeds[si];
+  e.target.innerHTML='Speed &times;'+SPEED;
+});
+$('#btnReset').addEventListener('click',()=>{
+  G=0;
+  for(const t of tiles){t.passK=-1;t.st={};if(t.tg)fadeTrail(t,1);}
+});
+
+/* ---------- visibility + resize ---------- */
+const io=new IntersectionObserver(entries=>{
+  for(const en of entries){
+    const t=tiles.find(x=>x.cv===en.target);
+    if(t)t.vis=en.isIntersecting;
+  }
+},{rootMargin:'120px'});
+let resizeT=null;
+function doResize(){for(const t of tiles)t.resize();}
+window.addEventListener('resize',()=>{clearTimeout(resizeT);resizeT=setTimeout(()=>{doResize();},150);});
+document.addEventListener('visibilitychange',()=>{lastTs=null;});
+
+doResize();
+for(const t of tiles) io.observe(t.cv);
+
+/* reduced motion: pre-run one full pass, then hold */
+if(REDUCED){
+  for(let i=0;i<90;i++)frame(P/90);
+  PAUSED=true; $('#btnPause').textContent='Play';
+}
+requestAnimationFrame(raf);
+</script>
+</body>
+</html>
