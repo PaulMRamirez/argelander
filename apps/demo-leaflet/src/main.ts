@@ -26,10 +26,27 @@ interface SatLayer {
 }
 
 const map = L.map('map', { worldCopyJump: true, zoomControl: true }).setView([25, 0], 2);
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 12,
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-}).addTo(map);
+
+const OSM_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+const baseMaps: Record<string, L.TileLayer> = {
+  'Dark': L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 12, attribution: OSM_ATTRIBUTION,
+  }),
+  'Streets': L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 12, attribution: OSM_ATTRIBUTION,
+  }),
+  'Terrain': L.tileLayer('https://tile.opentopomap.org/{z}/{x}/{y}.png', {
+    maxZoom: 12,
+    attribution: `${OSM_ATTRIBUTION}, <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)`,
+  }),
+};
+baseMaps['Dark']!.addTo(map);
+// The dark ground is a CSS filter over the tile pane; it belongs to the
+// Dark basemap only.
+map.getContainer().classList.add('dark-tiles');
+map.on('baselayerchange', (event) => {
+  map.getContainer().classList.toggle('dark-tiles', event.name === 'Dark');
+});
 
 const worker = new Worker(`./sgp4-worker.js?v=${__BUILD_ID__}`);
 const provider = remoteStateProvider(worker as unknown as StatePortLike, 'sgp4');
@@ -77,78 +94,80 @@ async function start(): Promise<void> {
   const overlays: Record<string, L.Layer> = {};
   const failures: string[] = [];
   for (const sat of DEMO_SATS) {
-    try {
     const epochEt = parseTle(sat.line1, sat.line2, sat.name).epochEt;
-    // One strip per tasked window, sharing the passId; gaps between windows
-    // are real and never ribboned over (SPEC-STRIP section 2).
-    const windows = sat.taskWindowsSec ?? [[0, PASS_WINDOW_SEC] as const];
-    const baseStrips: Strip[] = [];
-    for (let w = 0; w < windows.length; w++) {
-      const [fromSec, toSec] = windows[w]!;
-      const batch = await provider.states({
-        targets: [sat.name],
-        observer: 'EARTH',
-        frame: 'ITRF93',
-        correction: 'NONE',
-        epochs: { start: epochEt + fromSec, end: epochEt + toSec, step: PASS_STEP_SEC },
-      });
-      const common = {
-        body: 'EARTH',
-        bodyRadiusKm: EARTH_RADIUS_KM,
-        instrumentId: sat.name,
-        authority: provider.id,
-        generatedBy: 'demo-leaflet',
-        missionId: 'demo',
-        passId: 'pass-0',
-      } as const;
-      if (sat.bilateralKm) {
-        // Two swaths plus the nadir chain, three strips sharing the passId
-        // (the SPEC-STRIP bilateral decomposition, live).
-        const { gapKm, outerKm } = sat.bilateralKm;
-        baseStrips.push(
-          trackStrip(batch, 0, {
-            ...common, id: `demo-${sat.name}-w${w}-left`,
-            offsetRangeKm: { nearKm: gapKm, farKm: outerKm, side: 'left' },
-          }),
-          trackStrip(batch, 0, {
-            ...common, id: `demo-${sat.name}-w${w}-right`,
-            offsetRangeKm: { nearKm: gapKm, farKm: outerKm, side: 'right' },
-          }),
-          trackStrip(batch, 0, {
-            ...common, id: `demo-${sat.name}-w${w}-nadir`, beadOffsetsKm: [0],
-          }),
+    // One platform, several instruments: every instrument samples the same
+    // provider states, and each gets its own toggleable layer.
+    for (const instrument of sat.instruments) {
+      try {
+        // One strip per tasked window, sharing the passId; gaps between
+        // windows are real and never ribboned over (SPEC-STRIP section 2).
+        const windows = instrument.taskWindowsSec ?? [[0, PASS_WINDOW_SEC] as const];
+        const baseStrips: Strip[] = [];
+        for (let w = 0; w < windows.length; w++) {
+          const [fromSec, toSec] = windows[w]!;
+          const batch = await provider.states({
+            targets: [sat.name],
+            observer: 'EARTH',
+            frame: 'ITRF93',
+            correction: 'NONE',
+            epochs: { start: epochEt + fromSec, end: epochEt + toSec, step: PASS_STEP_SEC },
+          });
+          const common = {
+            body: 'EARTH',
+            bodyRadiusKm: EARTH_RADIUS_KM,
+            instrumentId: `${sat.name}/${instrument.id}`,
+            authority: provider.id,
+            generatedBy: 'demo-leaflet',
+            missionId: 'demo',
+            passId: 'pass-0',
+          } as const;
+          if (instrument.bilateralKm) {
+            // Two swaths sharing the passId, the bilateral decomposition.
+            const { gapKm, outerKm } = instrument.bilateralKm;
+            baseStrips.push(
+              trackStrip(batch, 0, {
+                ...common, id: `demo-${sat.name}-${instrument.id}-w${w}-left`,
+                offsetRangeKm: { nearKm: gapKm, farKm: outerKm, side: 'left' },
+              }),
+              trackStrip(batch, 0, {
+                ...common, id: `demo-${sat.name}-${instrument.id}-w${w}-right`,
+                offsetRangeKm: { nearKm: gapKm, farKm: outerKm, side: 'right' },
+              }),
+            );
+          } else {
+            baseStrips.push(trackStrip(batch, 0, {
+              ...common,
+              id: `demo-${sat.name}-${instrument.id}-w${w}`,
+              ...(instrument.swathHalfWidthKm !== undefined ? { swathHalfWidthKm: instrument.swathHalfWidthKm } : {}),
+              ...(instrument.beadOffsetsKm !== undefined ? { beadOffsetsKm: instrument.beadOffsetsKm } : {}),
+              ...(instrument.scan !== undefined ? { scan: instrument.scan } : {}),
+              ...(instrument.offsetRangeKm !== undefined ? { offsetRangeKm: instrument.offsetRangeKm } : {}),
+            }));
+          }
+        }
+        const layer = new AcquisitionLayer(
+          baseStrips.map((strip) => withStateRule(strip, epochEt + tauSec)),
+          {
+            treatment: currentTreatment(),
+            paused,
+            // Reveal the scan mechanism once footprints are legible, not at
+            // the default threshold where they render as sub-pixel dots.
+            mechanismMinWidthPx: 16,
+          },
         );
-      } else {
-        baseStrips.push(trackStrip(batch, 0, {
-          ...common,
-          id: `demo-${sat.name}-w${w}`,
-          ...(sat.swathHalfWidthKm !== undefined ? { swathHalfWidthKm: sat.swathHalfWidthKm } : {}),
-          ...(sat.beadOffsetsKm !== undefined ? { beadOffsetsKm: sat.beadOffsetsKm } : {}),
-          ...(sat.scan !== undefined ? { scan: sat.scan } : {}),
-          ...(sat.offsetRangeKm !== undefined ? { offsetRangeKm: sat.offsetRangeKm } : {}),
-        }));
+        layer.addTo(map);
+        overlays[`${sat.name} &middot; ${instrument.label}`] = layer;
+        satLayers.push({ layer, epochEt, baseStrips });
+      } catch (err) {
+        // One instrument failing must not take the constellation down.
+        failures.push(`${sat.name}/${instrument.id}: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
-    const layer = new AcquisitionLayer(
-      baseStrips.map((strip) => withStateRule(strip, epochEt + tauSec)),
-      {
-        treatment: currentTreatment(),
-        paused,
-        // Reveal the scan mechanism once footprints are legible, not at the
-        // default threshold where they render as sub-pixel dots.
-        mechanismMinWidthPx: 16,
-      },
-    );
-    layer.addTo(map);
-    overlays[sat.label] = layer;
-    satLayers.push({ layer, epochEt, baseStrips });
-    } catch (err) {
-      // One satellite failing must not take the constellation down.
-      failures.push(`${sat.name}: ${err instanceof Error ? err.message : String(err)}`);
-    }
   }
-  L.control.layers(undefined, overlays, { collapsed: true }).addTo(map);
-  const names = satLayers.length ? `${satLayers.length} satellites` : 'no satellites loaded';
+  L.control.layers(baseMaps, overlays, { collapsed: true }).addTo(map);
+  const names = satLayers.length
+    ? `${DEMO_SATS.length} satellites, ${satLayers.length} instruments`
+    : 'no instruments loaded';
   const failed = failures.length ? `  |  failed: ${failures.join('; ')}` : '';
   statusLabel.textContent = `${names}  |  simulated plan: the clock executes it (amber ahead, teal behind)  |  zoom in for the scan mechanism${failed}`;
   applyNow();
