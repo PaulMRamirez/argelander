@@ -86,6 +86,19 @@ describe('mechanism treatment and LOD (AGE-09)', () => {
     expect(ctx.strokes().length).toBeGreaterThanOrEqual(41);
   });
 
+  it('keeps footprints small under an integer-rounding projector (the Leaflet case)', () => {
+    // Leaflet rounds container points to whole pixels; the km-to-px probe
+    // must survive that without inflating footprints.
+    const rounding = (p: { lonDeg: number; latDeg: number }): readonly [number, number] => {
+      const [x, y] = makeProjector(5)(p);
+      return [Math.round(x), Math.round(y)];
+    };
+    const ctx = new FakeCtx();
+    paintStrip(ctx, stripToGeo(fixtureStrip('whiskbroom')), rounding, { treatment: 'mechanism', mechanismMinWidthPx: 1 });
+    const radii = ctx.ellipses().map((e) => Math.hypot(e.path[1]![0] - e.path[0]![0], e.path[1]![1] - e.path[0]![1]));
+    expect(Math.max(...radii)).toBeLessThan(4);
+  });
+
   it('textures mechanism strokes by instrument identity (AGE-08)', () => {
     const ctx = paint('whiskbroom', { treatment: 'mechanism' });
     const dash = dashPatternFor(fixtureStrip('whiskbroom').instrumentId);
