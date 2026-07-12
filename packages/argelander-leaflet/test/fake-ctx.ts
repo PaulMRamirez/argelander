@@ -65,6 +65,8 @@ export class FakeCtx implements Canvas2DLike {
   strokeStyle: unknown = '';
   lineWidth = 1;
   globalCompositeOperation: unknown = 'source-over';
+  shadowColor: unknown = 'rgba(0,0,0,0)';
+  shadowBlur = 0;
   readonly ops: PaintOp[] = [];
   readonly dashCalls: Array<readonly number[]> = [];
   private path: Array<readonly [number, number]> = [];
@@ -82,6 +84,7 @@ export class FakeCtx implements Canvas2DLike {
       this.globalCompositeOperation = top.composite;
       this.dash = top.dash;
     }
+    this.shadowBlur = 0;
   }
 
   beginPath(): void {

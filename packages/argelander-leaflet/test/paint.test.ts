@@ -146,6 +146,13 @@ describe('now plus trail', () => {
     expect(ctx.fills()).toHaveLength(20);
   });
 
+  it('rides the mechanism on the trail as the clock sweeps it', () => {
+    const geo = stripToGeo(fixtureStrip('whiskbroom'));
+    const ctx = new FakeCtx();
+    paintTrailWindow(ctx, geo, WIDE, { treatment: 'now-trail' }, -Infinity, 5);
+    expect(ctx.ellipses().length).toBeGreaterThan(30);
+  });
+
   it('marks a zero-width now as a dot, not a line', () => {
     const geo = stripToGeo(fixtureStrip('profiler'));
     const ctx = new FakeCtx();
