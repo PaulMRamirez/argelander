@@ -333,26 +333,6 @@ export function createPanel(init: PanelInit): void {
     const foot = el('div', 'panel-foot');
     foot.appendChild(segControl('basemap', Object.keys(init.baseMaps), baseName, setBase));
     foot.appendChild(segControl('scan detail', Object.keys(SCAN_STOPS), scanDetail, (v) => setScanDetail(v as ScanStop)));
-    const copy = el('button', 'copy-btn', 'copy config JSON');
-    copy.addEventListener('click', () => {
-      const records = configs.map((c) => ({
-        id: c.id,
-        satellite: c.satName,
-        instrument: c.instrument.id,
-        source: { type: 'sgp4-tle' },
-        treatment: c.treatment,
-        palette: 'atlas',
-        mechanismMinWidthPx: SCAN_STOPS[scanDetail],
-        enabled: c.enabled,
-      }));
-      void navigator.clipboard.writeText(JSON.stringify(records, null, 2)).then(() => {
-        copy.textContent = 'copied';
-        setTimeout(() => {
-          copy.textContent = 'copy config JSON';
-        }, 1200);
-      });
-    });
-    foot.appendChild(copy);
     foot.appendChild(tileCredit());
     root.appendChild(foot);
   }
