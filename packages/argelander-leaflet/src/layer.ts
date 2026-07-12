@@ -13,7 +13,7 @@ import type { Strip } from 'argelander-core';
 import type { GeoStrip } from './geo.js';
 import { stripToGeo } from './geo.js';
 import type { PaintOptions, Projector, Treatment } from './paint.js';
-import { paintGuide, paintNowLine, paintStrip, paintTrailWindow } from './paint.js';
+import { nowMarkerIndex, paintGuide, paintNowLine, paintStrip, paintTrailWindow } from './paint.js';
 import type { Palette } from './palette.js';
 import { applyTrailFade, trailFadeAlpha } from './trail.js';
 
@@ -28,6 +28,10 @@ export interface AcquisitionLayerOptions {
   paused?: boolean;
   /** Engine seconds per wall second for the internal fade clock scaling. */
   speedScale?: number;
+  /** Constant fill alpha for the fill treatments; default 0.35. */
+  fillAlpha?: number;
+  /** Envelope stroke width, pixels; default 1.5. */
+  lineWidthPx?: number;
 }
 
 export class AcquisitionLayer extends L.Layer {
@@ -38,6 +42,7 @@ export class AcquisitionLayer extends L.Layer {
   private canvas: HTMLCanvasElement | undefined;
   private trailCanvas: HTMLCanvasElement | undefined;
   private nowEtSec: number | undefined;
+  private lastNowKey = '';
   private trailPaintedToEtSec = -Infinity;
   private paused: boolean;
   private speedScale: number;
@@ -99,12 +104,20 @@ export class AcquisitionLayer extends L.Layer {
     this.resetView();
   }
 
-  /** Engine clock in Et seconds; drives now-trail and time-gradient. */
+  /** Engine clock in Et seconds; drives the trail and the now marker. */
   setNow(etSec: number): void {
     this.nowEtSec = etSec;
-    if (this.treatment === 'now-trail') this.drawNowFrame(0);
-    else if (this.treatment === 'time-gradient') this.redrawStatic();
-    // The other treatments derive from segment states, not the clock.
+    if (!this.map) return;
+    if (this.treatment === 'now-trail') {
+      this.drawNowFrame(0);
+      return;
+    }
+    // Every static treatment carries exactly one clock-dependent element,
+    // the now marker, which quantizes to segment boundaries; repaint only
+    // when it would visibly move (AGE-16). Driving setNow alone therefore
+    // keeps the marker honest without a per-frame full repaint.
+    const key = this.geoStrips.map((g) => nowMarkerIndex(g, etSec)).join(',');
+    if (key !== this.lastNowKey) this.redrawStatic();
   }
 
   /** Pause and resume all animation (AGE-16). */
@@ -122,6 +135,17 @@ export class AcquisitionLayer extends L.Layer {
   setMechanismMinWidthPx(px: number): void {
     this.layerOptions.mechanismMinWidthPx = px;
     this.resetView();
+  }
+
+  /** Swap the state hues at runtime, the explicit AGE-08 override. */
+  setPalette(palette: Palette): void {
+    this.layerOptions.palette = palette;
+    this.resetView();
+  }
+
+  /** Trail decay time constant, seconds of wall clock; takes effect next frame. */
+  setTrailTau(sec: number): void {
+    this.layerOptions.trailTauSec = sec;
   }
 
   private handleViewChange(): void {
@@ -183,6 +207,8 @@ export class AcquisitionLayer extends L.Layer {
     if (this.layerOptions.mechanismMinWidthPx !== undefined) {
       options.mechanismMinWidthPx = this.layerOptions.mechanismMinWidthPx;
     }
+    if (this.layerOptions.fillAlpha !== undefined) options.fillAlpha = this.layerOptions.fillAlpha;
+    if (this.layerOptions.lineWidthPx !== undefined) options.lineWidthPx = this.layerOptions.lineWidthPx;
     return options;
   }
 
@@ -193,8 +219,12 @@ export class AcquisitionLayer extends L.Layer {
     const project = this.projector();
     const options = this.paintOptions();
     for (const geo of this.geoStrips) paintStrip(ctx, geo, project, options);
-    // Every atlas treatment carries the bright now overlay, not just the trail.
+    // Every atlas treatment carries the bright now overlay, not just the
+    // trail. The key records what this repaint showed, so setNow can skip
+    // repaints that would not move the marker, whoever triggered this one.
     if (this.nowEtSec !== undefined) {
+      const now = this.nowEtSec;
+      this.lastNowKey = this.geoStrips.map((g) => nowMarkerIndex(g, now)).join(',');
       for (const geo of this.geoStrips) paintNowLine(ctx, geo, project, options);
     }
   }

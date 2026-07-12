@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { stripToGeo } from '../src/geo.js';
-import { decideLod, medianProjectedWidthPx, paintNowLine, paintStrip, paintTrailWindow } from '../src/paint.js';
+import { decideLod, medianProjectedWidthPx, nowMarkerIndex, paintNowLine, paintStrip, paintTrailWindow } from '../src/paint.js';
 import type { PaintOptions, Treatment } from '../src/paint.js';
 import { ATLAS_PALETTE, dashPatternFor } from '../src/palette.js';
 import { FakeCtx, alphaOf, fixtureStrip, makeProjector, sameHue, syntheticStrip } from './fake-ctx.js';
@@ -272,5 +272,31 @@ describe('antimeridian and polar painting (AGE-10)', () => {
         expect(Number.isFinite(y)).toBe(true);
       }
     }
+  });
+});
+
+describe('nowMarkerIndex: the static repaint gate (AGE-16)', () => {
+  const geo = stripToGeo(syntheticStrip([
+    [0, 0, 1, 0], [1, 0, 1, 10], [2, 0, 1, 20], [3, 0, 1, 30],
+  ]));
+
+  it('is -1 before the strip, tracks the last segment at or before the clock', () => {
+    expect(nowMarkerIndex(geo, -5)).toBe(-1);
+    expect(nowMarkerIndex(geo, 0)).toBe(0);
+    expect(nowMarkerIndex(geo, 14)).toBe(1);
+    expect(nowMarkerIndex(geo, 30)).toBe(3);
+  });
+
+  it('is stable between segment boundaries, so gated repaints skip', () => {
+    expect(nowMarkerIndex(geo, 11)).toBe(nowMarkerIndex(geo, 19));
+    expect(nowMarkerIndex(geo, 19)).not.toBe(nowMarkerIndex(geo, 21));
+  });
+
+  it('expires with paintNowLine: past 1.5 median steps the marker is gone', () => {
+    expect(nowMarkerIndex(geo, 44)).toBe(3);
+    expect(nowMarkerIndex(geo, 46)).toBe(-1);
+    const ctx = new FakeCtx();
+    paintNowLine(ctx, geo, WIDE, { treatment: 'flat-fill', nowEtSec: 46 });
+    expect(ctx.ops).toHaveLength(0);
   });
 });
