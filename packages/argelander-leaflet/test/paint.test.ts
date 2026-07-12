@@ -76,6 +76,14 @@ describe('mechanism treatment and LOD (AGE-09)', () => {
     expect(ctx.fills().length).toBeGreaterThan(0);
   });
 
+  it('keeps the full envelope for strips with no mechanism detail', () => {
+    // stripmap-sar carries no sub-structure: mechanism mode must not dim it
+    // to a backdrop it will never draw on.
+    const ctx = paint('stripmap-sar', { treatment: 'mechanism' });
+    expect(ctx.fills().length).toBeGreaterThan(0);
+    expect(alphaOf(ctx.fills()[0]!.fillStyle)).toBeCloseTo(0.35, 9);
+  });
+
   it('textures mechanism strokes by instrument identity (AGE-08)', () => {
     const ctx = paint('whiskbroom', { treatment: 'mechanism' });
     const dash = dashPatternFor(fixtureStrip('whiskbroom').instrumentId);

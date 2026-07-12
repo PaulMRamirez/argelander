@@ -388,9 +388,13 @@ export function paintStrip(ctx: Canvas2DLike, geo: GeoStrip, project: Projector,
     return;
   }
 
-  // mechanism: LOD gate on projected swath width (AGE-09).
+  // mechanism: LOD gate on projected swath width (AGE-09). A strip with no
+  // mechanism detail keeps its full envelope; only strips that will draw
+  // detail on top dim the envelope to a backdrop.
   const widthPx = medianProjectedWidthPx(geo, project);
-  if (decideLod(widthPx, r.mechanismMinWidthPx) === 'envelope' && widthPx > 0) {
+  const hasMechanismDetail = geo.segments.some((s) =>
+    s.sub?.some((e) => e.kind === 'footprint' || e.kind === 'frame' || e.kind === 'look' || e.kind === 'baseline'));
+  if (!hasMechanismDetail || (decideLod(widthPx, r.mechanismMinWidthPx) === 'envelope' && widthPx > 0)) {
     paintQuads(ctx, geo, project, r, () => 1, -Infinity, Infinity);
     paintLoneSegments(ctx, geo, project, r, 3);
     for (const s of geo.segments) paintSparse(ctx, project, r, s);
