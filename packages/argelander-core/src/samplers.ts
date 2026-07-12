@@ -69,7 +69,7 @@ export const MULTI_ANGLE_SCENE: AlongTrackScene = {
   acquiringIndex: 28,
 };
 
-interface TrackBasis {
+export interface TrackBasis {
   dirX: number;
   dirY: number;
   nrmX: number;
@@ -78,7 +78,7 @@ interface TrackBasis {
   cy: number;
 }
 
-function trackBasis(scene: AlongTrackScene): TrackBasis {
+export function trackBasis(scene: AlongTrackScene): TrackBasis {
   const dirX = Math.sin(scene.tiltRad);
   const dirY = Math.cos(scene.tiltRad);
   return {
@@ -88,7 +88,7 @@ function trackBasis(scene: AlongTrackScene): TrackBasis {
 }
 
 /** Platform plane position at pass fraction sf, the tile 1 track equation. */
-function trackPoint(scene: AlongTrackScene, b: TrackBasis, sf: number): PlanePoint {
+export function trackPoint(scene: AlongTrackScene, b: TrackBasis, sf: number): PlanePoint {
   return [
     b.cx + (sf - 0.5) * scene.trackLengthKm * b.dirX,
     b.cy + (sf - 0.5) * scene.trackLengthKm * b.dirY,
@@ -106,7 +106,7 @@ function crossTrackRotationRad(b: TrackBasis): number {
   return ((raw % Math.PI) + Math.PI) % Math.PI;
 }
 
-function numberArrayParam(model: InstrumentModel, key: string): readonly number[] {
+export function numberArrayParam(model: InstrumentModel, key: string): readonly number[] {
   const v = model.params[key];
   if (!Array.isArray(v) || v.length === 0 || !v.every((x) => typeof x === 'number' && Number.isFinite(x))) {
     throw new TypeError(`model ${model.instrumentId}: numeric array param ${key} missing`);
@@ -119,7 +119,7 @@ function requireKind(model: InstrumentModel, kind: string): void {
 }
 
 /** Emission epochs k times stepSec through the pass, inclusive of a final on-clock epoch. */
-function cadenceEpochs(stepSec: number, passSec: number): number[] {
+export function cadenceEpochs(stepSec: number, passSec: number): number[] {
   const epochs: number[] = [];
   for (let k = 0; k * stepSec <= passSec + 1e-9; k++) epochs.push(k * stepSec);
   return epochs;

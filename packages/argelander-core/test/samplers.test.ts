@@ -1,48 +1,11 @@
-import { readFileSync, writeFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   FRAMING_SCENE, MULTI_ANGLE_SCENE, PROFILER_SCENE, PUSH_FRAME_SCENE, WHISKBROOM_SCENE,
   generateFramingStrip, generateMultiAngleStrip, generateProfilerStrip,
-  generatePushFrameStrip, generateWhiskbroomStrip, validateStrip,
+  generatePushFrameStrip, generateWhiskbroomStrip,
 } from '../src/index.js';
-import type { AlongTrackScene, InstrumentModel, Strip, SubFootprint, Vec3 } from '../src/index.js';
-
-const fixturesDir = fileURLToPath(new URL('../fixtures/', import.meta.url));
-const UPDATE = process.env['UPDATE_FIXTURES'] === '1';
-const TOLERANCE = 1e-6;
-
-function readJson<T>(rel: string): T {
-  return JSON.parse(readFileSync(fixturesDir + rel, 'utf8')) as T;
-}
-
-/** Deep comparison with numeric tolerance, covering sub-structure and quality. */
-function expectDeepClose(actual: unknown, fixture: unknown, path: string): void {
-  if (typeof fixture === 'number') {
-    expect(typeof actual, path).toBe('number');
-    expect(Math.abs((actual as number) - fixture), path).toBeLessThanOrEqual(TOLERANCE);
-    return;
-  }
-  if (Array.isArray(fixture)) {
-    expect(Array.isArray(actual), path).toBe(true);
-    expect((actual as unknown[]).length, path).toBe(fixture.length);
-    fixture.forEach((v, i) => expectDeepClose((actual as unknown[])[i], v, `${path}[${i}]`));
-    return;
-  }
-  if (fixture !== null && typeof fixture === 'object') {
-    const fixtureKeys = Object.keys(fixture as object).sort();
-    expect(Object.keys(actual as object).sort(), path).toEqual(fixtureKeys);
-    for (const key of fixtureKeys) {
-      expectDeepClose(
-        (actual as Record<string, unknown>)[key],
-        (fixture as Record<string, unknown>)[key],
-        `${path}.${key}`,
-      );
-    }
-    return;
-  }
-  expect(actual, path).toEqual(fixture);
-}
+import type { AlongTrackScene, InstrumentModel, Strip, SubFootprint } from '../src/index.js';
+import { TOLERANCE, chord, replayFamily as replay } from './replay-helpers.js';
 
 type Sampler = (model: InstrumentModel, scene: AlongTrackScene) => Strip;
 
@@ -53,21 +16,6 @@ const FAMILIES: ReadonlyArray<readonly [string, Sampler, AlongTrackScene]> = [
   ['push-frame', generatePushFrameStrip, PUSH_FRAME_SCENE],
   ['multi-angle', generateMultiAngleStrip, MULTI_ANGLE_SCENE],
 ];
-
-/** Model fixture round trip: sample, validate, compare against the anchor. */
-function replay(family: string, sample: Sampler, scene: AlongTrackScene): Strip {
-  const model = readJson<InstrumentModel>(`models/${family}.json`);
-  const strip = sample(model, scene);
-  expect(validateStrip(strip).errors).toEqual([]);
-  if (UPDATE) {
-    writeFileSync(`${fixturesDir}strips/${family}.json`, JSON.stringify(strip, null, 2) + '\n');
-  }
-  expectDeepClose(strip, readJson<Strip>(`strips/${family}.json`), family);
-  return strip;
-}
-
-const chord = (a: Vec3, b: Vec3): number =>
-  Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 
 describe('along-track family samplers replay their fixtures (AGE-03, AGE-17)', () => {
   for (const [family, sample, scene] of FAMILIES) {

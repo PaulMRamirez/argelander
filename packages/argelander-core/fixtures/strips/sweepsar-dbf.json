@@ -1,24 +1,25 @@
 {
-  "id": "fixture-sweepsar-dbf",
+  "id": "conformance-sweepsar-dbf",
   "body": "EARTH",
   "frame": "ITRF93",
   "instrumentId": "atlas-tile-20",
-  "missionId": "atlas-fixtures",
+  "missionId": "conformance",
   "mode": "nominal",
   "passId": "pass-0",
   "segments": [
     {
       "etSec": 0,
       "left": [
-        6370.899163387201,
-        23.999620141468032,
-        -26.624578594441097
+        6367.397266398406,
+        -65.80093453637588,
+        203.870765133807
       ],
       "right": [
-        6369.98807267434,
-        110.3824647972449,
-        -26.620771061835555
+        6366.487677045215,
+        -150.40931328474514,
+        186.68876910149757
       ],
+      "state": "committed",
       "sub": [
         {
           "kind": "sub-swath",
@@ -40,21 +41,21 @@
           "kind": "sub-swath",
           "index": 4
         }
-      ],
-      "state": "committed"
+      ]
     },
     {
       "etSec": 0.25,
       "left": [
-        6370.934767865395,
-        23.999754266013102,
-        -15.974836433314973
+        6367.743863323425,
+        -63.68976928254488,
+        193.44948796933124
       ],
       "right": [
-        6370.023661879438,
-        110.38308150549207,
-        -15.972551875455036
+        6366.834125448171,
+        -148.30305331153684,
+        176.26804420283966
       ],
+      "state": "committed",
       "sub": [
         {
           "kind": "sub-swath",
@@ -76,21 +77,21 @@
           "kind": "sub-swath",
           "index": 4
         }
-      ],
-      "state": "committed"
+      ]
     },
     {
       "etSec": 0.5,
       "left": [
-        6370.952570328347,
-        23.999821329128917,
-        -5.324960357400479
+        6368.072738372263,
+        -61.578202449349114,
+        183.02656578510036
       ],
       "right": [
-        6370.041456705681,
-        110.38338986349196,
-        -5.32419883173093
+        6367.162859554097,
+        -146.19615648798012,
+        165.84572271555626
       ],
+      "state": "committed",
       "sub": [
         {
           "kind": "sub-swath",
@@ -112,21 +113,21 @@
           "kind": "sub-swath",
           "index": 4
         }
-      ],
-      "state": "committed"
+      ]
     },
     {
       "etSec": 0.75,
       "left": [
-        6370.952570328347,
-        23.999821329128917,
-        5.324960357400479
+        6368.383883295172,
+        -59.466251616220724,
+        172.6020854596032
       ],
       "right": [
-        6370.041456705681,
-        110.38338986349196,
-        5.32419883173093
+        6367.47387111913,
+        -144.08864027644063,
+        155.42189150325564
       ],
+      "state": "committed",
       "sub": [
         {
           "kind": "sub-swath",
@@ -148,21 +149,21 @@
           "kind": "sub-swath",
           "index": 4
         }
-      ],
-      "state": "committed"
+      ]
     },
     {
       "etSec": 1,
       "left": [
-        6370.934767865395,
-        23.999754266013102,
-        15.974836433314973
+        6368.67729028507,
+        -57.35393437753741,
+        162.17613393666412
       ],
       "right": [
-        6370.023661879438,
-        110.38308150549207,
-        15.972551875455036
+        6367.767152341758,
+        -141.9805221600984,
+        144.99663749364305
       ],
+      "state": "committed",
       "sub": [
         {
           "kind": "sub-swath",
@@ -184,21 +185,21 @@
           "kind": "sub-swath",
           "index": 4
         }
-      ],
-      "state": "acquiring"
+      ]
     },
     {
       "etSec": 1.25,
       "left": [
-        6370.899163387201,
-        23.999620141468032,
-        26.624578594441097
+        6368.952951978073,
+        -55.24126834189201,
+        151.74879822182885
       ],
       "right": [
-        6369.98807267434,
-        110.3824647972449,
-        26.620771061835555
+        6368.042695863364,
+        -139.87181964222492,
+        134.57004767490815
       ],
+      "state": "committed",
       "sub": [
         {
           "kind": "sub-swath",
@@ -220,15 +221,1276 @@
           "kind": "sub-swath",
           "index": 4
         }
+      ]
+    },
+    {
+      "etSec": 1.5,
+      "left": [
+        6369.210861454024,
+        -53.1282711313609,
+        141.320165378746
       ],
-      "state": "planned"
+      "right": [
+        6368.300494768725,
+        -137.76255024545898,
+        124.14220909210712
+      ],
+      "state": "committed",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 1.75,
+      "left": [
+        6369.451012236966,
+        -51.01496038077103,
+        130.89032252554216
+      ],
+      "right": [
+        6368.54054258651,
+        -135.65273151108042,
+        113.71320884353935
+      ],
+      "state": "committed",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 2,
+      "left": [
+        6369.673398295592,
+        -48.901353736965774,
+        120.45935683119124
+      ],
+      "right": [
+        6368.762833289721,
+        -133.54238099828285,
+        103.28313407711818
+      ],
+      "state": "committed",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 2.25,
+      "left": [
+        6369.878014043669,
+        -46.78746885806968,
+        110.02735551187999
+      ],
+      "right": [
+        6368.967361296115,
+        -131.43151628344413,
+        92.85207198673764
+      ],
+      "state": "committed",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 2.5,
+      "left": [
+        6370.064854340429,
+        -44.67332341275217,
+        99.5944058273677
+      ],
+      "right": [
+        6369.154121468597,
+        -129.32015495939606,
+        82.42010980863402
+      ],
+      "state": "committed",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 2.75,
+      "left": [
+        6370.233914490924,
+        -42.55893507949019,
+        89.16059507734246
+      ],
+      "right": [
+        6369.32310911557,
+        -127.20831463469209,
+        71.98733481774347
+      ],
+      "state": "committed",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 3,
+      "left": [
+        6370.385190246352,
+        -40.44432154583003,
+        78.72601059777314
+      ],
+      "right": [
+        6369.474319991274,
+        -125.09601293287426,
+        61.553834324055934
+      ],
+      "state": "committed",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 3.25,
+      "left": [
+        6370.518677804363,
+        -38.32950050764829,
+        68.29073975725792
+      ],
+      "right": [
+        6369.607750296072,
+        -122.9832674917384,
+        51.11969566896529
+      ],
+      "state": "committed",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 3.5,
+      "left": [
+        6370.63437380931,
+        -36.214489668411986,
+        57.85486995336963
+      ],
+      "right": [
+        6369.7233966767135,
+        -120.87009596259833,
+        40.685006221616675
+      ],
+      "state": "committed",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 3.75,
+      "left": [
+        6370.732275352496,
+        -34.099306738438095,
+        47.41848860899811
+      ],
+      "right": [
+        6369.821256226586,
+        -118.75651600954924,
+        30.24985337525093
+      ],
+      "state": "committed",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 4,
+      "left": [
+        6370.812379972373,
+        -31.983969434152485,
+        36.981683168690395
+      ],
+      "right": [
+        6369.901326485896,
+        -116.64254530872961,
+        19.814324543546615
+      ],
+      "state": "committed",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 4.25,
+      "left": [
+        6370.874685654708,
+        -29.868495477347988,
+        26.54454109498851
+      ],
+      "right": [
+        6369.963605441855,
+        -114.52820154758224,
+        9.378507156960167
+      ],
+      "state": "committed",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 4.5,
+      "left": [
+        6370.919190832734,
+        -27.75290259444257,
+        16.10714986476537
+      ],
+      "right": [
+        6370.00809152881,
+        -112.41350242411458,
+        -1.0575113409360604
+      ],
+      "state": "committed",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 4.75,
+      "left": [
+        6370.9458943872505,
+        -25.637208515736358,
+        5.669596965559841
+      ],
+      "right": [
+        6370.034783628365,
+        -110.29846564615825,
+        -11.493643497116384
+      ],
+      "state": "committed",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 5,
+      "left": [
+        6370.954795646709,
+        -23.521430974669173,
+        -4.7680301080899765
+      ],
+      "right": [
+        6370.043681069448,
+        -108.18310893062747,
+        -21.92980185276607
+      ],
+      "state": "committed",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 5.25,
+      "left": [
+        6370.9458943872505,
+        -21.405587707076897,
+        -15.20564385831357
+      ],
+      "right": [
+        6370.034783628365,
+        -106.06745000277725,
+        -32.36589894694578
+      ],
+      "state": "committed",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 5.5,
+      "left": [
+        6370.919190832734,
+        -19.289696450448595,
+        -25.64315678757551
+      ],
+      "right": [
+        6370.00809152881,
+        -103.95150659546063,
+        -42.80184732025628
+      ],
+      "state": "committed",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 5.75,
+      "left": [
+        6370.874685654708,
+        -17.173774943182558,
+        -36.0804814023428
+      ],
+      "right": [
+        6369.963605441855,
+        -101.83529644838563,
+        -53.23755951850336
+      ],
+      "state": "committed",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 6,
+      "left": [
+        6370.812379972373,
+        -15.057840923843257,
+        -46.517530216751936
+      ],
+      "right": [
+        6369.901326485896,
+        -99.71883730737153,
+        -63.67294809636193
+      ],
+      "state": "committed",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 6.25,
+      "left": [
+        6370.732275352496,
+        -12.941912130417403,
+        -56.95421575627504
+      ],
+      "right": [
+        6369.821256226586,
+        -97.60214692360503,
+        -74.10792562103951
+      ],
+      "state": "committed",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 6.5,
+      "left": [
+        6370.63437380931,
+        -10.826006299570965,
+        -67.39045056138502
+      ],
+      "right": [
+        6369.7233966767135,
+        -95.48524305289581,
+        -84.54240467593837
+      ],
+      "state": "committed",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 6.75,
+      "left": [
+        6370.518677804363,
+        -8.710141165905773,
+        -77.82614719121932
+      ],
+      "right": [
+        6369.607750296072,
+        -93.36814345493208,
+        -94.97629786431627
+      ],
+      "state": "committed",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 7,
+      "left": [
+        6370.385190246352,
+        -6.594334461216465,
+        -88.2612182272417
+      ],
+      "right": [
+        6369.474319991274,
+        -91.25086589253577,
+        -105.40951781294521
+      ],
+      "state": "acquiring",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 7.25,
+      "left": [
+        6370.233914490924,
+        -4.478603913747962,
+        -98.6955762769023
+      ],
+      "right": [
+        6369.32310911557,
+        -89.13342813091778,
+        -115.8419771757683
+      ],
+      "state": "planned",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 7.5,
+      "left": [
+        6370.064854340429,
+        -2.3629672474533168,
+        -109.12913397729417
+      ],
+      "right": [
+        6369.154121468597,
+        -87.01584793693324,
+        -126.27358863755319
+      ],
+      "state": "planned",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 7.75,
+      "left": [
+        6369.878014043669,
+        -0.24744218125183753,
+        -119.56180399880809
+      ],
+      "right": [
+        6368.967361296115,
+        -84.89814307833656,
+        -136.70426491754324
+      ],
+      "state": "planned",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 8,
+      "left": [
+        6369.673398295592,
+        1.8679535717123326,
+        -129.9934990487834
+      ],
+      "right": [
+        6368.762833289721,
+        -82.78033132303693,
+        -147.1339187731053
+      ],
+      "state": "planned",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 8.25,
+      "left": [
+        6369.451012236966,
+        3.983202304810447,
+        -140.42413187515538
+      ],
+      "right": [
+        6368.54054258651,
+        -80.66243043835377,
+        -157.56246300337338
+      ],
+      "state": "planned",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 8.5,
+      "left": [
+        6369.210861454024,
+        6.098286318669563,
+        -150.85361527009897
+      ],
+      "right": [
+        6368.300494768725,
+        -78.5444581902726,
+        -167.98981045288897
+      ],
+      "state": "planned",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 8.75,
+      "left": [
+        6368.952951978073,
+        8.21318792191128,
+        -161.2818620736678
+      ],
+      "right": [
+        6368.042695863364,
+        -76.42643234270118,
+        -178.41587401523628
+      ],
+      "state": "planned",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 9,
+      "left": [
+        6368.67729028507,
+        10.327889431890561,
+        -171.70878517742864
+      ],
+      "right": [
+        6367.767152341758,
+        -74.3083706567261,
+        -188.840566636673
+      ],
+      "state": "planned",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 9.25,
+      "left": [
+        6368.383883295172,
+        12.442373175432754,
+        -182.13429752809085
+      ],
+      "right": [
+        6367.47387111913,
+        -72.19029088986983,
+        -199.26380131975617
+      ],
+      "state": "planned",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 9.5,
+      "left": [
+        6368.072738372263,
+        14.55662148957055,
+        -192.55831213113092
+      ],
+      "right": [
+        6367.162859554097,
+        -70.0722107953483,
+        -209.68549112696232
+      ],
+      "state": "planned",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 9.75,
+      "left": [
+        6367.743863323425,
+        16.670616722278968,
+        -202.98074205441043
+      ],
+      "right": [
+        6366.834125448171,
+        -67.95414812132925,
+        -220.10554918430208
+      ],
+      "state": "planned",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "etSec": 10,
+      "left": [
+        6367.397266398406,
+        18.78434123321019,
+        -213.4015004317885
+      ],
+      "right": [
+        6366.487677045215,
+        -65.8361206101911,
+        -230.52388868492835
+      ],
+      "state": "planned",
+      "sub": [
+        {
+          "kind": "sub-swath",
+          "index": 0
+        },
+        {
+          "kind": "sub-swath",
+          "index": 1
+        },
+        {
+          "kind": "sub-swath",
+          "index": 2
+        },
+        {
+          "kind": "sub-swath",
+          "index": 3
+        },
+        {
+          "kind": "sub-swath",
+          "index": 4
+        }
+      ]
     }
   ],
   "provenance": {
     "authority": "argelander-core@0.0.1",
-    "generatedBy": "phase-0-authoring",
+    "generatedBy": "conformance-sampler",
+    "correction": "NONE",
     "inputs": [
-      "model:atlas-tile-20"
+      "model:atlas-tile-20",
+      "scene:atlas-tile-20"
     ]
   }
 }
