@@ -12,6 +12,14 @@ export interface DemoSat {
   swathHalfWidthKm?: number;
   /** Cross-track beam offsets, km; beads chain, never a ribbon. */
   beadOffsetsKm?: readonly number[];
+  /** Whiskbroom-style scan mechanism revealed by LOD when zoomed in. */
+  scan?: {
+    scanRateHz: number;
+    subStepSec: number;
+    footprintSemiMajorKm: number;
+    footprintSemiMinorKm: number;
+    footprintGrowthFactor: number;
+  };
   label: string;
 }
 
@@ -21,7 +29,14 @@ export const DEMO_SATS: readonly DemoSat[] = [
     line1: '1 25544U 98067A   26192.31485778  .00005525  00000+0  10843-3 0  9998',
     line2: '2 25544  51.6302 180.6822 0006688 282.4935  77.5305 15.48978902575497',
     swathHalfWidthKm: 80,
-    label: 'ISS: demonstration 160 km pushbroom envelope',
+    scan: {
+      scanRateHz: 0.05,
+      subStepSec: 5,
+      footprintSemiMajorKm: 12,
+      footprintSemiMinorKm: 8,
+      footprintGrowthFactor: 0.8,
+    },
+    label: 'ISS: demonstration 160 km whiskbroom swath',
   },
   {
     name: 'ICESAT-2',

@@ -28,6 +28,20 @@ export interface TrackStripOptions {
   /** Cross-track bead offsets per segment; sparse geometry, never a ribbon (AGE-09). */
   beadOffsetsKm?: readonly number[];
   /**
+   * Whiskbroom-style scan mechanism riding the track: footprint ellipses
+   * sweep the swath on the triangle law of the whiskbroom sampler, sampled
+   * at subStepSec between segment epochs (nadir and cross-track directions
+   * interpolate between the bracketing states, rendering grade). Gives the
+   * mechanism treatment something to reveal when LOD zooms in (AGE-09).
+   */
+  scan?: {
+    scanRateHz: number;
+    subStepSec: number;
+    footprintSemiMajorKm: number;
+    footprintSemiMinorKm: number;
+    footprintGrowthFactor: number;
+  };
+  /**
    * Engine clock for the state rule: the last segment at or before it is
    * acquiring, earlier committed, later planned. Defaults to the last epoch.
    */
@@ -46,6 +60,38 @@ function surfacePoint(radiusKm: number, nadir: Vec3, cross: Vec3, offsetKm: numb
   ];
 }
 
+function unit(v: Vec3): Vec3 {
+  const m = Math.hypot(v[0], v[1], v[2]);
+  return [v[0] / m, v[1] / m, v[2] / m];
+}
+
+/**
+ * Footprint orientation: the cross-track direction from local east,
+ * counterclockwise seen from outside the body, folded to [0, pi). East
+ * degenerates at the poles; the fold to zero there is rendering grade.
+ */
+function crossTrackRotationRad(nadir: Vec3, cross: Vec3): number {
+  const em = Math.hypot(-nadir[1], nadir[0]);
+  if (em < 1e-9) return 0;
+  const east: Vec3 = [-nadir[1] / em, nadir[0] / em, 0];
+  const north: Vec3 = [
+    nadir[1] * east[2] - nadir[2] * east[1],
+    nadir[2] * east[0] - nadir[0] * east[2],
+    nadir[0] * east[1] - nadir[1] * east[0],
+  ];
+  const raw = Math.atan2(
+    cross[0] * north[0] + cross[1] * north[1] + cross[2] * north[2],
+    cross[0] * east[0] + cross[1] * east[1] + cross[2] * east[2],
+  );
+  return ((raw % Math.PI) + Math.PI) % Math.PI;
+}
+
+/** The whiskbroom triangle scan law: phase in cycles to position in [-1, 1]. */
+function trianglePosition(phase: number): number {
+  const fract = ((phase % 1) + 1) % 1;
+  return Math.abs(fract * 2 - 1) * 2 - 1;
+}
+
 export function trackStrip(batch: StateBatch, targetIndex: number, options: TrackStripOptions): Strip {
   const n = batch.epochs.length;
   if (n === 0) throw new RangeError('trackStrip requires a non-empty batch');
@@ -59,20 +105,36 @@ export function trackStrip(batch: StateBatch, targetIndex: number, options: Trac
     if (batch.epochs[i]! <= nowEtSec + 1e-9) acquiringIndex = i;
   }
 
-  const segments: StripSegment[] = [];
+  const nadirs: Vec3[] = [];
+  const crosses: Vec3[] = [];
   for (let i = 0; i < n; i++) {
     const sample = decodeState(batch, targetIndex, i);
     const [px, py, pz] = sample.positionKm;
     const [vx, vy, vz] = sample.velocityKmS;
     const pm = Math.hypot(px, py, pz);
     if (!(pm > 0)) throw new RangeError(`degenerate position at epoch index ${i}`);
-    const nadir: Vec3 = [px / pm, py / pm, pz / pm];
+    nadirs.push([px / pm, py / pm, pz / pm]);
     const hx = py * vz - pz * vy;
     const hy = pz * vx - px * vz;
     const hz = px * vy - py * vx;
     const hm = Math.hypot(hx, hy, hz);
     if (!(hm > 0)) throw new RangeError(`degenerate state at epoch index ${i}: position and velocity are parallel`);
-    const cross: Vec3 = [hx / hm, hy / hm, hz / hm];
+    crosses.push([hx / hm, hy / hm, hz / hm]);
+  }
+
+  const scan = options.scan;
+  if (scan && !(halfWidth > 0)) {
+    throw new RangeError('scan requires a positive swathHalfWidthKm');
+  }
+  if (scan && !(scan.subStepSec > 0)) {
+    throw new RangeError('scan.subStepSec must be positive');
+  }
+
+  const segments: StripSegment[] = [];
+  for (let i = 0; i < n; i++) {
+    const et = batch.epochs[i]!;
+    const nadir = nadirs[i]!;
+    const cross = crosses[i]!;
 
     const sub: SubStructure[] = [];
     if (options.beadOffsetsKm?.length) {
@@ -81,9 +143,35 @@ export function trackStrip(batch: StateBatch, targetIndex: number, options: Trac
         points: options.beadOffsetsKm.map((d) => surfacePoint(radius, nadir, cross, d)),
       });
     }
+    if (scan) {
+      const nextEt = i + 1 < n ? batch.epochs[i + 1]! : et;
+      for (let j = 0; j === 0 || et + j * scan.subStepSec < nextEt - 1e-9; j++) {
+        const tt = et + j * scan.subStepSec;
+        const f = nextEt > et ? (tt - et) / (nextEt - et) : 0;
+        const sNadir = f === 0 ? nadir : unit([
+          nadir[0] + f * (nadirs[i + 1]![0] - nadir[0]),
+          nadir[1] + f * (nadirs[i + 1]![1] - nadir[1]),
+          nadir[2] + f * (nadirs[i + 1]![2] - nadir[2]),
+        ]);
+        const sCross = f === 0 ? cross : unit([
+          cross[0] + f * (crosses[i + 1]![0] - cross[0]),
+          cross[1] + f * (crosses[i + 1]![1] - cross[1]),
+          cross[2] + f * (crosses[i + 1]![2] - cross[2]),
+        ]);
+        const tri = trianglePosition(tt * scan.scanRateHz);
+        const grow = 1 + scan.footprintGrowthFactor * tri * tri;
+        sub.push({
+          kind: 'footprint',
+          center: surfacePoint(radius, sNadir, sCross, tri * halfWidth),
+          semiMajorKm: scan.footprintSemiMajorKm * grow,
+          semiMinorKm: scan.footprintSemiMinorKm * grow,
+          rotationRad: crossTrackRotationRad(sNadir, sCross),
+        });
+      }
+    }
 
     segments.push({
-      etSec: sample.etSec,
+      etSec: et,
       left: surfacePoint(radius, nadir, cross, -halfWidth),
       right: surfacePoint(radius, nadir, cross, halfWidth),
       state: i < acquiringIndex ? 'committed' : i === acquiringIndex ? 'acquiring' : 'planned',

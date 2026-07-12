@@ -60,13 +60,15 @@ export class AcquisitionLayer extends L.Layer {
     this.canvas.style.pointerEvents = 'none';
     this.trailCanvas = document.createElement('canvas');
     map.getPanes()['overlayPane']!.appendChild(this.canvas);
-    map.on('moveend zoomend viewreset resize', this.handleViewChange, this);
+    // 'move' and 'zoom' fire through drags and zoom animation, so the layer
+    // repaints live instead of snapping into place at moveend.
+    map.on('move zoom moveend zoomend viewreset resize', this.handleViewChange, this);
     this.resetView();
     return this;
   }
 
   override onRemove(map: L.Map): this {
-    map.off('moveend zoomend viewreset resize', this.handleViewChange, this);
+    map.off('move zoom moveend zoomend viewreset resize', this.handleViewChange, this);
     this.stopAnimation();
     this.canvas?.remove();
     this.map = undefined;
@@ -89,7 +91,8 @@ export class AcquisitionLayer extends L.Layer {
   setNow(etSec: number): void {
     this.nowEtSec = etSec;
     if (this.treatment === 'now-trail') this.drawNowFrame(0);
-    else this.redrawStatic();
+    else if (this.treatment === 'time-gradient') this.redrawStatic();
+    // The other treatments derive from segment states, not the clock.
   }
 
   /** Pause and resume all animation (AGE-16). */
@@ -111,10 +114,12 @@ export class AcquisitionLayer extends L.Layer {
   private resetView(): void {
     if (!this.map || !this.canvas || !this.trailCanvas) return;
     const size = this.map.getSize();
-    this.canvas.width = size.x;
-    this.canvas.height = size.y;
-    this.trailCanvas.width = size.x;
-    this.trailCanvas.height = size.y;
+    if (this.canvas.width !== size.x || this.canvas.height !== size.y) {
+      this.canvas.width = size.x;
+      this.canvas.height = size.y;
+      this.trailCanvas.width = size.x;
+      this.trailCanvas.height = size.y;
+    }
     L.DomUtil.setPosition(this.canvas, this.map.containerPointToLayerPoint([0, 0]));
     if (this.treatment === 'now-trail') {
       this.trailPaintedToEtSec = -Infinity;
@@ -157,11 +162,16 @@ export class AcquisitionLayer extends L.Layer {
   private drawNowFrame(dtSec: number): void {
     if (!this.map || !this.canvas || !this.trailCanvas) return;
     const trailCtx = this.trailCanvas.getContext('2d')!;
+    const now = this.nowEtSec ?? Infinity;
+    if (now < this.trailPaintedToEtSec) {
+      // The clock ran backward (a scrub or a looping pass): rebuild the trail.
+      trailCtx.clearRect(0, 0, this.trailCanvas.width, this.trailCanvas.height);
+      this.trailPaintedToEtSec = -Infinity;
+    }
     const tau = this.layerOptions.trailTauSec ?? 4;
     applyTrailFade(trailCtx, this.trailCanvas.width, this.trailCanvas.height, trailFadeAlpha(dtSec, tau));
     const project = this.projector();
     const options = this.paintOptions();
-    const now = this.nowEtSec ?? Infinity;
     if (now > this.trailPaintedToEtSec) {
       for (const geo of this.geoStrips) {
         paintTrailWindow(trailCtx, geo, project, options, this.trailPaintedToEtSec, now);

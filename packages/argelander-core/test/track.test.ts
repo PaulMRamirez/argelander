@@ -84,6 +84,34 @@ describe('trackStrip: the provider-to-strip bridge (AGE-04)', () => {
     expect(later.segments[4]!.state).toBe('acquiring');
   });
 
+  it('sweeps scan footprints across the swath between segment epochs (AGE-09 hybrid)', () => {
+    const scan = {
+      scanRateHz: 0.05,
+      subStepSec: 5,
+      footprintSemiMajorKm: 12,
+      footprintSemiMinorKm: 8,
+      footprintGrowthFactor: 0.8,
+    };
+    const strip = trackStrip(equatorialBatch(3, 15), 0, { ...BASE, swathHalfWidthKm: 80, scan });
+    expect(validateStrip(strip).errors).toEqual([]);
+    const footprints = strip.segments.flatMap((s) =>
+      (s.sub ?? []).filter((e) => e.kind === 'footprint'));
+    // Two bracketed segments carry three sub-samples each; the last carries one.
+    expect(strip.segments.map((s) => s.sub!.length)).toEqual([3, 3, 1]);
+    for (const f of footprints) {
+      if (f.kind !== 'footprint') throw new Error('footprint expected');
+      expect(Math.hypot(...f.center)).toBeCloseTo(R_BODY, 9);
+      expect(f.semiMajorKm).toBeGreaterThanOrEqual(scan.footprintSemiMajorKm - 1e-9);
+      expect(f.semiMajorKm).toBeLessThanOrEqual(scan.footprintSemiMajorKm * (1 + scan.footprintGrowthFactor) + 1e-9);
+      expect(f.semiMinorKm / f.semiMajorKm).toBeCloseTo(8 / 12, 9);
+      // Equatorial orbit: cross-track is due north, a quarter turn from east.
+      expect(f.rotationRad).toBeCloseTo(Math.PI / 2, 9);
+    }
+    const majors = footprints.map((f) => (f.kind === 'footprint' ? f.semiMajorKm : 0));
+    expect(Math.max(...majors)).toBeGreaterThan(Math.min(...majors));
+    expect(() => trackStrip(equatorialBatch(2, 15), 0, { ...BASE, scan })).toThrow(/swathHalfWidthKm/);
+  });
+
   it('refuses degenerate input', () => {
     const batch = equatorialBatch(2, 10);
     batch.states.fill(0, 3, 6);
