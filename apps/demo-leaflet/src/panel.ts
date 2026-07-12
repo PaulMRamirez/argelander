@@ -361,7 +361,19 @@ export function createPanel(init: PanelInit): void {
     const foot = el('div', 'panel-foot');
     foot.appendChild(bulkTreatmentLine());
     foot.appendChild(segControl('basemap', Object.keys(init.baseMaps), baseName, setBase));
-    foot.appendChild(segControl('scan detail', Object.keys(SCAN_STOPS), scanDetail, (v) => setScanDetail(v as ScanStop)));
+    // The stops gate the mechanism treatment's LOD and nothing else; a
+    // control that silently no-ops reads as broken, so it dims and says
+    // why whenever no visible layer would respond to it.
+    const scanLine = segControl('scan detail', Object.keys(SCAN_STOPS), scanDetail, (v) => setScanDetail(v as ScanStop));
+    const mechanismLive = configs.some((c) => c.enabled && c.treatment === 'mechanism');
+    foot.appendChild(scanLine);
+    if (!mechanismLive) {
+      scanLine.classList.add('dim');
+      scanLine.querySelectorAll('button').forEach((b) => {
+        b.disabled = true;
+      });
+      foot.appendChild(el('div', 'foot-hint', 'applies to the MECHANISM TEXTURE treatment'));
+    }
     foot.appendChild(tileCredit());
     root.appendChild(foot);
   }
