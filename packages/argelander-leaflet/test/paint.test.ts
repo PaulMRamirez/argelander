@@ -169,6 +169,19 @@ describe('now plus trail', () => {
     expect(ctx.fills()).toHaveLength(20);
   });
 
+  it('paints the trail committed even when the state field lags the clock', () => {
+    // The demo re-emits states once per segment boundary; extrusion between
+    // re-emissions sees stale planned states, and trails never repaint, so
+    // a state-derived hue would bake amber into the trail (field report).
+    const strip = fixtureStrip('pushbroom');
+    const stale = { ...strip, segments: strip.segments.map((s) => ({ ...s, state: 'planned' as const })) };
+    const ctx = new FakeCtx();
+    paintTrailWindow(ctx, stripToGeo(stale), WIDE, { treatment: 'now-trail' }, -Infinity, Infinity);
+    const fills = ctx.fills();
+    expect(fills).toHaveLength(40);
+    expect(fills.every((f) => sameHue(f.fillStyle, ATLAS_PALETTE.committed))).toBe(true);
+  });
+
   it('rides the mechanism on the trail as the clock sweeps it', () => {
     const geo = stripToGeo(fixtureStrip('whiskbroom'));
     const ctx = new FakeCtx();

@@ -212,9 +212,9 @@ export function qualityAlphaScale(geo: GeoStrip): (s: GeoSegment) => number {
 }
 
 /** Beads and events paint at any LOD and any treatment; never ribbons (AGE-09). */
-function paintSparse(ctx: Canvas2DLike, project: Projector, r: Resolved, segment: GeoSegment): void {
+function paintSparse(ctx: Canvas2DLike, project: Projector, r: Resolved, segment: GeoSegment, stateOverride?: GeoSegment['state']): void {
   if (!segment.sub) return;
-  const color = stateColor(r.palette, segment.state);
+  const color = stateColor(r.palette, stateOverride ?? segment.state);
   for (const entry of segment.sub) {
     if (entry.kind === 'beads') {
       for (const p of entry.points) dot(ctx, project, toGeo(p), 1.5, withAlpha(color, 0.9));
@@ -232,10 +232,10 @@ function paintSparse(ctx: Canvas2DLike, project: Projector, r: Resolved, segment
 }
 
 /** Mechanism grade: draw the sub-structure detail of one segment (AGE-09). */
-function paintMechanism(ctx: Canvas2DLike, geo: GeoStrip, project: Projector, r: Resolved, segment: GeoSegment): void {
-  paintSparse(ctx, project, r, segment);
+function paintMechanism(ctx: Canvas2DLike, geo: GeoStrip, project: Projector, r: Resolved, segment: GeoSegment, stateOverride?: GeoSegment['state']): void {
+  paintSparse(ctx, project, r, segment, stateOverride);
   if (!segment.sub) return;
-  const color = stateColor(r.palette, segment.state);
+  const color = stateColor(r.palette, stateOverride ?? segment.state);
   ctx.setLineDash(r.dash);
   for (const entry of segment.sub) {
     if (entry.kind === 'footprint') {
@@ -371,16 +371,30 @@ export function paintNowLine(ctx: Canvas2DLike, geo: GeoStrip, project: Projecto
 /**
  * Trail increment: coverage between two clock readings. The mechanism rides
  * the trail, the atlas behavior: footprints, beads, and frames appear as
- * the clock sweeps them and then decay with the trail.
+ * the clock sweeps them and then decay with the trail. Everything entering
+ * the trail is by definition being acquired at that moment, so it paints in
+ * the committed hue regardless of the segment state field, which may be a
+ * tick behind the clock that drives the extrusion (trails never repaint, so
+ * a stale planned hue would bake in permanently).
  */
 export function paintTrailWindow(
   ctx: Canvas2DLike, geo: GeoStrip, project: Projector, options: PaintOptions,
   fromEtSec: number, toEtSec: number,
 ): number {
   const r = resolve(geo, options);
-  const painted = paintQuads(ctx, geo, project, r, () => 0.85, fromEtSec, toEtSec);
+  const style = withAlpha(stateColor(r.palette, 'committed'), r.fillAlpha * 0.85);
+  let painted = 0;
+  for (let i = 0; i + 1 < geo.segments.length; i++) {
+    if (!geo.connect[i]) continue;
+    const later = geo.segments[i + 1]!;
+    if (later.etSec <= fromEtSec || later.etSec > toEtSec) continue;
+    fillQuad(ctx, project, geo.segments[i]!, later, style);
+    painted++;
+  }
   for (const s of geo.segments) {
-    if (s.etSec > fromEtSec && s.etSec <= toEtSec) paintMechanism(ctx, geo, project, r, s);
+    if (s.etSec > fromEtSec && s.etSec <= toEtSec) {
+      paintMechanism(ctx, geo, project, r, s, 'committed');
+    }
   }
   ctx.setLineDash([]);
   return painted;
