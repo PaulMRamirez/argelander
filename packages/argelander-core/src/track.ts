@@ -25,6 +25,12 @@ export interface TrackStripOptions {
   passId?: string;
   /** Ribbon half-width on the ground; omit or zero for a zero-width track. */
   swathHalfWidthKm?: number;
+  /**
+   * Side-looking offset ribbon (stripmap SAR): `left` is the near-range edge
+   * and `right` the far, on the imaged side, because nadir is never imaged.
+   * Mutually exclusive with swathHalfWidthKm and scan.
+   */
+  offsetRangeKm?: { nearKm: number; farKm: number; side: 'left' | 'right' };
   /** Cross-track bead offsets per segment; sparse geometry, never a ribbon (AGE-09). */
   beadOffsetsKm?: readonly number[];
   /**
@@ -130,6 +136,22 @@ export function trackStrip(batch: StateBatch, targetIndex: number, options: Trac
     throw new RangeError('scan.subStepSec must be positive');
   }
 
+  const offset = options.offsetRangeKm;
+  if (offset) {
+    if (halfWidth > 0 || scan) {
+      throw new RangeError('offsetRangeKm is exclusive with swathHalfWidthKm and scan');
+    }
+    if (!(offset.nearKm > 0 && offset.nearKm < offset.farKm)) {
+      throw new RangeError(`offsetRangeKm needs 0 < nearKm < farKm, got ${offset.nearKm}, ${offset.farKm}`);
+    }
+    if (offset.side !== 'left' && offset.side !== 'right') {
+      throw new RangeError(`offsetRangeKm.side must be 'left' or 'right', got ${String(offset.side)}`);
+    }
+  }
+  const offSign = offset?.side === 'left' ? -1 : 1;
+  const leftOffsetKm = offset ? offSign * offset.nearKm : -halfWidth;
+  const rightOffsetKm = offset ? offSign * offset.farKm : halfWidth;
+
   const segments: StripSegment[] = [];
   for (let i = 0; i < n; i++) {
     const et = batch.epochs[i]!;
@@ -176,8 +198,8 @@ export function trackStrip(batch: StateBatch, targetIndex: number, options: Trac
 
     segments.push({
       etSec: et,
-      left: surfacePoint(radius, nadir, cross, -halfWidth),
-      right: surfacePoint(radius, nadir, cross, halfWidth),
+      left: surfacePoint(radius, nadir, cross, leftOffsetKm),
+      right: surfacePoint(radius, nadir, cross, rightOffsetKm),
       state: i < acquiringIndex ? 'committed' : i === acquiringIndex ? 'acquiring' : 'planned',
       ...(sub.length ? { sub } : {}),
       // Scan segments record the footprint size range they actually swept,

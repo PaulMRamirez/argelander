@@ -20,6 +20,8 @@ export interface DemoSat {
     footprintSemiMinorKm: number;
     footprintGrowthFactor: number;
   };
+  /** Side-looking offset ribbon; nadir is never imaged. */
+  offsetRangeKm?: { nearKm: number; farKm: number; side: 'left' | 'right' };
   label: string;
 }
 
@@ -31,12 +33,21 @@ export const DEMO_SATS: readonly DemoSat[] = [
     swathHalfWidthKm: 80,
     scan: {
       scanRateHz: 0.05,
-      subStepSec: 5,
+      // Dense enough that successive footprints nearly tile the sweep, so
+      // high zoom shows a scan, not isolated ellipses.
+      subStepSec: 2.5,
       footprintSemiMajorKm: 12,
       footprintSemiMinorKm: 8,
       footprintGrowthFactor: 0.8,
     },
     label: 'ISS: demonstration 160 km whiskbroom swath',
+  },
+  {
+    name: 'SENTINEL-1A',
+    line1: '1 39634U 14016A   26192.77890475 -.00000105  00000+0 -12473-4 0  9992',
+    line2: '2 39634  98.1786 199.9525 0001444  86.5450 273.5915 14.59199380653608',
+    offsetRangeKm: { nearKm: 250, farKm: 400, side: 'right' },
+    label: 'Sentinel-1A: side-looking IW ribbon, nadir never imaged',
   },
   {
     name: 'ICESAT-2',

@@ -64,6 +64,7 @@ function applyNow(): void {
 
 async function start(): Promise<void> {
   statusLabel.textContent = 'propagating in the worker...';
+  const overlays: Record<string, L.Layer> = {};
   for (const sat of DEMO_SATS) {
     const epochEt = parseTle(sat.line1, sat.line2, sat.name).epochEt;
     const batch = await provider.states({
@@ -82,9 +83,13 @@ async function start(): Promise<void> {
       generatedBy: 'demo-leaflet',
       missionId: 'demo',
       passId: 'pass-0',
+      // Snapshot the state rule at 60 percent of the pass so committed,
+      // acquiring, and planned hues all appear (AGE-08 vocabulary).
+      nowEtSec: epochEt + PASS_WINDOW_SEC * 0.6,
       ...(sat.swathHalfWidthKm !== undefined ? { swathHalfWidthKm: sat.swathHalfWidthKm } : {}),
       ...(sat.beadOffsetsKm !== undefined ? { beadOffsetsKm: sat.beadOffsetsKm } : {}),
       ...(sat.scan !== undefined ? { scan: sat.scan } : {}),
+      ...(sat.offsetRangeKm !== undefined ? { offsetRangeKm: sat.offsetRangeKm } : {}),
     });
     const layer = new AcquisitionLayer([strip], {
       treatment: currentTreatment(),
@@ -94,9 +99,11 @@ async function start(): Promise<void> {
       mechanismMinWidthPx: 16,
     });
     layer.addTo(map);
+    overlays[sat.label] = layer;
     satLayers.push({ layer, epochEt });
   }
-  statusLabel.textContent = `${DEMO_SATS.map((s) => s.label).join('  |  ')}  |  zoom in over a swath to reveal the scan mechanism`;
+  L.control.layers(undefined, overlays, { collapsed: true }).addTo(map);
+  statusLabel.textContent = `${DEMO_SATS.map((s) => s.name).join(' | ')}  |  zoom in over a swath to reveal the scan mechanism`;
   applyNow();
 
   let lastMs = performance.now();
