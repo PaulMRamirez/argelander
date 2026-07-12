@@ -121,6 +121,19 @@ export class FakeCtx implements Canvas2DLike {
     this.record('fillRect', [[x, y], [x + w, y + h]], 'rect');
   }
 
+  createLinearGradient(_x0: number, _y0: number, _x1: number, _y1: number): {
+    addColorStop(offset: number, color: string): void;
+  } {
+    const stops: string[] = [];
+    const gradient = {
+      addColorStop: (offset: number, color: string): void => {
+        stops.push(`${offset}:${color}`);
+      },
+      toString: (): string => `lgrad(${stops.join(';')})`,
+    };
+    return gradient;
+  }
+
   fill(): void {
     this.record('fill', [...this.path], this.shape);
   }

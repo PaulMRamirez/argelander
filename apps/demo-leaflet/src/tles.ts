@@ -23,6 +23,11 @@ export interface DemoSat {
   /** Side-looking offset ribbon; nadir is never imaged. */
   offsetRangeKm?: { nearKm: number; farKm: number; side: 'left' | 'right' };
   /**
+   * Bilateral pair with a nadir gap: two offset ribbons plus the nadir
+   * altimeter chain, three strips sharing the passId (the SWOT posture).
+   */
+  bilateralKm?: { gapKm: number; outerKm: number };
+  /**
    * Tasked acquisition windows, seconds from the element epoch: one strip
    * per window sharing the passId, with honest gaps between (SPEC-STRIP).
    * Omitted means the instrument acquires through the whole pass.
@@ -55,6 +60,34 @@ export const DEMO_SATS: readonly DemoSat[] = [
     offsetRangeKm: { nearKm: 250, farKm: 400, side: 'right' },
     taskWindowsSec: [[480, 1080], [2040, 2580], [3660, 4440]],
     label: 'Sentinel-1A: tasked side-looking IW slots, nadir never imaged',
+  },
+  {
+    name: 'TERRA',
+    line1: '1 25994U 99068A   26192.88621611  .00000205  00000+0  50793-4 0  9998',
+    line2: '2 25994  97.9443 241.4516 0003278 129.2185 343.1618 14.61122111413215',
+    swathHalfWidthKm: 1165,
+    scan: {
+      scanRateHz: 0.02,
+      subStepSec: 2.5,
+      footprintSemiMajorKm: 40,
+      footprintSemiMinorKm: 24,
+      footprintGrowthFactor: 1.2,
+    },
+    label: 'Terra MODIS: 2330 km whiskbroom, bowtie growth off nadir',
+  },
+  {
+    name: 'LANDSAT 9',
+    line1: '1 49260U 21088A   26191.81894687  .00000149  00000+0  43075-4 0  9996',
+    line2: '2 49260  98.2341 261.7009 0001512 185.5660 174.5522 14.57104464254446',
+    swathHalfWidthKm: 92.5,
+    label: 'Landsat 9 OLI: 185 km pushbroom ribbon',
+  },
+  {
+    name: 'SWOT',
+    line1: '1 54754U 22173A   26192.85432307  .00000072  00000+0  50415-4 0  9999',
+    line2: '2 54754  77.6107   2.0082 0000286  77.4832 282.6352 14.00172172182604',
+    bilateralKm: { gapKm: 10, outerKm: 60 },
+    label: 'SWOT KaRIn: twin 50 km swaths, nadir altimeter in the gap',
   },
   {
     name: 'ICESAT-2',

@@ -76,12 +76,14 @@ describe('mechanism treatment and LOD (AGE-09)', () => {
     expect(ctx.fills().length).toBeGreaterThan(0);
   });
 
-  it('keeps the full envelope for strips with no mechanism detail', () => {
-    // stripmap-sar carries no sub-structure: mechanism mode must not dim it
-    // to a backdrop it will never draw on.
-    const ctx = paint('stripmap-sar', { treatment: 'mechanism' });
+  it('hatches the swath cross-track over a faint backdrop (atlas texture)', () => {
+    // stripmap-sar carries no sub-structure: the mechanism texture is the
+    // hatching itself. Zoomed so the 38 km ribbon clears the LOD threshold.
+    const ctx = new FakeCtx();
+    paintStrip(ctx, stripToGeo(fixtureStrip('stripmap-sar')), makeProjector(60), { treatment: 'mechanism' });
     expect(ctx.fills().length).toBeGreaterThan(0);
-    expect(alphaOf(ctx.fills()[0]!.fillStyle)).toBeCloseTo(0.35, 9);
+    expect(alphaOf(ctx.fills()[0]!.fillStyle)).toBeCloseTo(0.35 * 0.4, 9);
+    expect(ctx.strokes().length).toBeGreaterThanOrEqual(41);
   });
 
   it('textures mechanism strokes by instrument identity (AGE-08)', () => {
@@ -101,21 +103,29 @@ describe('mechanism treatment and LOD (AGE-09)', () => {
   });
 });
 
-describe('time gradient', () => {
-  it('fades older coverage', () => {
-    const strip = fixtureStrip('pushbroom');
-    const lastEt = strip.segments[strip.segments.length - 1]!.etSec;
-    const ctx = paint('pushbroom', { treatment: 'time-gradient', nowEtSec: lastEt });
+describe('time gradient (atlas: hue runs along track)', () => {
+  it('ramps hue from early to late in the pass', () => {
+    const ctx = paint('pushbroom', { treatment: 'time-gradient' });
     const fills = ctx.fills();
-    expect(alphaOf(fills[0]!.fillStyle)).toBeLessThan(alphaOf(fills[26]!.fillStyle));
+    const hue = (s: string): number => Number(/hsla\((\d+\.?\d*)/.exec(s)![1]);
+    expect(fills).toHaveLength(40);
+    expect(hue(fills[0]!.fillStyle)).toBeCloseTo(196 + 92 / 40, 0);
+    expect(hue(fills[39]!.fillStyle)).toBeCloseTo(288, 0);
   });
 });
 
-describe('quality gradient', () => {
-  it('scales alpha with the quality range where it varies', () => {
+describe('quality gradient (atlas: cross-swath edge fade)', () => {
+  it('fades the edges and scales the center by segment quality', () => {
     const ctx = new FakeCtx();
     paintStrip(ctx, stripToGeo(fixtureStrip('flyby-swath')), WIDE, { treatment: 'quality-gradient' });
-    const alphas = ctx.fills().map((f) => alphaOf(f.fillStyle));
+    const fills = ctx.fills().filter((f) => f.fillStyle.startsWith('lgrad('));
+    expect(fills).toHaveLength(40);
+    expect(fills[0]!.fillStyle).toMatch(/^lgrad\(0:rgba\(\d+,\d+,\d+,0\)/);
+    const centerAlpha = (style: string): number => {
+      const m = /0\.5:rgba\(\d+,\d+,\d+,([\d.]+)\)/.exec(style);
+      return Number(m![1]);
+    };
+    const alphas = fills.map((f) => centerAlpha(f.fillStyle));
     expect(Math.max(...alphas)).toBeGreaterThan(Math.min(...alphas) * 1.5);
   });
 });

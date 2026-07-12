@@ -172,6 +172,10 @@ export class AcquisitionLayer extends L.Layer {
     const project = this.projector();
     const options = this.paintOptions();
     for (const geo of this.geoStrips) paintStrip(ctx, geo, project, options);
+    // Every atlas treatment carries the bright now overlay, not just the trail.
+    if (this.nowEtSec !== undefined) {
+      for (const geo of this.geoStrips) paintNowLine(ctx, geo, project, options);
+    }
   }
 
   /** One now-trail frame: fade, extrude new coverage, composite, now line. */
