@@ -32,3 +32,5 @@ export type {
 } from './samplers-radar.js';
 export { trackStrip, withStateRule } from './track.js';
 export type { TrackStripOptions } from './track.js';
+export { passStrips } from './pass.js';
+export type { PassStripsOptions } from './pass.js';

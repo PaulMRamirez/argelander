@@ -12,3 +12,5 @@ export type { Palette } from './palette.js';
 export { applyTrailFade, trailFadeAlpha } from './trail.js';
 export { AcquisitionLayer } from './layer.js';
 export type { AcquisitionLayerOptions } from './layer.js';
+export { AcquisitionClock } from './clock.js';
+export type { AcquisitionClockOptions, ClockDrivenLayer, ClockEntry } from './clock.js';
