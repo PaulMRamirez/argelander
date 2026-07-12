@@ -25,7 +25,7 @@ export interface StatePortLike {
   addEventListener(type: 'message', listener: (event: any) => void): void;
 }
 
-interface WireError {
+export interface WireError {
   readonly name: string;
   readonly message: string;
   readonly body?: BodyId;
@@ -50,7 +50,8 @@ function isTagged(data: unknown): data is { tag: typeof TAG; seq: number } {
     && typeof (data as { seq?: unknown }).seq === 'number';
 }
 
-function marshalError(err: unknown): WireError {
+/** Wire-safe error shape shared by the message port and the HTTP flavor. */
+export function marshalError(err: unknown): WireError {
   if (err instanceof CoverageRefusalError) {
     return { name: err.name, message: err.message, body: err.body, requested: err.requested, covered: [...err.covered] };
   }
@@ -58,7 +59,7 @@ function marshalError(err: unknown): WireError {
   return { name: 'Error', message: String(err) };
 }
 
-function reviveError(wire: WireError): Error {
+export function reviveError(wire: WireError): Error {
   if (wire.name === 'CoverageRefusalError' && wire.body !== undefined && wire.requested && wire.covered) {
     const err = new CoverageRefusalError(wire.body, wire.requested, wire.covered);
     err.message = wire.message;

@@ -113,3 +113,37 @@ export function parseTle(line1: string, line2: string, name?: string): Tle {
   const trimmed = name?.trim();
   return trimmed ? { ...tle, name: trimmed } : tle;
 }
+
+export interface TleSet {
+  line1: string;
+  line2: string;
+  name: string;
+}
+
+/**
+ * Parse a Celestrak-shaped text blob into element sets (ADR-0009): 3-line
+ * sets (name line, then lines 1 and 2) and bare 2-line sets both accepted,
+ * blank lines and stray text skipped. A leading '0 ' on the name line (the
+ * 3LE convention) is stripped; a missing name falls back to the catalog
+ * number. Checksum and field validation stay where they are, in parseTle
+ * and the provider, so this stays a splitter, not a validator.
+ */
+export function parseTles(text: string): TleSet[] {
+  const lines = text.split(/\r?\n/).map((l) => l.trimEnd());
+  const sets: TleSet[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line1 = lines[i]!;
+    if (!line1.startsWith('1 ') || line1.length < 69) continue;
+    const line2 = lines[i + 1];
+    if (!line2 || !line2.startsWith('2 ') || line2.length < 69) continue;
+    let name = '';
+    const before = i > 0 ? lines[i - 1]!.trim() : '';
+    if (before && !before.startsWith('1 ') && !before.startsWith('2 ')) {
+      name = before.startsWith('0 ') ? before.slice(2).trim() : before;
+    }
+    if (!name) name = `SAT ${line1.slice(2, 7).trim()}`;
+    sets.push({ line1, line2, name });
+    i++;
+  }
+  return sets;
+}
