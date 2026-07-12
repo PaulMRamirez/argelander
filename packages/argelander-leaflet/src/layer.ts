@@ -82,6 +82,17 @@ export class AcquisitionLayer extends L.Layer {
     this.resetView();
   }
 
+  /**
+   * Replace strips whose geometry is unchanged, the evolving-state-rule case
+   * (core withStateRule on an engine clock): no view reset, the trail keeps
+   * its history, and static treatments repaint with the new states.
+   */
+  updateStates(strips: readonly Strip[]): void {
+    this.geoStrips = strips.map((s) => stripToGeo(s));
+    if (!this.map) return;
+    if (this.treatment !== 'now-trail') this.redrawStatic();
+  }
+
   setTreatment(treatment: Treatment): void {
     this.treatment = treatment;
     this.resetView();

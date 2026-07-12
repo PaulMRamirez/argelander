@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { trackStrip, validateStrip } from '../src/index.js';
+import { trackStrip, validateStrip, withStateRule } from '../src/index.js';
 import type { StateBatch } from '../src/index.js';
 
 const R_BODY = 6371;
@@ -140,6 +140,22 @@ describe('trackStrip: the provider-to-strip bridge (AGE-04)', () => {
     expect(() => trackStrip(equatorialBatch(2, 10), 0, {
       ...BASE, offsetRangeKm: { nearKm: 400, farKm: 250, side: 'right' },
     })).toThrow(/nearKm < farKm/);
+  });
+
+  it('re-emits states for an evolving clock without touching geometry', () => {
+    const base = trackStrip(equatorialBatch(5, 10), 0, { ...BASE, swathHalfWidthKm: 50 });
+    const early = withStateRule(base, -1);
+    expect(early.segments.every((s) => s.state === 'planned')).toBe(true);
+    const mid = withStateRule(base, 20);
+    expect(mid.segments.map((s) => s.state)).toEqual([
+      'committed', 'committed', 'acquiring', 'planned', 'planned',
+    ]);
+    expect(validateStrip(mid).errors).toEqual([]);
+    // Geometry is shared, not copied: cheap enough for a per-tick clock.
+    expect(mid.segments[0]!.left).toBe(base.segments[0]!.left);
+    const late = withStateRule(base, 1000);
+    expect(late.segments.at(-1)!.state).toBe('acquiring');
+    expect(late.segments.slice(0, -1).every((s) => s.state === 'committed')).toBe(true);
   });
 
   it('refuses degenerate input', () => {
