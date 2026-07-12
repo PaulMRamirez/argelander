@@ -56,9 +56,88 @@ Everything after this section is optional refinement. A strip with a swath half-
 
 Three fields deserve a note before moving on. `authority` is provenance, not decoration: it names the computing authority that produced the states (AGE-20), and the convention is to pass the provider's own `id`. `bodyRadiusKm` is explicit because a StateBatch does not carry one; the geometry is an analytic spherical footprint, rendering grade by design. And `trackStrip` applies a state rule at build time: its `nowEtSec` option defaults to the batch's last epoch, so a freshly built strip arrives fully committed with the final segment acquiring. Hosts that drive a live clock re-state segments later (the clock section below); hosts that render a finished pass can leave the default alone.
 
+## The minimal example off Earth: the Moon and Mars
+
+Nothing in the pipeline is Earth-shaped. The strip contract's `body` is any SPICE body name, the footprint math takes whatever radius you hand it, and the painters derive their scale from the strip's own geometry, so the entire Earth example above becomes a lunar one by swapping the provider and three constants. Off Earth there are no TLEs; states arrive through `PresampledProvider`, sampled by whatever computes them (a SPICE-backed service, a file, an ephemeris kernel pipeline). The loop below stands in for that table; a real host receives it, it does not compute it.
+
+```ts
+import 'leaflet/dist/leaflet.css';
+import * as L from 'leaflet';
+import { trackStrip } from 'argelander-core';
+import { AcquisitionLayer } from 'argelander-leaflet';
+import { PresampledProvider } from 'argelander-providers';
+
+// An LRO-like circular polar pass, 50 km over the Moon, sampled in the
+// MOON_ME body-fixed frame: n blocks of (x, y, z, vx, vy, vz) km, km/s.
+const R = 1737.4 + 50;
+const W = (2 * Math.PI) / 6786;
+const N = 361;
+const epochs = new Float64Array(N);
+const states = new Float64Array(N * 6);
+for (let i = 0; i < N; i++) {
+  const t = i * 15;
+  epochs[i] = t;
+  states.set([
+    R * Math.cos(W * t), 0, R * Math.sin(W * t),
+    -R * W * Math.sin(W * t), 0, R * W * Math.cos(W * t),
+  ], i * 6);
+}
+
+const provider = new PresampledProvider([{
+  body: 'LRO', observer: 'MOON', frame: 'MOON_ME', correction: 'NONE',
+  epochs, states,
+}], { id: 'my-ephemeris-service' });
+
+const batch = await provider.states({
+  targets: ['LRO'],
+  observer: 'MOON',
+  frame: 'MOON_ME',
+  correction: 'NONE',
+  epochs: { start: 0, end: 5400, step: 15 },
+});
+
+const strip = trackStrip(batch, 0, {
+  id: 'lro-pass-0',
+  body: 'MOON',
+  bodyRadiusKm: 1737.4,
+  instrumentId: 'LRO/lroc-wac',
+  authority: provider.id,
+  generatedBy: 'my-app',
+  swathHalfWidthKm: 30,
+});
+
+// Planetary tile sets are equirectangular: plate carree CRS, and the NASA
+// Trek WMTS pyramid matches Leaflet's EPSG:4326 tiling (2 by 1 at zoom 0).
+const map = L.map('map', { crs: L.CRS.EPSG4326, minZoom: 1 }).setView([0, 0], 2);   // #map must have a height
+L.tileLayer(
+  'https://trek.nasa.gov/tiles/Moon/EQ/LRO_WAC_Mosaic_Global_303ppd_v02/1.0.0/default/default028mm/{z}/{y}/{x}.jpg',
+  { maxNativeZoom: 7, maxZoom: 9 },
+).addTo(map);
+new AcquisitionLayer([strip]).addTo(map);
+```
+
+Mars is the same code with Mars numbers: an MRO-like table (orbit radius `3389.5 + 290`, period about 6770 s) served as `body: 'MRO', observer: 'MARS', frame: 'IAU_MARS'`, a strip built with `body: 'MARS', bodyRadiusKm: 3389.5`, and Trek Mars tiles:
+
+```ts
+L.tileLayer(
+  'https://trek.nasa.gov/tiles/Mars/EQ/Mars_Viking_MDIM21_ClrMosaic_global_232m/1.0.0/default/default028mm/{z}/{y}/{x}.jpg',
+  { maxNativeZoom: 7, maxZoom: 9 },
+);
+```
+
+| Body | `bodyRadiusKm` | Body-fixed frame | Tiles |
+| --- | --- | --- | --- |
+| Earth | 6371 | `ITRF93` | OSM and friends, Web Mercator |
+| Moon | 1737.4 | `MOON_ME` | NASA Moon Trek (LRO WAC), plate carree |
+| Mars | 3389.5 | `IAU_MARS` | NASA Mars Trek (Viking MDIM 2.1, MGS MOLA), plate carree |
+
+The provider's `id` option matters more here than anywhere: it is what `authority: provider.id` writes into every strip's provenance (AGE-20), and states that were received rather than computed should name their real computing authority, not the default 'presampled'.
+
+Two boundaries to respect. Tile credits are license and courtesy obligations, so surface them somewhere real (the demo renders them in its panel footer per world and basemap; Mars alone has two credits). And the analytic sphere is rendering grade by charter: oblateness (Mars flattens nearly twice Earth) and irregular bodies (Phobos, comets) exceed it, and the declared path for analysis-grade footprints is the pluggable intercept service seam, not frames math in the engine. The live demo ships all three worlds behind its world control, the whole planetary path exercised end to end: presampled tables, plate carree maps, polar orbits over the poles.
+
 ## Getting states
 
-The minimal example runs SGP4 inline, which blocks the main thread for exactly as long as propagation takes. The engine posture (AGE-05) is that the main thread only paints, so real hosts put the provider behind a worker using the port pair from `argelander-providers`:
+The Earth minimal example runs SGP4 inline, which blocks the main thread for exactly as long as propagation takes. The engine posture (AGE-05) is that the main thread only paints, so real hosts put the provider behind a worker using the port pair from `argelander-providers`:
 
 ```ts
 // sgp4-worker.ts, the propagation side of the seam
@@ -84,9 +163,9 @@ const provider = remoteStateProvider(worker, 'sgp4');
 
 A `Worker` assigns to the port parameter directly. The one cast lives on the worker side: `globalThis` is only typed with `postMessage` when the TypeScript config includes the `webworker` lib, so the cast bridges a tsconfig gap, not the seam. Bundle the worker as its own entry point (the demo gives esbuild `main.ts` and `sgp4-worker.ts` as sibling entries) and pass `new Worker` a URL relative to the served page. `remoteStateProvider` returns an object satisfying the same interface as the inline class, so the `trackStrip` code above does not change; batches cross the port as transferable Float64Arrays. The `id` argument names the provider for provenance and error messages; it is an assertion by the caller, not something the port verifies.
 
-Two provider families ship today. `Sgp4Provider` propagates near-earth TLEs from source; deep-space elements (period 225 minutes and up) are refused at construction with a `DeepSpaceUnsupportedError`, so a bad element set fails when the provider is built, not later inside a query. `PresampledProvider` serves states sampled elsewhere, which is how non-Earth bodies and analysis-grade ephemerides arrive; `parsePresampledCsv` loads its table format.
+Two provider families ship today. `Sgp4Provider` propagates near-earth TLEs from source; deep-space elements (period 225 minutes and up) are refused at construction with a `DeepSpaceUnsupportedError`, so a bad element set fails when the provider is built, not later inside a query. `PresampledProvider` serves states sampled elsewhere, the planetary path the Moon example above already walked; `parsePresampledCsv` loads its table format from files.
 
-Query-time refusals are `CoverageRefusalError`, and handling one is part of configuring a constellation honestly. Every provider enforces the same contract: queries are atomic (a refusal mutates nothing), oversized queries name the 65536-epoch ceiling, and epochs outside the provider's fence are refused rather than extrapolated. The error carries `body`, `requested`, and `covered` fields naming the window it could not serve, and it round-trips the worker port structurally. Anchor clocks to `parseTle(..).epochEt` and the fence takes care of itself; and when building many layers, isolate the failure the way the demo does, one try/catch per instrument, so a single refused query does not take the constellation down.
+Query-time refusals are `CoverageRefusalError`, and handling one is part of configuring a constellation honestly. Every provider enforces the same contract: queries are atomic (a refusal mutates nothing), oversized queries name the 65536-epoch ceiling, and epochs outside the provider's fence are refused rather than extrapolated. The error carries `body`, `requested`, and `covered` fields naming the window it could not serve, and it round-trips the worker port structurally. Anchor clocks to the fence and it takes care of itself: `parseTle(..).epochEt` for a TLE, the table's first epoch for a pre-sampled table, and both shipped providers implement the contract's optional `coverage(body)`, which returns the servable windows outright (a provider that omits it is treated as unbounded until it refuses). When building many layers, isolate the failure the way the demo does, one try/catch per instrument (and one per provider construction), so a single refusal does not take the constellation down.
 
 ## Shaping the footprint
 
@@ -230,9 +309,10 @@ paintStrip(ctx, geo, myProjector, { treatment: 'flat-fill', worldCopies: [0] });
 | Symptom | Cause | Fix |
 | --- | --- | --- |
 | DeepSpaceUnsupportedError building the provider | TLE with a period of 225 minutes or more | Serve that object from a `PresampledProvider`; SGP4 here is near-earth only |
-| CoverageRefusalError on load | Query outside the TLE fence or the pre-sampled table | Anchor the clock to `parseTle(..).epochEt`; query inside the fence |
+| CoverageRefusalError on load | Query outside the TLE fence or the pre-sampled table | Anchor to `parseTle(..).epochEt` for TLEs, the table's first epoch for pre-sampled; `coverage(body)` names the servable window |
 | Ribbon drawn across an ocean the instrument never imaged | One continuous batch sliced into windows | One `states()` query per tasked window, strips share a `passId` |
 | Mechanism texture never appears | Treatment is not `mechanism`, or swath projects below `mechanismMinWidthPx` | Switch treatment; zoom in or lower the threshold |
 | Trail history lost on a data refresh | `setStrips` used for a pure state change | `updateStates` re-states geometry in place; `setStrips` is for new geometry |
+| Coverage vanishes past 85 degrees latitude | Web Mercator's cutoff on the Earth basemap, not the engine | Run a plate carree map (`L.CRS.EPSG4326`) with an EPSG:4326 tile source (OSM serves Web Mercator only; NASA GIBS publishes EPSG:4326 Earth layers); the painters are tested through both poles |
 | Amber baked into the fading trail | Host repainting trail from live state | Nothing: `paintTrailWindow` paints committed hue by construction; report if seen |
 | Features missing at the antimeridian in a custom host | `worldCopies` not passed | Compute offsets from the view; the Leaflet binding does this for you |
