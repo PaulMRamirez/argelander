@@ -23,6 +23,15 @@ describe('flat fill: hue is state (AGE-07, AGE-08)', () => {
     expect(fills.filter((f) => sameHue(f.fillStyle, ATLAS_PALETTE.planned))).toHaveLength(12);
   });
 
+  it('lifts the acquiring band near opacity so the now pops (all modes)', () => {
+    const flat = paint('pushbroom', { treatment: 'flat-fill' });
+    const acquiring = flat.fills().filter((f) => sameHue(f.fillStyle, ATLAS_PALETTE.acquiring));
+    expect(acquiring).toHaveLength(1);
+    expect(alphaOf(acquiring[0]!.fillStyle)).toBeGreaterThanOrEqual(0.9);
+    const committed = flat.fills().filter((f) => sameHue(f.fillStyle, ATLAS_PALETTE.committed));
+    expect(alphaOf(committed[0]!.fillStyle)).toBeCloseTo(0.35, 9);
+  });
+
   it('honors an explicit palette override (AGE-08)', () => {
     const palette = { committed: '#112233', acquiring: '#445566', planned: '#778899', guide: '#aabbcc' };
     const ctx = paint('pushbroom', { treatment: 'flat-fill', palette });
