@@ -14,6 +14,8 @@ import { AcquisitionLayer, TREATMENTS, TREATMENT_LABELS } from 'argelander-leafl
 import type { Treatment } from 'argelander-leaflet';
 import { parseTle, remoteStateProvider } from 'argelander-providers';
 import type { StatePortLike } from 'argelander-providers';
+import { createPanel } from './panel.js';
+import type { DemoInstrument } from './tles.js';
 import { DEMO_SATS, PASS_STEP_SEC, PASS_WINDOW_SEC } from './tles.js';
 
 const EARTH_RADIUS_KM = 6371;
@@ -21,6 +23,8 @@ const EARTH_RADIUS_KM = 6371;
 interface SatLayer {
   layer: AcquisitionLayer;
   epochEt: number;
+  satName: string;
+  instrument: DemoInstrument;
   /** Geometry with the state rule not yet applied; states re-emit per tick. */
   baseStrips: readonly Strip[];
 }
@@ -42,11 +46,8 @@ const baseMaps: Record<string, L.TileLayer> = {
 };
 baseMaps['Dark']!.addTo(map);
 // The dark ground is a CSS filter over the tile pane; it belongs to the
-// Dark basemap only.
+// Dark basemap only. The config panel owns basemap switching.
 map.getContainer().classList.add('dark-tiles');
-map.on('baselayerchange', (event) => {
-  map.getContainer().classList.toggle('dark-tiles', event.name === 'Dark');
-});
 
 const worker = new Worker(`./sgp4-worker.js?v=${__BUILD_ID__}`);
 const provider = remoteStateProvider(worker as unknown as StatePortLike, 'sgp4');
@@ -91,7 +92,6 @@ function applyStates(): void {
 
 async function start(): Promise<void> {
   statusLabel.textContent = 'propagating in the worker...';
-  const overlays: Record<string, L.Layer> = {};
   const failures: string[] = [];
   for (const sat of DEMO_SATS) {
     const epochEt = parseTle(sat.line1, sat.line2, sat.name).epochEt;
@@ -155,18 +155,23 @@ async function start(): Promise<void> {
             mechanismMinWidthPx: 16,
           },
         );
-        // Off-at-start instruments stay listed in the control; their states
+        // Off-at-start instruments stay listed in the panel; their states
         // keep updating so enabling one lands on the current clock.
         if (instrument.startOn !== false) layer.addTo(map);
-        overlays[`${sat.name} &middot; ${instrument.label}`] = layer;
-        satLayers.push({ layer, epochEt, baseStrips });
+        satLayers.push({ layer, epochEt, satName: sat.name, instrument, baseStrips });
       } catch (err) {
         // One instrument failing must not take the constellation down.
         failures.push(`${sat.name}/${instrument.id}: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
   }
-  L.control.layers(baseMaps, overlays, { collapsed: true }).addTo(map);
+  createPanel({
+    map,
+    baseMaps,
+    entries: satLayers.map((s) => ({ satName: s.satName, instrument: s.instrument, layer: s.layer })),
+    headerSelect: treatmentSelect,
+    defaultTreatment: 'now-trail',
+  });
   const names = satLayers.length
     ? `${DEMO_SATS.length} satellites, ${satLayers.length} instruments`
     : 'no instruments loaded';
@@ -196,10 +201,6 @@ async function start(): Promise<void> {
   requestAnimationFrame(tick);
 }
 
-treatmentSelect.addEventListener('change', () => {
-  for (const s of satLayers) s.layer.setTreatment(currentTreatment());
-  applyNow();
-});
 speedSelect.addEventListener('change', () => {
   speed = Number(speedSelect.value);
 });
