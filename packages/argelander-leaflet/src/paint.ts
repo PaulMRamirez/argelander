@@ -217,9 +217,11 @@ function paintMechanism(ctx: Canvas2DLike, geo: GeoStrip, project: Projector, r:
     if (entry.kind === 'footprint') {
       const g = toGeo(entry.center);
       const [x, y] = project(g);
-      const scale = localScalePxPerKm(geo, project, g);
+      // Floor the scale so a footprint never falls below a legible pixel
+      // size; the aspect ratio survives the floor.
+      const scale = Math.max(localScalePxPerKm(geo, project, g), 1.6 / entry.semiMajorKm);
       ctx.strokeStyle = withAlpha(color, 0.85);
-      ctx.fillStyle = withAlpha(color, 0.25);
+      ctx.fillStyle = withAlpha(color, 0.45);
       ctx.lineWidth = 1;
       ctx.beginPath();
       // rotationRad is counterclockwise from east; canvas y grows down.
@@ -294,6 +296,30 @@ function paintLoneSegments(ctx: Canvas2DLike, geo: GeoStrip, project: Projector,
   }
 }
 
+/**
+ * Faint guide underlay for now-trail: the strip edges at guide color, so the
+ * pass geometry stays legible while the decaying trail sweeps it (the atlas
+ * draws its dashed nominal track the same way).
+ */
+export function paintGuide(ctx: Canvas2DLike, geo: GeoStrip, project: Projector, options: PaintOptions): void {
+  const r = resolve(geo, options);
+  const style = withAlpha(r.palette.guide, 0.35);
+  ctx.setLineDash([3, 5]);
+  for (let i = 0; i + 1 < geo.segments.length; i++) {
+    if (!geo.connect[i]) continue;
+    const a = geo.segments[i]!;
+    const b = geo.segments[i + 1]!;
+    strokeLine(ctx, project, a.left, b.left, style, 1);
+    strokeLine(ctx, project, a.right, b.right, style, 1);
+  }
+  if (geo.segments.every((s) => s.widthKm <= 0)) {
+    for (let i = 0; i + 1 < geo.segments.length; i++) {
+      strokeLine(ctx, project, geo.segments[i]!.left, geo.segments[i + 1]!.left, style, 1);
+    }
+  }
+  ctx.setLineDash([]);
+}
+
 /** The bright cross-track line at the engine clock (the now of now-trail). */
 export function paintNowLine(ctx: Canvas2DLike, geo: GeoStrip, project: Projector, options: PaintOptions): void {
   const r = resolve(geo, options);
@@ -304,9 +330,9 @@ export function paintNowLine(ctx: Canvas2DLike, geo: GeoStrip, project: Projecto
   }
   if (!current) return;
   if (current.widthKm > 0) {
-    strokeLine(ctx, project, current.left, current.right, r.palette.acquiring, 2.5);
+    strokeLine(ctx, project, current.left, current.right, r.palette.acquiring, 3.5);
   } else {
-    dot(ctx, project, current.left, 3, r.palette.acquiring);
+    dot(ctx, project, current.left, 4, r.palette.acquiring);
   }
 }
 
@@ -356,6 +382,7 @@ export function paintStrip(ctx: Canvas2DLike, geo: GeoStrip, project: Projector,
   }
 
   if (treatment === 'now-trail') {
+    paintGuide(ctx, geo, project, options);
     paintTrailWindow(ctx, geo, project, options, -Infinity, r.nowEtSec);
     paintNowLine(ctx, geo, project, options);
     return;

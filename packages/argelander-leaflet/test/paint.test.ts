@@ -122,6 +122,9 @@ describe('now plus trail', () => {
     expect(ctx.fills()).toHaveLength(28);
     const nowStrokes = ctx.strokes().filter((s) => sameHue(s.strokeStyle, ATLAS_PALETTE.acquiring));
     expect(nowStrokes).toHaveLength(1);
+    // The guide underlay keeps the pass geometry visible while the trail decays.
+    const guideStrokes = ctx.strokes().filter((s) => sameHue(s.strokeStyle, ATLAS_PALETTE.guide));
+    expect(guideStrokes.length).toBeGreaterThanOrEqual(80);
   });
 
   it('extrudes the trail incrementally by clock window', () => {

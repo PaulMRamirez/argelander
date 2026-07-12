@@ -13,7 +13,7 @@ import type { Strip } from 'argelander-core';
 import type { GeoStrip } from './geo.js';
 import { stripToGeo } from './geo.js';
 import type { PaintOptions, Projector, Treatment } from './paint.js';
-import { paintNowLine, paintStrip, paintTrailWindow } from './paint.js';
+import { paintGuide, paintNowLine, paintStrip, paintTrailWindow } from './paint.js';
 import type { Palette } from './palette.js';
 import { applyTrailFade, trailFadeAlpha } from './trail.js';
 
@@ -21,7 +21,7 @@ export interface AcquisitionLayerOptions {
   treatment?: Treatment;
   /** Explicit hue override (AGE-08). */
   palette?: Palette;
-  /** Trail decay time constant, seconds of wall clock; default 4. */
+  /** Trail decay time constant, seconds of wall clock; default 15. */
   trailTauSec?: number;
   mechanismMinWidthPx?: number;
   /** Start paused (reduced-motion preference, AGE-16). */
@@ -173,7 +173,7 @@ export class AcquisitionLayer extends L.Layer {
       trailCtx.clearRect(0, 0, this.trailCanvas.width, this.trailCanvas.height);
       this.trailPaintedToEtSec = -Infinity;
     }
-    const tau = this.layerOptions.trailTauSec ?? 4;
+    const tau = this.layerOptions.trailTauSec ?? 15;
     applyTrailFade(trailCtx, this.trailCanvas.width, this.trailCanvas.height, trailFadeAlpha(dtSec, tau));
     const project = this.projector();
     const options = this.paintOptions();
@@ -185,6 +185,7 @@ export class AcquisitionLayer extends L.Layer {
     }
     const ctx = this.canvas.getContext('2d')!;
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    for (const geo of this.geoStrips) paintGuide(ctx, geo, project, options);
     ctx.drawImage(this.trailCanvas, 0, 0);
     for (const geo of this.geoStrips) paintNowLine(ctx, geo, project, options);
   }

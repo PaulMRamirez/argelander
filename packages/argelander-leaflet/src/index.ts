@@ -4,7 +4,7 @@ export {
 export type { GeoPoint, GeoSegment, GeoStrip, StripToGeoOptions } from './geo.js';
 export {
   TREATMENTS, decideLod, medianProjectedWidthPx,
-  paintNowLine, paintStrip, paintTrailWindow, qualityAlphaScale, timeAlphaScale,
+  paintGuide, paintNowLine, paintStrip, paintTrailWindow, qualityAlphaScale, timeAlphaScale,
 } from './paint.js';
 export type { Canvas2DLike, PaintOptions, Projector, Treatment } from './paint.js';
 export { ATLAS_PALETTE, DASH_PATTERNS, dashPatternFor, stateColor, withAlpha } from './palette.js';
