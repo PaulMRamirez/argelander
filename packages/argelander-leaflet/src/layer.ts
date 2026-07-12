@@ -155,8 +155,22 @@ export class AcquisitionLayer extends L.Layer {
     };
   }
 
+  /**
+   * World-copy longitude offsets the current view can see. Leaflet keeps
+   * canonical longitudes in [-180, 180]; a view straddling the antimeridian
+   * (or wider than the world) needs point features re-painted a world away.
+   */
+  private worldCopies(): readonly number[] {
+    if (!this.map) return [0];
+    const bounds = this.map.getBounds();
+    const copies = [0];
+    if (bounds.getEast() > 180) copies.push(360);
+    if (bounds.getWest() < -180) copies.push(-360);
+    return copies;
+  }
+
   private paintOptions(): PaintOptions {
-    const options: PaintOptions = { treatment: this.treatment };
+    const options: PaintOptions = { treatment: this.treatment, worldCopies: this.worldCopies() };
     if (this.nowEtSec !== undefined) options.nowEtSec = this.nowEtSec;
     if (this.layerOptions.palette) options.palette = this.layerOptions.palette;
     if (this.layerOptions.mechanismMinWidthPx !== undefined) {

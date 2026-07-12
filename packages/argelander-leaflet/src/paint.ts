@@ -63,6 +63,13 @@ export interface PaintOptions {
   treatment: Treatment;
   /** Engine clock for now-trail and time-gradient; defaults to the last segment. */
   nowEtSec?: number;
+  /**
+   * World-copy longitude offsets the view can see (0, 360, -360), computed
+   * by the host from its map bounds. Every feature, points included, paints
+   * once per offset; ring-crossing duplication alone misses point features
+   * at the antimeridian (AGE-10).
+   */
+  worldCopies?: readonly number[];
   /** Explicit hue override (AGE-08); the atlas palette otherwise. */
   palette?: Palette;
   /** LOD threshold: below this projected swath width, mechanism falls back to envelope (AGE-09). */
@@ -81,7 +88,10 @@ interface Resolved {
   lineWidthPx: number;
   timeWindowSec: number;
   dash: readonly number[];
+  worldCopies: readonly number[];
 }
+
+const BASE_COPIES: readonly number[] = [0];
 
 function resolve(geo: GeoStrip, options: PaintOptions): Resolved {
   const first = geo.segments[0]!.etSec;
@@ -94,6 +104,7 @@ function resolve(geo: GeoStrip, options: PaintOptions): Resolved {
     lineWidthPx: options.lineWidthPx ?? 1.5,
     timeWindowSec: options.timeWindowSec ?? Math.max(last - first, 1e-9),
     dash: dashPatternFor(geo.strip.instrumentId),
+    worldCopies: options.worldCopies ?? BASE_COPIES,
   };
 }
 
@@ -122,9 +133,16 @@ function ringLons(points: readonly GeoPoint[]): number[] {
   return points.map((p) => unwrapLon(ref, p.lonDeg));
 }
 
-function tracePath(ctx: Canvas2DLike, project: Projector, points: readonly GeoPoint[], close: boolean): void {
+/** View copies united with whatever the unwrapped ring itself demands. */
+function unionOffsets(copies: readonly number[], lons: readonly number[]): readonly number[] {
+  const set = new Set(copies);
+  for (const offset of worldCopyOffsets(lons)) set.add(offset);
+  return [...set];
+}
+
+function tracePath(ctx: Canvas2DLike, project: Projector, points: readonly GeoPoint[], close: boolean, copies: readonly number[] = BASE_COPIES): void {
   const lons = ringLons(points);
-  for (const offset of worldCopyOffsets(lons)) {
+  for (const offset of unionOffsets(copies, lons)) {
     ctx.beginPath();
     points.forEach((p, i) => {
       const [x, y] = project({ lonDeg: lons[i]! + offset, latDeg: p.latDeg });
@@ -141,31 +159,34 @@ function tracePath(ctx: Canvas2DLike, project: Projector, points: readonly GeoPo
 function eachQuadCopy(
   project: Projector, a: GeoSegment, b: GeoSegment,
   cb: (pts: ReadonlyArray<readonly [number, number]>) => void,
+  copies: readonly number[] = BASE_COPIES,
 ): void {
   const points = [a.left, a.right, b.right, b.left];
   const lons = ringLons(points);
-  for (const offset of worldCopyOffsets(lons)) {
+  for (const offset of unionOffsets(copies, lons)) {
     cb(points.map((p, i) => project({ lonDeg: lons[i]! + offset, latDeg: p.latDeg })));
   }
 }
 
-function fillQuad(ctx: Canvas2DLike, project: Projector, a: GeoSegment, b: GeoSegment, style: string): void {
+function fillQuad(ctx: Canvas2DLike, project: Projector, a: GeoSegment, b: GeoSegment, style: string, copies: readonly number[] = BASE_COPIES): void {
   ctx.fillStyle = style;
-  tracePath(ctx, project, [a.left, a.right, b.right, b.left], true);
+  tracePath(ctx, project, [a.left, a.right, b.right, b.left], true, copies);
 }
 
-function strokeLine(ctx: Canvas2DLike, project: Projector, from: GeoPoint, to: GeoPoint, style: string, width: number): void {
+function strokeLine(ctx: Canvas2DLike, project: Projector, from: GeoPoint, to: GeoPoint, style: string, width: number, copies: readonly number[] = BASE_COPIES): void {
   ctx.strokeStyle = style;
   ctx.lineWidth = width;
-  tracePath(ctx, project, [from, to], false);
+  tracePath(ctx, project, [from, to], false, copies);
 }
 
-function dot(ctx: Canvas2DLike, project: Projector, p: GeoPoint, radiusPx: number, style: string): void {
-  const [x, y] = project(p);
+function dot(ctx: Canvas2DLike, project: Projector, p: GeoPoint, radiusPx: number, style: string, copies: readonly number[] = BASE_COPIES): void {
   ctx.fillStyle = style;
-  ctx.beginPath();
-  ctx.arc(x, y, radiusPx, 0, 2 * Math.PI);
-  ctx.fill();
+  for (const offset of copies) {
+    const [x, y] = project({ lonDeg: p.lonDeg + offset, latDeg: p.latDeg });
+    ctx.beginPath();
+    ctx.arc(x, y, radiusPx, 0, 2 * Math.PI);
+    ctx.fill();
+  }
 }
 
 /**
@@ -217,16 +238,18 @@ function paintSparse(ctx: Canvas2DLike, project: Projector, r: Resolved, segment
   const color = stateColor(r.palette, stateOverride ?? segment.state);
   for (const entry of segment.sub) {
     if (entry.kind === 'beads') {
-      for (const p of entry.points) dot(ctx, project, toGeo(p), 1.5, withAlpha(color, 0.9));
+      for (const p of entry.points) dot(ctx, project, toGeo(p), 1.5, withAlpha(color, 0.9), r.worldCopies);
     } else if (entry.kind === 'event') {
       const g = toGeo(entry.center);
-      dot(ctx, project, g, 2, withAlpha(color, 0.9));
-      const [x, y] = project(g);
+      dot(ctx, project, g, 2, withAlpha(color, 0.9), r.worldCopies);
       ctx.strokeStyle = withAlpha(color, 0.7);
       ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.arc(x, y, 5, 0, 2 * Math.PI);
-      ctx.stroke();
+      for (const offset of r.worldCopies) {
+        const [x, y] = project({ lonDeg: g.lonDeg + offset, latDeg: g.latDeg });
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, 2 * Math.PI);
+        ctx.stroke();
+      }
     }
   }
 }
@@ -240,7 +263,6 @@ function paintMechanism(ctx: Canvas2DLike, geo: GeoStrip, project: Projector, r:
   for (const entry of segment.sub) {
     if (entry.kind === 'footprint') {
       const g = toGeo(entry.center);
-      const [x, y] = project(g);
       // Floor the scale so a footprint never falls below a legible pixel
       // size; the aspect ratio survives the floor.
       const scale = Math.max(localScalePxPerKm(geo, project, g), 1.6 / entry.semiMajorKm);
@@ -248,32 +270,37 @@ function paintMechanism(ctx: Canvas2DLike, geo: GeoStrip, project: Projector, r:
       ctx.strokeStyle = withAlpha(color, acquiring ? 1 : 0.85);
       ctx.fillStyle = withAlpha(color, acquiring ? 0.85 : 0.45);
       ctx.lineWidth = 1;
-      ctx.beginPath();
-      // rotationRad is counterclockwise from east; canvas y grows down.
-      ctx.ellipse(x, y, entry.semiMajorKm * scale, entry.semiMinorKm * scale, -entry.rotationRad, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.stroke();
+      for (const offset of r.worldCopies) {
+        const [x, y] = project({ lonDeg: g.lonDeg + offset, latDeg: g.latDeg });
+        ctx.beginPath();
+        // rotationRad is counterclockwise from east; canvas y grows down.
+        ctx.ellipse(x, y, entry.semiMajorKm * scale, entry.semiMinorKm * scale, -entry.rotationRad, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+      }
     } else if (entry.kind === 'frame') {
       ctx.strokeStyle = withAlpha(color, 0.85);
       ctx.fillStyle = withAlpha(color, 0.15);
       ctx.lineWidth = 1;
       const corners = entry.corners.map(toGeo);
-      tracePath(ctx, project, corners, true);
-      tracePath(ctx, project, [...corners, corners[0]!], false);
+      tracePath(ctx, project, corners, true, r.worldCopies);
+      tracePath(ctx, project, [...corners, corners[0]!], false, r.worldCopies);
     } else if (entry.kind === 'look') {
       const mid = midpoint(segment.left, segment.right);
-      const [x, y] = project(mid);
       const len = 14;
       ctx.strokeStyle = withAlpha(color, 0.7);
       ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(x + len * Math.cos(-entry.azimuthRad), y + len * Math.sin(-entry.azimuthRad));
-      ctx.stroke();
+      for (const offset of r.worldCopies) {
+        const [x, y] = project({ lonDeg: mid.lonDeg + offset, latDeg: mid.latDeg });
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + len * Math.cos(-entry.azimuthRad), y + len * Math.sin(-entry.azimuthRad));
+        ctx.stroke();
+      }
     } else if (entry.kind === 'baseline') {
       const companion = toGeo(entry.companion);
-      strokeLine(ctx, project, midpoint(segment.left, segment.right), companion, withAlpha(r.palette.guide, 0.6), 1);
-      dot(ctx, project, companion, 2, withAlpha(color, 0.9));
+      strokeLine(ctx, project, midpoint(segment.left, segment.right), companion, withAlpha(r.palette.guide, 0.6), 1, r.worldCopies);
+      dot(ctx, project, companion, 2, withAlpha(color, 0.9), r.worldCopies);
     }
     // sub-swath membership stays envelope-grade; the geo-raster sector
     // repaint is a recorded adapter follow-up (goals/PHASE-1.md ledger).
@@ -306,7 +333,7 @@ function paintQuads(
     const state = quadState(later);
     // The now pops: the acquiring band paints near opaque in every mode.
     const fillAlphaHere = state === 'acquiring' ? Math.max(r.fillAlpha * alpha, 0.9) : r.fillAlpha * alpha;
-    fillQuad(ctx, project, geo.segments[i]!, later, withAlpha(stateColor(r.palette, state), fillAlphaHere));
+    fillQuad(ctx, project, geo.segments[i]!, later, withAlpha(stateColor(r.palette, state), fillAlphaHere), r.worldCopies);
     painted++;
   }
   return painted;
@@ -324,6 +351,7 @@ function paintLoneSegments(ctx: Canvas2DLike, geo: GeoStrip, project: Projector,
       ctx, project, s.left, s.right,
       withAlpha(stateColor(r.palette, s.state), s.state === 'acquiring' ? 1 : 0.9),
       s.state === 'acquiring' ? widthPx + 1 : widthPx,
+      r.worldCopies,
     );
   }
 }
@@ -341,12 +369,12 @@ export function paintGuide(ctx: Canvas2DLike, geo: GeoStrip, project: Projector,
     if (!geo.connect[i]) continue;
     const a = geo.segments[i]!;
     const b = geo.segments[i + 1]!;
-    strokeLine(ctx, project, a.left, b.left, style, 1);
-    strokeLine(ctx, project, a.right, b.right, style, 1);
+    strokeLine(ctx, project, a.left, b.left, style, 1, r.worldCopies);
+    strokeLine(ctx, project, a.right, b.right, style, 1, r.worldCopies);
   }
   if (geo.segments.every((s) => s.widthKm <= 0)) {
     for (let i = 0; i + 1 < geo.segments.length; i++) {
-      strokeLine(ctx, project, geo.segments[i]!.left, geo.segments[i + 1]!.left, style, 1);
+      strokeLine(ctx, project, geo.segments[i]!.left, geo.segments[i + 1]!.left, style, 1, r.worldCopies);
     }
   }
   ctx.setLineDash([]);
@@ -368,7 +396,7 @@ export function paintNowLine(ctx: Canvas2DLike, geo: GeoStrip, project: Projecto
     ctx.save();
     ctx.shadowColor = r.palette.acquiring;
     ctx.shadowBlur = 8;
-    strokeLine(ctx, project, current.left, current.right, r.palette.acquiring, 4);
+    strokeLine(ctx, project, current.left, current.right, r.palette.acquiring, 4, r.worldCopies);
     ctx.restore();
   }
   // Glowing beam-center marker, the atlas platform dot.
@@ -376,7 +404,7 @@ export function paintNowLine(ctx: Canvas2DLike, geo: GeoStrip, project: Projecto
   ctx.save();
   ctx.shadowColor = r.palette.acquiring;
   ctx.shadowBlur = 10;
-  dot(ctx, project, at, 4, r.palette.acquiring);
+  dot(ctx, project, at, 4, r.palette.acquiring, r.worldCopies);
   ctx.restore();
 }
 
@@ -400,7 +428,7 @@ export function paintTrailWindow(
     if (!geo.connect[i]) continue;
     const later = geo.segments[i + 1]!;
     if (later.etSec <= fromEtSec || later.etSec > toEtSec) continue;
-    fillQuad(ctx, project, geo.segments[i]!, later, style);
+    fillQuad(ctx, project, geo.segments[i]!, later, style, r.worldCopies);
     painted++;
   }
   for (const s of geo.segments) {
@@ -426,8 +454,8 @@ export function paintStrip(ctx: Canvas2DLike, geo: GeoStrip, project: Projector,
       const state = quadState(b);
       const style = withAlpha(stateColor(r.palette, state), state === 'acquiring' ? 1 : 0.9);
       const width = state === 'acquiring' ? r.lineWidthPx + 1 : r.lineWidthPx;
-      strokeLine(ctx, project, a.left, b.left, style, width);
-      strokeLine(ctx, project, a.right, b.right, style, width);
+      strokeLine(ctx, project, a.left, b.left, style, width, r.worldCopies);
+      strokeLine(ctx, project, a.right, b.right, style, width, r.worldCopies);
     }
     paintLoneSegments(ctx, geo, project, r, r.lineWidthPx);
     for (const s of geo.segments) paintSparse(ctx, project, r, s);
@@ -462,7 +490,7 @@ export function paintStrip(ctx: Canvas2DLike, geo: GeoStrip, project: Projector,
         pts.forEach(([x, y], j) => (j === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
         ctx.closePath();
         ctx.fill();
-      });
+      }, r.worldCopies);
     }
     paintLoneSegments(ctx, geo, project, r, 3);
     for (const s of geo.segments) paintSparse(ctx, project, r, s);
@@ -478,7 +506,7 @@ export function paintStrip(ctx: Canvas2DLike, geo: GeoStrip, project: Projector,
       if (!geo.connect[i]) continue;
       const later = geo.segments[i + 1]!;
       const frac = (later.etSec - first) / span;
-      fillQuad(ctx, project, geo.segments[i]!, later, `hsla(${196 + 92 * frac},65%,60%,${r.fillAlpha})`);
+      fillQuad(ctx, project, geo.segments[i]!, later, `hsla(${196 + 92 * frac},65%,60%,${r.fillAlpha})`, r.worldCopies);
     }
     paintLoneSegments(ctx, geo, project, r, 3);
     for (const s of geo.segments) paintSparse(ctx, project, r, s);
@@ -513,6 +541,7 @@ export function paintStrip(ctx: Canvas2DLike, geo: GeoStrip, project: Projector,
       ctx, project, s.left, s.right,
       withAlpha(stateColor(r.palette, s.state), acquiring ? 0.95 : 0.4),
       acquiring ? 2 : 1,
+      r.worldCopies,
     );
   }
   paintLoneSegments(ctx, geo, project, r, 3);
