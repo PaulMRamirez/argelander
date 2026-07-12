@@ -82,6 +82,9 @@ importers:
       '@types/leaflet':
         specifier: 'catalog:'
         version: 1.9.21
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.20.1
       leaflet:
         specifier: 'catalog:'
         version: 1.9.4

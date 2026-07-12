@@ -1,0 +1,377 @@
+/**
+ * Strip painting for the Leaflet adapter: the six treatments of AGE-07 as
+ * pure styling policies over the strip schema, level of detail by projected
+ * swath width (AGE-09, sparse geometries never inflated to ribbons), painted
+ * against an abstract projector and 2D-context interface so every policy
+ * tests headless. The projector owns the CRS: the layer hands in Leaflet's
+ * latLngToContainerPoint, so MMGIS CRS configurations flow through untouched
+ * (AGE-10) and this module never sees a map.
+ */
+import type { GeoPoint, GeoSegment, GeoStrip } from './geo.js';
+import { kmPerDegLat, toGeo, unwrapLon, worldCopyOffsets } from './geo.js';
+import type { Palette } from './palette.js';
+import { ATLAS_PALETTE, dashPatternFor, stateColor, withAlpha } from './palette.js';
+
+/** The six treatments (AGE-07), selectable per layer at runtime. */
+export type Treatment =
+  | 'outline' | 'flat-fill' | 'now-trail'
+  | 'mechanism' | 'quality-gradient' | 'time-gradient';
+
+export const TREATMENTS: readonly Treatment[] = [
+  'outline', 'flat-fill', 'now-trail', 'mechanism', 'quality-gradient', 'time-gradient',
+];
+
+/** The 2D-context subset the painters use; satisfied by CanvasRenderingContext2D. */
+export interface Canvas2DLike {
+  fillStyle: unknown;
+  strokeStyle: unknown;
+  lineWidth: number;
+  globalCompositeOperation: unknown;
+  save(): void;
+  restore(): void;
+  beginPath(): void;
+  moveTo(x: number, y: number): void;
+  lineTo(x: number, y: number): void;
+  closePath(): void;
+  fill(): void;
+  stroke(): void;
+  arc(x: number, y: number, r: number, a0: number, a1: number): void;
+  ellipse(x: number, y: number, rx: number, ry: number, rot: number, a0: number, a1: number): void;
+  setLineDash(pattern: readonly number[]): void;
+  fillRect(x: number, y: number, w: number, h: number): void;
+}
+
+/** Geographic point to container pixels; the layer supplies the CRS. */
+export type Projector = (p: GeoPoint) => readonly [number, number];
+
+export interface PaintOptions {
+  treatment: Treatment;
+  /** Engine clock for now-trail and time-gradient; defaults to the last segment. */
+  nowEtSec?: number;
+  /** Explicit hue override (AGE-08); the atlas palette otherwise. */
+  palette?: Palette;
+  /** LOD threshold: below this projected swath width, mechanism falls back to envelope (AGE-09). */
+  mechanismMinWidthPx?: number;
+  fillAlpha?: number;
+  lineWidthPx?: number;
+  /** Age span of the time gradient; defaults to the strip time span. */
+  timeWindowSec?: number;
+}
+
+interface Resolved {
+  palette: Palette;
+  nowEtSec: number;
+  mechanismMinWidthPx: number;
+  fillAlpha: number;
+  lineWidthPx: number;
+  timeWindowSec: number;
+  dash: readonly number[];
+}
+
+function resolve(geo: GeoStrip, options: PaintOptions): Resolved {
+  const first = geo.segments[0]!.etSec;
+  const last = geo.segments[geo.segments.length - 1]!.etSec;
+  return {
+    palette: options.palette ?? ATLAS_PALETTE,
+    nowEtSec: options.nowEtSec ?? last,
+    mechanismMinWidthPx: options.mechanismMinWidthPx ?? 8,
+    fillAlpha: options.fillAlpha ?? 0.35,
+    lineWidthPx: options.lineWidthPx ?? 1.5,
+    timeWindowSec: options.timeWindowSec ?? Math.max(last - first, 1e-9),
+    dash: dashPatternFor(geo.strip.instrumentId),
+  };
+}
+
+/** LOD decision by projected swath width in pixels (AGE-09). */
+export function decideLod(medianWidthPx: number, thresholdPx: number): 'envelope' | 'mechanism' {
+  return medianWidthPx >= thresholdPx ? 'mechanism' : 'envelope';
+}
+
+/** Median projected cross-track width, pixels, over non-zero-width segments. */
+export function medianProjectedWidthPx(geo: GeoStrip, project: Projector): number {
+  const widths: number[] = [];
+  for (const s of geo.segments) {
+    if (s.widthKm <= 0) continue;
+    const l = project(s.left);
+    const r = project({ lonDeg: unwrapLon(s.left.lonDeg, s.right.lonDeg), latDeg: s.right.latDeg });
+    widths.push(Math.hypot(l[0] - r[0], l[1] - r[1]));
+  }
+  if (!widths.length) return 0;
+  widths.sort((a, b) => a - b);
+  return widths[Math.floor(widths.length / 2)]!;
+}
+
+/** One quad or line in unwrapped geographic space, ready for world copies. */
+function ringLons(points: readonly GeoPoint[]): number[] {
+  const ref = points[0]!.lonDeg;
+  return points.map((p) => unwrapLon(ref, p.lonDeg));
+}
+
+function tracePath(ctx: Canvas2DLike, project: Projector, points: readonly GeoPoint[], close: boolean): void {
+  const lons = ringLons(points);
+  for (const offset of worldCopyOffsets(lons)) {
+    ctx.beginPath();
+    points.forEach((p, i) => {
+      const [x, y] = project({ lonDeg: lons[i]! + offset, latDeg: p.latDeg });
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    if (close) ctx.closePath();
+    if (close) ctx.fill();
+    else ctx.stroke();
+  }
+}
+
+function fillQuad(ctx: Canvas2DLike, project: Projector, a: GeoSegment, b: GeoSegment, style: string): void {
+  ctx.fillStyle = style;
+  tracePath(ctx, project, [a.left, a.right, b.right, b.left], true);
+}
+
+function strokeLine(ctx: Canvas2DLike, project: Projector, from: GeoPoint, to: GeoPoint, style: string, width: number): void {
+  ctx.strokeStyle = style;
+  ctx.lineWidth = width;
+  tracePath(ctx, project, [from, to], false);
+}
+
+function dot(ctx: Canvas2DLike, project: Projector, p: GeoPoint, radiusPx: number, style: string): void {
+  const [x, y] = project(p);
+  ctx.fillStyle = style;
+  ctx.beginPath();
+  ctx.arc(x, y, radiusPx, 0, 2 * Math.PI);
+  ctx.fill();
+}
+
+/** Pixels per kilometer at a point, probed through the projector. */
+function localScalePxPerKm(geo: GeoStrip, project: Projector, at: GeoPoint): number {
+  const dLat = 1 / kmPerDegLat(geo.radiusKm);
+  const [x0, y0] = project(at);
+  const [x1, y1] = project({ lonDeg: at.lonDeg, latDeg: at.latDeg + dLat });
+  return Math.hypot(x1 - x0, y1 - y0);
+}
+
+/** Quad state: the state in force when its swath area finished acquiring. */
+function quadState(later: GeoSegment): GeoSegment['state'] {
+  return later.state;
+}
+
+/** Alpha policy for the quality gradient: stronger paint for better quality. */
+export function qualityAlphaScale(geo: GeoStrip): (s: GeoSegment) => number {
+  const metric = (s: GeoSegment): number | undefined => {
+    if (s.quality?.resolutionM) return -(s.quality.resolutionM[0] + s.quality.resolutionM[1]) / 2;
+    if (s.quality?.incidenceDeg) return -(s.quality.incidenceDeg[0] + s.quality.incidenceDeg[1]) / 2;
+    if (s.quality?.lookCount !== undefined) return s.quality.lookCount;
+    return undefined;
+  };
+  let min = Infinity;
+  let max = -Infinity;
+  for (const s of geo.segments) {
+    const m = metric(s);
+    if (m === undefined) continue;
+    if (m < min) min = m;
+    if (m > max) max = m;
+  }
+  const span = max - min;
+  return (s) => {
+    const m = metric(s);
+    if (m === undefined || !(span > 0)) return 1;
+    return 0.25 + (0.75 * (m - min)) / span;
+  };
+}
+
+/** Alpha policy for the time gradient: older coverage fades toward the floor. */
+export function timeAlphaScale(nowEtSec: number, windowSec: number): (etSec: number) => number {
+  return (etSec) => {
+    const age = nowEtSec - etSec;
+    if (age < 0) return 0.15;
+    return Math.max(0.08, 1 - age / windowSec);
+  };
+}
+
+/** Beads and events paint at any LOD and any treatment; never ribbons (AGE-09). */
+function paintSparse(ctx: Canvas2DLike, project: Projector, r: Resolved, segment: GeoSegment): void {
+  if (!segment.sub) return;
+  const color = stateColor(r.palette, segment.state);
+  for (const entry of segment.sub) {
+    if (entry.kind === 'beads') {
+      for (const p of entry.points) dot(ctx, project, toGeo(p), 1.5, withAlpha(color, 0.9));
+    } else if (entry.kind === 'event') {
+      const g = toGeo(entry.center);
+      dot(ctx, project, g, 2, withAlpha(color, 0.9));
+      const [x, y] = project(g);
+      ctx.strokeStyle = withAlpha(color, 0.7);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, 2 * Math.PI);
+      ctx.stroke();
+    }
+  }
+}
+
+/** Mechanism grade: draw the sub-structure detail of one segment (AGE-09). */
+function paintMechanism(ctx: Canvas2DLike, geo: GeoStrip, project: Projector, r: Resolved, segment: GeoSegment): void {
+  paintSparse(ctx, project, r, segment);
+  if (!segment.sub) return;
+  const color = stateColor(r.palette, segment.state);
+  ctx.setLineDash(r.dash);
+  for (const entry of segment.sub) {
+    if (entry.kind === 'footprint') {
+      const g = toGeo(entry.center);
+      const [x, y] = project(g);
+      const scale = localScalePxPerKm(geo, project, g);
+      ctx.strokeStyle = withAlpha(color, 0.85);
+      ctx.fillStyle = withAlpha(color, 0.25);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      // rotationRad is counterclockwise from east; canvas y grows down.
+      ctx.ellipse(x, y, entry.semiMajorKm * scale, entry.semiMinorKm * scale, -entry.rotationRad, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.stroke();
+    } else if (entry.kind === 'frame') {
+      ctx.strokeStyle = withAlpha(color, 0.85);
+      ctx.fillStyle = withAlpha(color, 0.15);
+      ctx.lineWidth = 1;
+      const corners = entry.corners.map(toGeo);
+      tracePath(ctx, project, corners, true);
+      tracePath(ctx, project, [...corners, corners[0]!], false);
+    } else if (entry.kind === 'look') {
+      const mid = midpoint(segment.left, segment.right);
+      const [x, y] = project(mid);
+      const len = 14;
+      ctx.strokeStyle = withAlpha(color, 0.7);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + len * Math.cos(-entry.azimuthRad), y + len * Math.sin(-entry.azimuthRad));
+      ctx.stroke();
+    } else if (entry.kind === 'baseline') {
+      const companion = toGeo(entry.companion);
+      strokeLine(ctx, project, midpoint(segment.left, segment.right), companion, withAlpha(r.palette.guide, 0.6), 1);
+      dot(ctx, project, companion, 2, withAlpha(color, 0.9));
+    }
+    // sub-swath membership stays envelope-grade; the geo-raster sector
+    // repaint is a recorded adapter follow-up (goals/PHASE-1.md ledger).
+  }
+  ctx.setLineDash([]);
+}
+
+function midpoint(a: GeoPoint, b: GeoPoint): GeoPoint {
+  const lonB = unwrapLon(a.lonDeg, b.lonDeg);
+  return { lonDeg: (a.lonDeg + lonB) / 2, latDeg: (a.latDeg + b.latDeg) / 2 };
+}
+
+/**
+ * Fill the ribbon quads whose completion time falls in (fromEtSec, toEtSec],
+ * with a per-quad alpha policy. This is the trail increment primitive; the
+ * full-strip treatments call it with an infinite window.
+ */
+function paintQuads(
+  ctx: Canvas2DLike, geo: GeoStrip, project: Projector, r: Resolved,
+  alphaOf: (later: GeoSegment) => number,
+  fromEtSec: number, toEtSec: number,
+): number {
+  let painted = 0;
+  for (let i = 0; i + 1 < geo.segments.length; i++) {
+    if (!geo.connect[i]) continue;
+    const later = geo.segments[i + 1]!;
+    if (later.etSec <= fromEtSec || later.etSec > toEtSec) continue;
+    const alpha = alphaOf(later);
+    if (alpha <= 0) continue;
+    fillQuad(ctx, project, geo.segments[i]!, later, withAlpha(stateColor(r.palette, quadState(later)), r.fillAlpha * alpha));
+    painted++;
+  }
+  return painted;
+}
+
+/** Cross-track bar for segments that ribbon to nothing (lone bursts, exposures). */
+function paintLoneSegments(ctx: Canvas2DLike, geo: GeoStrip, project: Projector, r: Resolved, widthPx: number): void {
+  for (let i = 0; i < geo.segments.length; i++) {
+    const s = geo.segments[i]!;
+    if (s.widthKm <= 0) continue;
+    const before = i > 0 ? geo.connect[i - 1]! : false;
+    const after = i < geo.connect.length ? geo.connect[i]! : false;
+    if (before || after) continue;
+    strokeLine(ctx, project, s.left, s.right, withAlpha(stateColor(r.palette, s.state), 0.9), widthPx);
+  }
+}
+
+/** The bright cross-track line at the engine clock (the now of now-trail). */
+export function paintNowLine(ctx: Canvas2DLike, geo: GeoStrip, project: Projector, options: PaintOptions): void {
+  const r = resolve(geo, options);
+  let current: GeoSegment | undefined;
+  for (const s of geo.segments) {
+    if (s.etSec <= r.nowEtSec + 1e-9) current = s;
+    else break;
+  }
+  if (!current) return;
+  if (current.widthKm > 0) {
+    strokeLine(ctx, project, current.left, current.right, r.palette.acquiring, 2.5);
+  } else {
+    dot(ctx, project, current.left, 3, r.palette.acquiring);
+  }
+}
+
+/** Trail increment: committed coverage between two clock readings, low alpha. */
+export function paintTrailWindow(
+  ctx: Canvas2DLike, geo: GeoStrip, project: Projector, options: PaintOptions,
+  fromEtSec: number, toEtSec: number,
+): number {
+  const r = resolve(geo, options);
+  const painted = paintQuads(ctx, geo, project, r, () => 1, fromEtSec, toEtSec);
+  for (const s of geo.segments) {
+    if (s.etSec > fromEtSec && s.etSec <= toEtSec) paintSparse(ctx, project, r, s);
+  }
+  return painted;
+}
+
+/** Paint one strip under one treatment; pure policy over the strip schema. */
+export function paintStrip(ctx: Canvas2DLike, geo: GeoStrip, project: Projector, options: PaintOptions): void {
+  const r = resolve(geo, options);
+  const treatment = options.treatment;
+
+  if (treatment === 'outline') {
+    ctx.setLineDash([]);
+    for (let i = 0; i + 1 < geo.segments.length; i++) {
+      if (!geo.connect[i]) continue;
+      const a = geo.segments[i]!;
+      const b = geo.segments[i + 1]!;
+      const style = withAlpha(stateColor(r.palette, quadState(b)), 0.9);
+      strokeLine(ctx, project, a.left, b.left, style, r.lineWidthPx);
+      strokeLine(ctx, project, a.right, b.right, style, r.lineWidthPx);
+    }
+    paintLoneSegments(ctx, geo, project, r, r.lineWidthPx);
+    for (const s of geo.segments) paintSparse(ctx, project, r, s);
+    return;
+  }
+
+  if (treatment === 'flat-fill' || treatment === 'quality-gradient' || treatment === 'time-gradient') {
+    const alphaOf = treatment === 'flat-fill'
+      ? () => 1
+      : treatment === 'quality-gradient'
+        ? qualityAlphaScale(geo)
+        : (s: GeoSegment) => timeAlphaScale(r.nowEtSec, r.timeWindowSec)(s.etSec);
+    paintQuads(ctx, geo, project, r, alphaOf, -Infinity, Infinity);
+    paintLoneSegments(ctx, geo, project, r, 3);
+    for (const s of geo.segments) paintSparse(ctx, project, r, s);
+    return;
+  }
+
+  if (treatment === 'now-trail') {
+    paintTrailWindow(ctx, geo, project, options, -Infinity, r.nowEtSec);
+    paintNowLine(ctx, geo, project, options);
+    return;
+  }
+
+  // mechanism: LOD gate on projected swath width (AGE-09).
+  const widthPx = medianProjectedWidthPx(geo, project);
+  if (decideLod(widthPx, r.mechanismMinWidthPx) === 'envelope' && widthPx > 0) {
+    paintQuads(ctx, geo, project, r, () => 1, -Infinity, Infinity);
+    paintLoneSegments(ctx, geo, project, r, 3);
+    for (const s of geo.segments) paintSparse(ctx, project, r, s);
+    return;
+  }
+  paintQuads(ctx, geo, project, r, () => 0.35, -Infinity, Infinity);
+  ctx.setLineDash(r.dash);
+  paintLoneSegments(ctx, geo, project, r, 3);
+  for (const s of geo.segments) paintMechanism(ctx, geo, project, r, s);
+  ctx.setLineDash([]);
+}

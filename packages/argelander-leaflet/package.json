@@ -12,15 +12,19 @@
   ],
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run"
   },
   "dependencies": {
     "argelander-core": "workspace:*"
   },
+  "peerDependencies": {
+    "leaflet": "^1.9.4"
+  },
   "devDependencies": {
-    "typescript": "catalog:",
-    "vitest": "catalog:",
+    "@types/leaflet": "catalog:",
+    "@types/node": "catalog:",
     "leaflet": "catalog:",
-    "@types/leaflet": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }
