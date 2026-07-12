@@ -259,6 +259,33 @@ export function createPanel(init: PanelInit): void {
     return wrap;
   }
 
+  /**
+   * The tile credit lives here, not on the map: the attribution overlay was
+   * costing map pixels, and ODbL asks for reasonable calculation of credit,
+   * not a permanent on-map box. Rendered per basemap so Terrain also
+   * credits OpenTopoMap.
+   */
+  function tileCredit(): HTMLElement {
+    const credit = el('div', 'credit');
+    credit.append('map data © ');
+    const osm = el('a', undefined, 'OpenStreetMap');
+    osm.href = 'https://www.openstreetmap.org/copyright';
+    osm.target = '_blank';
+    osm.rel = 'noopener';
+    credit.appendChild(osm);
+    credit.append(' contributors');
+    if (baseName === 'Terrain') {
+      credit.append(' · tiles ');
+      const otm = el('a', undefined, 'OpenTopoMap');
+      otm.href = 'https://opentopomap.org';
+      otm.target = '_blank';
+      otm.rel = 'noopener';
+      credit.appendChild(otm);
+      credit.append(' (CC-BY-SA)');
+    }
+    return credit;
+  }
+
   function segControl(caption: string, values: readonly string[], current: string, onPick: (v: string) => void): HTMLElement {
     const line = el('div', 'foot-line');
     line.appendChild(el('span', 'cap', caption));
@@ -326,6 +353,7 @@ export function createPanel(init: PanelInit): void {
       });
     });
     foot.appendChild(copy);
+    foot.appendChild(tileCredit());
     root.appendChild(foot);
   }
 
