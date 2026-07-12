@@ -11,11 +11,11 @@
  */
 import 'leaflet/dist/leaflet.css';
 import * as L from 'leaflet';
-import { trackStrip, withStateRule } from 'argelander-core';
+import { passStrips, withStateRule } from 'argelander-core';
 import type { StateProvider, Strip } from 'argelander-core';
-import { AcquisitionLayer } from 'argelander-leaflet';
+import { AcquisitionClock, AcquisitionLayer } from 'argelander-leaflet';
 import type { Treatment } from 'argelander-leaflet';
-import { PresampledProvider, parseTle, remoteStateProvider } from 'argelander-providers';
+import { PresampledProvider, connectSgp4Worker, parseTle } from 'argelander-providers';
 import { createPanel } from './panel.js';
 import type { WorldHost } from './panel.js';
 import { sampleOrbit } from './orbits.js';
@@ -73,7 +73,6 @@ legendToggle.addEventListener('click', () => {
 });
 
 const worker = new Worker(`./sgp4-worker.js?v=${__BUILD_ID__}`);
-const earthProvider = remoteStateProvider(worker, 'sgp4');
 
 const speedSelect = document.getElementById('speed') as HTMLSelectElement;
 const pauseButton = document.getElementById('pause') as HTMLButtonElement;
@@ -85,29 +84,31 @@ const statusLabel = document.getElementById('status') as HTMLSpanElement;
 const DEFAULT_TREATMENT: Treatment = 'now-trail';
 
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-let paused = reduceMotion;
-let speed = 60;
-let tauSec = reduceMotion ? PASS_WINDOW_SEC : 0;
+let isPaused = reduceMotion;
+let clock: AcquisitionClock | undefined;
 
-function applyNow(): void {
-  for (const s of satLayers) s.layer.setNow(s.epochEt + tauSec);
+function labelTick(tauSec: number): void {
   const minutes = Math.floor(tauSec / 60);
   const seconds = Math.floor(tauSec % 60);
   clockLabel.textContent = `pass + ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
-/** Execute the plan: re-emit segment states for the current clock (AGE-13). */
-function applyStates(): void {
-  for (const s of satLayers) {
-    s.layer.updateStates(s.baseStrips.map((strip) => withStateRule(strip, s.epochEt + tauSec)));
-  }
+/** Windows for passStrips: the instrument's tasked spans, absolute Et. */
+function windowsFor(instrument: DemoInstrument, epochEt: number): Array<readonly [number, number]> {
+  const relative = instrument.taskWindowsSec ?? [[0, PASS_WINDOW_SEC] as const];
+  return relative.map(([fromSec, toSec]) => [epochEt + fromSec, epochEt + toSec] as const);
 }
 
-/**
- * One instrument's strips for one pass: a states query per tasked window so
- * the gaps between windows are real (SPEC-STRIP section 2), the bilateral
- * pair decomposed into two strips sharing the passId.
- */
+function postureOf(instrument: DemoInstrument): Record<string, unknown> {
+  return {
+    ...(instrument.swathHalfWidthKm !== undefined ? { swathHalfWidthKm: instrument.swathHalfWidthKm } : {}),
+    ...(instrument.beadOffsetsKm !== undefined ? { beadOffsetsKm: instrument.beadOffsetsKm } : {}),
+    ...(instrument.scan !== undefined ? { scan: instrument.scan } : {}),
+    ...(instrument.offsetRangeKm !== undefined ? { offsetRangeKm: instrument.offsetRangeKm } : {}),
+    ...(instrument.bilateralKm !== undefined ? { bilateralKm: instrument.bilateralKm } : {}),
+  };
+}
+
 async function instrumentStrips(
   provider: StateProvider,
   target: string,
@@ -116,58 +117,27 @@ async function instrumentStrips(
   epochEt: number,
   geometry: { observer: string; frame: string; bodyRadiusKm: number },
 ): Promise<Strip[]> {
-  const windows = instrument.taskWindowsSec ?? [[0, PASS_WINDOW_SEC] as const];
-  const strips: Strip[] = [];
-  for (let w = 0; w < windows.length; w++) {
-    const [fromSec, toSec] = windows[w]!;
-    const batch = await provider.states({
-      targets: [target],
-      observer: geometry.observer,
-      frame: geometry.frame,
-      correction: 'NONE',
-      epochs: { start: epochEt + fromSec, end: epochEt + toSec, step: PASS_STEP_SEC },
-    });
-    const common = {
-      body: geometry.observer,
-      bodyRadiusKm: geometry.bodyRadiusKm,
-      instrumentId: `${satName}/${instrument.id}`,
-      authority: provider.id,
-      generatedBy: 'demo-leaflet',
-      missionId: 'demo',
-      passId: 'pass-0',
-    } as const;
-    if (instrument.bilateralKm) {
-      const { gapKm, outerKm } = instrument.bilateralKm;
-      strips.push(
-        trackStrip(batch, 0, {
-          ...common, id: `demo-${satName}-${instrument.id}-w${w}-left`,
-          offsetRangeKm: { nearKm: gapKm, farKm: outerKm, side: 'left' },
-        }),
-        trackStrip(batch, 0, {
-          ...common, id: `demo-${satName}-${instrument.id}-w${w}-right`,
-          offsetRangeKm: { nearKm: gapKm, farKm: outerKm, side: 'right' },
-        }),
-      );
-    } else {
-      strips.push(trackStrip(batch, 0, {
-        ...common,
-        id: `demo-${satName}-${instrument.id}-w${w}`,
-        ...(instrument.swathHalfWidthKm !== undefined ? { swathHalfWidthKm: instrument.swathHalfWidthKm } : {}),
-        ...(instrument.beadOffsetsKm !== undefined ? { beadOffsetsKm: instrument.beadOffsetsKm } : {}),
-        ...(instrument.scan !== undefined ? { scan: instrument.scan } : {}),
-        ...(instrument.offsetRangeKm !== undefined ? { offsetRangeKm: instrument.offsetRangeKm } : {}),
-      }));
-    }
-  }
-  return strips;
+  return passStrips(provider, {
+    target,
+    observer: geometry.observer,
+    frame: geometry.frame,
+    bodyRadiusKm: geometry.bodyRadiusKm,
+    instrumentId: `${satName}/${instrument.id}`,
+    generatedBy: 'demo-leaflet',
+    missionId: 'demo',
+    idPrefix: `demo-${satName}-${instrument.id}`,
+    windows: windowsFor(instrument, epochEt),
+    stepSec: PASS_STEP_SEC,
+    ...postureOf(instrument),
+  });
 }
 
 function registerLayer(world: string, satName: string, instrument: DemoInstrument, epochEt: number, baseStrips: readonly Strip[]): void {
   const layer = new AcquisitionLayer(
-    baseStrips.map((strip) => withStateRule(strip, epochEt + tauSec)),
+    baseStrips.map((strip) => withStateRule(strip, epochEt)),
     {
       treatment: DEFAULT_TREATMENT,
-      paused,
+      paused: isPaused,
       // Reveal the scan mechanism once footprints are legible, not at
       // the default threshold where they render as sub-pixel dots.
       mechanismMinWidthPx: 16,
@@ -183,6 +153,12 @@ function registerLayer(world: string, satName: string, instrument: DemoInstrumen
 async function start(): Promise<void> {
   statusLabel.textContent = 'propagating in the worker...';
   const failures: string[] = [];
+  // The worker file is one import of the shipped entry; the TLEs travel in
+  // the init message and connect resolves after the ready handshake.
+  const earthProvider = await connectSgp4Worker(
+    worker,
+    DEMO_SATS.map((s) => ({ line1: s.line1, line2: s.line2, name: s.name })),
+  );
   for (const sat of DEMO_SATS) {
     const epochEt = parseTle(sat.line1, sat.line2, sat.name).epochEt;
     // One platform, several instruments: every instrument samples the same
@@ -242,36 +218,26 @@ async function start(): Promise<void> {
     : 'no instruments loaded';
   const failed = failures.length ? `  |  failed: ${failures.join('; ')}` : '';
   statusLabel.textContent = `${names}  |  simulated plan: the clock executes it (amber ahead, teal behind)  |  zoom in for the scan mechanism${failed}`;
-  applyNow();
 
-  let lastMs = performance.now();
-  let lastStateTick = -1;
-  const tick = (nowMs: number): void => {
-    const dt = (nowMs - lastMs) / 1000;
-    lastMs = nowMs;
-    if (!paused) {
-      tauSec = (tauSec + dt * speed) % PASS_WINDOW_SEC;
-      applyNow();
-      const stateTick = Math.floor(tauSec / PASS_STEP_SEC);
-      if (stateTick !== lastStateTick) {
-        lastStateTick = stateTick;
-        applyStates();
-      }
-    }
-    requestAnimationFrame(tick);
-  };
-  requestAnimationFrame(tick);
+  // The promoted loop: setNow per frame, boundary-gated updateStates
+  // through withStateRule, clock before states (AGE-13, AGE-16).
+  clock = new AcquisitionClock(
+    satLayers.map((s) => ({ layer: s.layer, epochEt: s.epochEt, baseStrips: s.baseStrips })),
+    { windowSec: PASS_WINDOW_SEC, stepSec: PASS_STEP_SEC, speed: Number(speedSelect.value), paused: isPaused, onTick: labelTick },
+  );
+  // Reduced motion opens on a nearly complete pass instead of an empty one.
+  if (reduceMotion) clock.seek(PASS_WINDOW_SEC - PASS_STEP_SEC / 2);
 }
 
 speedSelect.addEventListener('change', () => {
-  speed = Number(speedSelect.value);
+  clock?.setSpeed(Number(speedSelect.value));
 });
 pauseButton.addEventListener('click', () => {
-  paused = !paused;
-  pauseButton.textContent = paused ? 'play' : 'pause';
-  for (const s of satLayers) s.layer.setPaused(paused);
+  isPaused = !isPaused;
+  pauseButton.textContent = isPaused ? 'play' : 'pause';
+  clock?.setPaused(isPaused);
 });
-if (paused) pauseButton.textContent = 'play';
+if (isPaused) pauseButton.textContent = 'play';
 
 start().catch((err: unknown) => {
   statusLabel.textContent = `failed: ${err instanceof Error ? err.message : String(err)}`;
