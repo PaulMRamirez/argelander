@@ -75,6 +75,18 @@ describe('mechanism treatment and LOD (AGE-09)', () => {
     expect(ctx.ellipses().filter((e) => e.op === 'fill')).toHaveLength(121);
   });
 
+  it('flips between detail and envelope at the named scan-detail stops', () => {
+    // The demo's Early / Standard / Late control fans 6 / 16 / 40 px.
+    const geo = stripToGeo(fixtureStrip('whiskbroom'));
+    const early = new FakeCtx();
+    paintStrip(early, geo, makeProjector(10), { treatment: 'mechanism', mechanismMinWidthPx: 6 });
+    expect(early.ellipses().length).toBeGreaterThan(0);
+    const late = new FakeCtx();
+    paintStrip(late, geo, makeProjector(10), { treatment: 'mechanism', mechanismMinWidthPx: 40 });
+    expect(late.ellipses()).toHaveLength(0);
+    expect(late.fills().length).toBeGreaterThan(0);
+  });
+
   it('falls back to the envelope below the width threshold', () => {
     const narrow = makeProjector(0.05);
     const geo = stripToGeo(fixtureStrip('whiskbroom'));

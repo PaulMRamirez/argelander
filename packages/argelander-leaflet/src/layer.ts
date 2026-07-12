@@ -48,7 +48,8 @@ export class AcquisitionLayer extends L.Layer {
     super();
     this.geoStrips = strips.map((s) => stripToGeo(s));
     this.treatment = options.treatment ?? 'flat-fill';
-    this.layerOptions = options;
+    // Copied so runtime setters never mutate the caller's object.
+    this.layerOptions = { ...options };
     this.paused = options.paused ?? false;
     this.speedScale = options.speedScale ?? 1;
   }
@@ -115,6 +116,12 @@ export class AcquisitionLayer extends L.Layer {
 
   setSpeedScale(scale: number): void {
     this.speedScale = scale;
+  }
+
+  /** Runtime LOD threshold: when the mechanism grade reveals (AGE-09). */
+  setMechanismMinWidthPx(px: number): void {
+    this.layerOptions.mechanismMinWidthPx = px;
+    this.resetView();
   }
 
   private handleViewChange(): void {

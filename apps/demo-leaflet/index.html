@@ -22,7 +22,62 @@ border-radius:6px;padding:4px 8px;font:inherit}
 /* The container background must match each basemap's ocean tone: translucent
    strip fills composite over it wherever tiles are missing or still loading,
    and a mismatched ground shows as a hard seam through the fills. */
-#map{flex:1;min-height:0}
+#stage{flex:1;min-height:0;position:relative}
+#map{position:absolute;inset:0}
+#status{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:480px){header a{display:none}}
+/* Layer config panel: satellites over instruments, config-as-data (AGE-12). */
+#panel{position:absolute;top:10px;right:10px;width:280px;max-height:calc(100% - 20px);
+display:none;flex-direction:column;background:rgba(18,27,39,0.92);
+border:1px solid var(--line);border-radius:10px;z-index:1000;font-size:12.5px;overflow:hidden}
+#panel.open{display:flex}
+.panel-head{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line);
+font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--teal);font-size:12px}
+.panel-head .count{flex:1}
+.panel-head button{background:none;border:none;color:var(--dim);cursor:pointer;font:inherit;padding:2px 4px}
+.panel-head button:hover{color:var(--teal)}
+.panel-tree{overflow-y:auto;flex:1;padding:4px 0;scrollbar-width:thin}
+.p-row{display:flex;align-items:center;gap:7px;padding:4px 10px;min-height:28px;cursor:pointer}
+.p-row:hover{background:rgba(127,216,204,0.06)}
+.p-row.sat{font-family:ui-monospace,monospace;font-size:11.5px;letter-spacing:.02em}
+.p-row.instr{padding-left:26px}
+.p-row .lbl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.p-row .sub{display:block;color:var(--dim);font-size:11px}
+.p-row.off .lbl{color:var(--dim)}
+.p-row canvas{flex:none}
+.p-row .chev{color:var(--dim);width:12px;text-align:center;flex:none}
+.p-row .n{color:var(--dim);font-size:10.5px}
+.t-badge{color:var(--teal);font-family:ui-monospace,monospace;font-size:10px;border:1px solid var(--line);
+border-radius:4px;padding:0 3px;flex:none}
+.only-btn{background:none;border:none;color:var(--dim);font-size:10.5px;cursor:pointer;padding:1px 4px;
+opacity:0;flex:none}
+.p-row:hover .only-btn{opacity:1}
+@media(hover:none){.only-btn{opacity:1}}
+.only-btn:hover{color:var(--teal)}
+.detail-row{display:flex;align-items:center;gap:8px;padding:4px 10px 6px 40px;color:var(--dim);font-size:11.5px}
+.detail-row select{background:var(--bg);color:var(--txt);border:1px solid var(--line);border-radius:5px;
+padding:2px 5px;font-size:11.5px}
+.panel-foot{border-top:1px solid var(--line);padding:8px 10px;display:flex;flex-direction:column;gap:7px}
+.foot-line{display:flex;align-items:center;gap:8px;color:var(--dim);font-size:11px}
+.foot-line .cap{width:74px;flex:none}
+.seg{display:flex;gap:2px;flex:1}
+.seg button{flex:1;background:var(--bg);color:var(--dim);border:1px solid var(--line);padding:3px 0;
+font-size:11px;cursor:pointer}
+.seg button:first-child{border-radius:6px 0 0 6px}
+.seg button:last-child{border-radius:0 6px 6px 0}
+.seg button.on{background:var(--teal);color:#0C131C;border-color:var(--teal)}
+.copy-btn{background:var(--bg);color:var(--dim);border:1px solid var(--line);border-radius:6px;
+padding:4px 0;font-size:11px;cursor:pointer}
+.copy-btn:hover{color:var(--teal)}
+#panel-pill{position:absolute;bottom:26px;right:10px;z-index:1000;background:rgba(18,27,39,0.92);
+color:var(--teal);border:1px solid var(--teal);border-radius:20px;padding:8px 14px;font:12px ui-monospace,monospace;
+cursor:pointer}
+@media(max-width:640px){
+  #panel{top:auto;left:0;right:0;bottom:0;width:auto;max-height:50vh;border-radius:12px 12px 0 0;border-bottom:none}
+  .p-row{min-height:44px}
+  .detail-row{padding-left:26px}
+  #stage.sheet-open #legend{display:none}
+}
 .leaflet-container{background:#aad3df}
 .leaflet-container.dark-tiles{background:#2d3e48}
 /* The atlas palette is designed for a dark ground: the Dark basemap darkens
@@ -51,11 +106,15 @@ border-radius:8px;font-size:12px;color:var(--dim)}
   <a href="../index.html">docs</a>
   <a href="../atlas/index.html">atlas</a>
 </header>
-<div id="map"></div>
-<div id="legend">
-  <span><i style="background:#4FAEBC"></i>committed</span>
-  <span><i style="background:#66DBF8"></i>acquiring / now</span>
-  <span><i style="background:#F0B255"></i>planned</span>
+<div id="stage">
+  <div id="map"></div>
+  <div id="legend">
+    <span><i style="background:#4FAEBC"></i>committed</span>
+    <span><i style="background:#66DBF8"></i>acquiring / now</span>
+    <span><i style="background:#F0B255"></i>planned</span>
+  </div>
+  <div id="panel"></div>
+  <button id="panel-pill" hidden>satellites</button>
 </div>
 <script src="./main.js"></script>
 </body>
