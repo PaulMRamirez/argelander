@@ -1,4 +1,43 @@
 <!doctype html>
-<html><head><meta charset="utf-8"><title>Argelander demo (Phase 1)</title></head>
-<body><p>Phase 1 deliverable: SGP4-driven live footprints over open tiles. See goals/PHASE-1.md.</p>
-<script type="module" src="./src/main.ts"></script></body></html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>argelander demo: live SGP4 footprints</title>
+<link rel="stylesheet" href="./main.css">
+<style>
+:root{--bg:#0C131C;--panel:#121B27;--txt:#D7E1EA;--dim:#8CA0B3;--teal:#7FD8CC;--line:#22303F}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);
+font:14px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:8px 14px;
+background:var(--panel);border-bottom:1px solid var(--line)}
+header h1{font:600 15px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--teal);margin:0 8px 0 0}
+header a{color:var(--teal);text-decoration:none;font-size:12px}
+select,button{background:var(--bg);color:var(--txt);border:1px solid var(--line);
+border-radius:6px;padding:4px 8px;font:inherit}
+#clock{font-family:ui-monospace,monospace;color:var(--teal);min-width:110px}
+#status{color:var(--dim);font-size:12px}
+#map{position:absolute;top:49px;bottom:0;left:0;right:0;background:#0C131C}
+.leaflet-container{background:#0C131C}
+</style>
+</head>
+<body>
+<header>
+  <h1>argelander demo</h1>
+  <label>treatment <select id="treatment"></select></label>
+  <label>speed <select id="speed">
+    <option value="10">10x</option>
+    <option value="60" selected>60x</option>
+    <option value="300">300x</option>
+  </select></label>
+  <button id="pause">pause</button>
+  <span id="clock">pass + 00:00</span>
+  <span id="status">loading...</span>
+  <a href="../index.html">docs</a>
+  <a href="../atlas/index.html">atlas</a>
+</header>
+<div id="map"></div>
+<script src="./main.js"></script>
+</body>
+</html>
