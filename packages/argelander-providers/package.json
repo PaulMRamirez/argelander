@@ -1,0 +1,25 @@
+{
+  "name": "argelander-providers",
+  "version": "0.0.1",
+  "description": "Standalone StateProviders for Argelander: near-earth SGP4/TLE and pre-sampled state playback behind the frozen SPEC-PROVIDER seam, with worker port marshalling. Reserved pre-release.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "argelander-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
