@@ -92,14 +92,14 @@ export function numberParam(model: InstrumentModel, key: string): number {
 }
 
 /** Strip envelope shared by every conformance-plane sampler. */
-export function conformanceStrip(model: InstrumentModel, scene: ConformanceScene, tile: string, segments: readonly StripSegment[]): Strip {
+export function conformanceStrip(model: InstrumentModel, scene: ConformanceScene, tile: string, segments: readonly StripSegment[], mode = 'nominal'): Strip {
   return {
     id: `conformance-${model.kind}`,
     body: scene.body,
     frame: scene.frame,
     instrumentId: model.instrumentId,
     missionId: 'conformance',
-    mode: 'nominal',
+    mode,
     passId: 'pass-0',
     segments,
     provenance: {

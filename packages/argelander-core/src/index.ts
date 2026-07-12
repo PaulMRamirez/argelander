@@ -19,3 +19,14 @@ export {
   generatePushFrameStrip, generateWhiskbroomStrip,
 } from './samplers.js';
 export type { AlongTrackScene } from './samplers.js';
+export {
+  BILATERAL_SWATH_SCENE, BISTATIC_FORMATION_SCENE, FAN_BEAM_SCENE, PENCIL_BEAM_SCENE,
+  SCANSAR_TOPS_SCENE, SPOTLIGHT_SAR_SCENE, STRIPMAP_SAR_SCENE, SWEEPSAR_DBF_SCENE,
+  generateBilateralSwathStrip, generateBistaticFormationStrip,
+  generateFanBeamScatterometerStrip, generatePencilBeamScatterometerStrip,
+  generateScansarTopsStrip, generateSpotlightSarStrip,
+  generateStripmapSarStrip, generateSweepsarDbfStrip,
+} from './samplers-radar.js';
+export type {
+  BistaticScene, SpotlightPatch, SpotlightScene, StripmapScene,
+} from './samplers-radar.js';
