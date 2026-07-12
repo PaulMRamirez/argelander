@@ -11,3 +11,7 @@ Deferrals, each explicit: (1) AnalysisProduct field-level alignment (SPEC-STRIP 
 ## Rationale
 
 goals/PHASE-0.md requires every open item resolved or explicitly deferred with an ADR note, and freezing against an absent upstream pin would fake precision: the strip payload is what adapters and exports consume, and it freezes fully; the product envelope is plumbing whose alignment is cheap to bind later precisely because it is additive. The remaining deferrals are sequencing already implied by the phase plan, recorded here so the specs can say frozen without an asterisk.
+
+## Addendum (phase-1-samplers merge)
+
+Scene policy is two-tier: tiles 1 and 21 remain spec-frozen conformance anchors, while the other nineteen family scenes are code-owned sampler scenes, pinned by tests and revisable with their samplers without spec churn. Fixture authority follows the same line: as each family's sampler lands, its fixture retires from hand-authored worked example to sampler-generated anchor (UPDATE_FIXTURES=1), and SPEC-INSTRUMENT-MODEL section 6 is amended in the same change to describe the progressive retirement. Dependency ruling from the Phase 0 review, recorded: the core zero-dependency rule governs runtime dependencies; dev-only type and tooling packages (for example @types/node) sit outside it.
