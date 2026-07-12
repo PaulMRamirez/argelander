@@ -137,35 +137,52 @@ Two boundaries to respect. Tile credits are license and courtesy obligations, so
 
 ## Getting states
 
-The Earth minimal example runs SGP4 inline, which blocks the main thread for exactly as long as propagation takes. The engine posture (AGE-05) is that the main thread only paints, so real hosts put the provider behind a worker using the port pair from `argelander-providers`:
+The Earth minimal example runs SGP4 inline, which blocks the main thread for exactly as long as propagation takes. The engine posture (AGE-05) is that the main thread only paints, so real hosts put the provider behind a worker. The worker file is one import of the shipped entry, and the main thread connects with a handshake:
 
 ```ts
-// sgp4-worker.ts, the propagation side of the seam
-import { Sgp4Provider, serveStateProvider } from 'argelander-providers';
-import type { StatePortLike } from 'argelander-providers';
-
-const LINE1 = '1 25544U 98067A   26192.31485778  .00005525  00000+0  10843-3 0  9998';
-const LINE2 = '2 25544  51.6302 180.6822 0006688 282.4935  77.5305 15.48978902575497';
-
-serveStateProvider(
-  globalThis as unknown as StatePortLike,
-  new Sgp4Provider([{ line1: LINE1, line2: LINE2, name: 'ISS' }]),
-);
+// sgp4-worker.ts, the whole file
+import 'argelander-providers/sgp4-worker';
 ```
 
 ```ts
 // main thread: same StateProvider interface, zero propagation here
-import { remoteStateProvider } from 'argelander-providers';
+import { connectSgp4Worker } from 'argelander-providers';
 
 const worker = new Worker('./sgp4-worker.js');
-const provider = remoteStateProvider(worker, 'sgp4');
+const provider = await connectSgp4Worker(worker, [{ line1: LINE1, line2: LINE2, name: 'ISS' }]);
 ```
 
-A `Worker` assigns to the port parameter directly. The one cast lives on the worker side: `globalThis` is only typed with `postMessage` when the TypeScript config includes the `webworker` lib, so the cast bridges a tsconfig gap, not the seam. Bundle the worker as its own entry point (the demo gives esbuild `main.ts` and `sgp4-worker.ts` as sibling entries) and pass `new Worker` a URL relative to the served page. `remoteStateProvider` returns an object satisfying the same interface as the inline class, so the `trackStrip` code above does not change; batches cross the port as transferable Float64Arrays. The `id` argument names the provider for provenance and error messages; it is an assertion by the caller, not something the port verifies.
+The element sets travel to the worker in an init message, the worker builds `Sgp4Provider` and serves it over the port protocol, and `connectSgp4Worker` resolves only after the worker acknowledges, so no query can race the setup; a construction failure there (a deep-space element set) rejects the promise with the worker's message instead of hanging. Bundle the worker as its own entry point (the demo gives esbuild `main.ts` and `sgp4-worker.ts` as sibling entries) and pass `new Worker` a URL relative to the served page. Batches cross the port as transferable Float64Arrays. For a Celestrak-shaped file, `parseTles(text)` splits 3-line and bare 2-line sets into exactly the array this takes. The lower-level pieces stay exported for custom topologies: `serveStateProvider(port, provider)` serves any provider from any worker or MessagePort, and `remoteStateProvider(port, id)` is the raw proxy; the `id` there is an assertion by the caller, not something the port verifies.
 
-Two provider families ship today. `Sgp4Provider` propagates near-earth TLEs from source; deep-space elements (period 225 minutes and up) are refused at construction with a `DeepSpaceUnsupportedError`, so a bad element set fails when the provider is built, not later inside a query. `PresampledProvider` serves states sampled elsewhere, the planetary path the Moon example above already walked; `parsePresampledCsv` loads its table format from files.
+Two provider families ship today, plus two adapters over them. `Sgp4Provider` propagates near-earth TLEs from source; deep-space elements (period 225 minutes and up) are refused at construction with a `DeepSpaceUnsupportedError`, so a bad element set fails when the provider is built, not later inside a query. `PresampledProvider` serves states sampled elsewhere, the planetary path the Moon example above already walked; `parsePresampledCsv` loads its table format from files. The adapters are the section "Other providers" below: CZML playback and the HTTP service wire.
 
 Query-time refusals are `CoverageRefusalError`, and handling one is part of configuring a constellation honestly. Every provider enforces the same contract: queries are atomic (a refusal mutates nothing), oversized queries name the 65536-epoch ceiling, and epochs outside the provider's fence are refused rather than extrapolated. The error carries `body`, `requested`, and `covered` fields naming the window it could not serve, and it round-trips the worker port structurally. Anchor clocks to the fence and it takes care of itself: `parseTle(..).epochEt` for a TLE, the table's first epoch for a pre-sampled table, and both shipped providers implement the contract's optional `coverage(body)`, which returns the servable windows outright (a provider that omits it is treated as unbounded until it refuses). When building many layers, isolate the failure the way the demo does, one try/catch per instrument (and one per provider construction), so a single refusal does not take the constellation down.
+
+## Other providers
+
+**CZML playback** (`czmlProvider`, `parseCzmlStates`), the interchange format ops tools already emit. Position packets become pre-sampled tables and `PresampledProvider` does the serving:
+
+```ts
+import { czmlProvider } from 'argelander-providers';
+
+const provider = czmlProvider(czmlText, { observer: 'EARTH', frame: 'ITRF93' }, { id: 'ops-czml' });
+```
+
+Scope is honest and narrow. Supported: packets carrying an ISO `epoch` plus time-tagged `cartesian` samples (offset seconds, meters, converted to kilometers), `referenceFrame` FIXED, which is the CZML default and the body-fixed reading the seam wants. Refused with named errors: INERTIAL frames (rotating them body-fixed is frames math, the non-goal), `cartographicDegrees`, constant positions, and ISO-string sample times. Velocities are derived from the samples by weighted central differences, rendering grade and stated as such; each packet's `id` is the target name you query.
+
+**The HTTP service wire** (`serveStateRequest`, `httpStateProvider`), the states-from-a-service posture. The server side is a pure request-in, response-out function you mount on any framework; the client is a `StateProvider` over `fetch`:
+
+```ts
+// server, any framework: the body in, the JSON-safe response out
+import { serveStateRequest } from 'argelander-providers';
+app.post('/states', async (req, res) => res.json(await serveStateRequest(localProvider, req.body)));
+
+// client
+import { httpStateProvider } from 'argelander-providers';
+const provider = httpStateProvider('https://svc.example/states', 'bessel-service');
+```
+
+The wire speaks the same three ops as the worker port; batches cross as JSON number arrays rebuilt into Float64Arrays client-side, and `CoverageRefusalError` round-trips structurally with its `body`, `requested`, and `covered` fields intact, so refusal handling is identical whether the provider is inline, in a worker, or behind a service.
 
 ## Shaping the footprint
 
@@ -196,6 +213,26 @@ new AcquisitionLayer([left, right]).addTo(map);
 ```
 
 **Tasked acquisition** (SAR imaging slots, pointed scenes) is one strip per commanded window, sharing a `passId`, built from separate batch queries so the gaps between windows are real. SPEC-STRIP forbids interpolating across time gaps, and the painter honors that: it will never ribbon over a gap you left in the data. If you query one continuous batch and slice it, you have created a lie; query per window instead.
+
+Both decompositions, the window loop, and the provenance defaults are packaged as `passStrips` in argelander-core, the loop hosts kept rewriting until it moved into the package that owns both sides of it. One call replaces everything above:
+
+```ts
+import { passStrips } from 'argelander-core';
+
+const strips = await passStrips(provider, {
+  target: 'ISS',
+  observer: 'EARTH',
+  frame: 'ITRF93',
+  bodyRadiusKm: 6371,
+  instrumentId: 'SWOT/karin',
+  generatedBy: 'my-app',
+  bilateralKm: { gapKm: 10, outerKm: 60 },
+  windows: [[epochEt + 480, epochEt + 1080], [epochEt + 2040, epochEt + 2580]],
+  stepSec: 15,
+});
+```
+
+One `states()` query runs per window (atomic, so a refusal poisons nothing), every strip shares the `passId` (default `'pass-0'`), `authority` defaults to the provider's `id`, and the posture options are the `trackStrip` ones plus `bilateralKm` for the pair. Errors propagate as thrown: isolating failures across a constellation is host policy, one try/catch per instrument, exactly as before.
 
 ## Layer options and treatments
 
@@ -250,6 +287,23 @@ function tick(dtSec: number): void {
 ```
 
 States only change on segment boundaries, so `updateStates` can run on a coarser cadence than `setNow`; the demo re-emits when `floor(tauSec / stepSec)` changes and drives `setNow` every frame. Keep updating states for layers that are toggled off, so enabling one lands on the current clock instead of a stale one.
+
+That whole loop is packaged as `AcquisitionClock`, the driver the demo proved and two field bugs shaped. It owns the frame loop for any number of layers, applies clock before states with boundary-gated re-emission, and adds pause, speed, and a scrub:
+
+```ts
+import { AcquisitionClock } from 'argelander-leaflet';
+
+const clock = new AcquisitionClock(
+  [{ layer, epochEt, baseStrips }],
+  { windowSec: 5400, stepSec: 15, speed: 60, onTick: (tau) => label.textContent = `${tau.toFixed(0)} s` },
+);
+clock.setPaused(true);     // forwards to every layer and freezes the loop
+clock.setSpeed(300);
+clock.seek(2700);          // scrub to mid-pass and apply immediately (AGE-13)
+clock.dispose();           // cancel the frame loop when tearing down
+```
+
+The clock applies an opening frame even when constructed paused (a paused clock shows the pass at tau zero, not a blank map), the first resumed frame carries no wall-clock gap (a long pause never teleports the clock), and tau wraps at the window. One browser fact to know: hidden tabs suspend `requestAnimationFrame`, so the clock freezes with the tab and jumps forward on the next visible frame; pass a custom `schedule` if you need different pacing. Hand-rolling the loop stays fully supported; the clock is the loop, packaged.
 
 ## Level of detail
 
