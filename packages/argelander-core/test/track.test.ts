@@ -120,6 +120,28 @@ describe('trackStrip: the provider-to-strip bridge (AGE-04)', () => {
     expect(() => trackStrip(equatorialBatch(2, 15), 0, { ...BASE, scan })).toThrow(/swathHalfWidthKm/);
   });
 
+  it('offsets a side-looking ribbon away from nadir (stripmap posture)', () => {
+    const strip = trackStrip(equatorialBatch(4, 10), 0, {
+      ...BASE, offsetRangeKm: { nearKm: 250, farKm: 400, side: 'right' },
+    });
+    expect(validateStrip(strip).errors).toEqual([]);
+    for (const s of strip.segments) {
+      // Orbit normal is +z: 'right' is the north side; left is the near edge.
+      expect(s.left[2]).toBeCloseTo(R_BODY * Math.sin(250 / R_BODY), 9);
+      expect(s.right[2]).toBeCloseTo(R_BODY * Math.sin(400 / R_BODY), 9);
+    }
+    const mirrored = trackStrip(equatorialBatch(4, 10), 0, {
+      ...BASE, offsetRangeKm: { nearKm: 250, farKm: 400, side: 'left' },
+    });
+    expect(mirrored.segments[0]!.left[2]).toBeCloseTo(-R_BODY * Math.sin(250 / R_BODY), 9);
+    expect(() => trackStrip(equatorialBatch(2, 10), 0, {
+      ...BASE, swathHalfWidthKm: 50, offsetRangeKm: { nearKm: 250, farKm: 400, side: 'right' },
+    })).toThrow(/exclusive/);
+    expect(() => trackStrip(equatorialBatch(2, 10), 0, {
+      ...BASE, offsetRangeKm: { nearKm: 400, farKm: 250, side: 'right' },
+    })).toThrow(/nearKm < farKm/);
+  });
+
   it('refuses degenerate input', () => {
     const batch = equatorialBatch(2, 10);
     batch.states.fill(0, 3, 6);
