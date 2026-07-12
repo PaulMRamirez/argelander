@@ -17,6 +17,11 @@ if (td.status !== 0) process.exit(td.status ?? 1);
 
 cpSync(join(ROOT, 'apps/atlas/index.html'), join(SITE, 'atlas/index.html'));
 
+// The live demo bundles beside the static atlas; both ship on Pages.
+const demo = spawnSync('pnpm', ['--filter', '@app/demo-leaflet', 'build'], { cwd: ROOT, stdio: 'inherit' });
+if (demo.status !== 0) process.exit(demo.status ?? 1);
+cpSync(join(ROOT, 'apps/demo-leaflet/dist'), join(SITE, 'demo'), { recursive: true });
+
 const CSS = `
 :root{--bg:#0C131C;--panel:#121B27;--txt:#D7E1EA;--dim:#8CA0B3;--teal:#7FD8CC;--line:#22303F}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);
@@ -72,8 +77,9 @@ for (const f of readdirSync(join(ROOT, 'adr')).sort()) {
 const index = `
 <h1>argelander</h1>
 <p>Acquisition Geometry Engine (AGE). Cosmolabe is what you see, Bessel is what computes, Argelander is what surveys.</p>
-<h2>Demo</h2>
-<p><a href="atlas/index.html">Acquisition Geometry Atlas</a>: 21 geometry families, 6 treatments, the visual regression corpus.</p>
+<h2>Demos</h2>
+<p><a href="atlas/index.html">Acquisition Geometry Atlas</a>: 21 geometry families, 6 treatments, the visual regression corpus.<br>
+<a href="demo/index.html">Live demo</a>: SGP4 footprints propagated in a worker, painted by argelander-leaflet over open tiles.</p>
 <h2>Foundation</h2>
 <p><a href="survey.html">${entries[0][2]}</a><br><a href="requirements.html">Requirements AGE-01 through AGE-20</a></p>
 <h2>Contracts</h2>
