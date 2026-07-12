@@ -41,7 +41,7 @@ for (const t of TREATMENTS) {
   const option = document.createElement('option');
   option.value = t;
   option.textContent = t;
-  if (t === 'mechanism') option.selected = true;
+  if (t === 'now-trail') option.selected = true;
   treatmentSelect.appendChild(option);
 }
 

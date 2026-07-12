@@ -27,6 +27,8 @@ export interface Canvas2DLike {
   strokeStyle: unknown;
   lineWidth: number;
   globalCompositeOperation: unknown;
+  shadowColor: unknown;
+  shadowBlur: number;
   save(): void;
   restore(): void;
   beginPath(): void;
@@ -331,21 +333,31 @@ export function paintNowLine(ctx: Canvas2DLike, geo: GeoStrip, project: Projecto
   if (!current) return;
   if (current.widthKm > 0) {
     strokeLine(ctx, project, current.left, current.right, r.palette.acquiring, 3.5);
-  } else {
-    dot(ctx, project, current.left, 4, r.palette.acquiring);
   }
+  // Glowing beam-center marker, the atlas platform dot.
+  const at = current.widthKm > 0 ? midpoint(current.left, current.right) : current.left;
+  ctx.save();
+  ctx.shadowColor = r.palette.acquiring;
+  ctx.shadowBlur = 10;
+  dot(ctx, project, at, 4, r.palette.acquiring);
+  ctx.restore();
 }
 
-/** Trail increment: committed coverage between two clock readings, low alpha. */
+/**
+ * Trail increment: coverage between two clock readings. The mechanism rides
+ * the trail, the atlas behavior: footprints, beads, and frames appear as
+ * the clock sweeps them and then decay with the trail.
+ */
 export function paintTrailWindow(
   ctx: Canvas2DLike, geo: GeoStrip, project: Projector, options: PaintOptions,
   fromEtSec: number, toEtSec: number,
 ): number {
   const r = resolve(geo, options);
-  const painted = paintQuads(ctx, geo, project, r, () => 1, fromEtSec, toEtSec);
+  const painted = paintQuads(ctx, geo, project, r, () => 0.6, fromEtSec, toEtSec);
   for (const s of geo.segments) {
-    if (s.etSec > fromEtSec && s.etSec <= toEtSec) paintSparse(ctx, project, r, s);
+    if (s.etSec > fromEtSec && s.etSec <= toEtSec) paintMechanism(ctx, geo, project, r, s);
   }
+  ctx.setLineDash([]);
   return painted;
 }
 

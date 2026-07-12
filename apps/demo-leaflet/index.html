@@ -21,6 +21,11 @@ border-radius:6px;padding:4px 8px;font:inherit}
 #status{color:var(--dim);font-size:12px}
 #map{flex:1;min-height:0;background:#0C131C}
 .leaflet-container{background:#0C131C}
+/* The atlas palette is designed for a dark ground: darken the OSM tiles so
+   teal, cyan, and amber read the way the atlas reads. */
+.leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) saturate(0.5) brightness(0.85) contrast(0.9)}
+.leaflet-control-attribution{background:rgba(18,27,39,0.85);color:#8CA0B3}
+.leaflet-control-attribution a{color:#7FD8CC}
 #legend{position:absolute;bottom:26px;left:10px;z-index:1000;display:flex;gap:12px;
 padding:6px 10px;background:rgba(18,27,39,0.88);border:1px solid var(--line);
 border-radius:8px;font-size:12px;color:var(--dim)}
