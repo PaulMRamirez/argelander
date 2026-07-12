@@ -33,7 +33,6 @@ export interface PanelInit {
   map: L.Map;
   baseMaps: Record<string, L.TileLayer>;
   entries: readonly PanelEntry[];
-  headerSelect: HTMLSelectElement;
   defaultTreatment: Treatment;
 }
 
@@ -73,22 +72,6 @@ export function createPanel(init: PanelInit): void {
   let scanDetail: ScanStop = 'Standard';
   let baseName = 'Dark';
   let open = !window.matchMedia('(max-width: 640px)').matches;
-
-  // The header select becomes a stateless bulk macro over per-layer
-  // treatment; 'mixed' appears only when layers diverge.
-  const mixedOption = el('option', undefined, 'MIXED');
-  mixedOption.value = '__mixed';
-  mixedOption.hidden = true;
-  init.headerSelect.appendChild(mixedOption);
-  init.headerSelect.addEventListener('change', () => {
-    const value = init.headerSelect.value as Treatment | '__mixed';
-    if (value === '__mixed') return;
-    for (const c of configs) {
-      c.treatment = value;
-      c.layer.setTreatment(value);
-    }
-    render();
-  });
 
   function reconcile(): void {
     for (const c of configs) {
@@ -153,7 +136,7 @@ export function createPanel(init: PanelInit): void {
     return canvas;
   }
 
-  function headerValue(): string {
+  function bulkValue(): string {
     const first = configs[0]?.treatment;
     return configs.every((c) => c.treatment === first) ? (first ?? init.defaultTreatment) : '__mixed';
   }
@@ -182,8 +165,21 @@ export function createPanel(init: PanelInit): void {
     return btn;
   }
 
-  function treatmentBadge(c: LayerConfig): HTMLElement | null {
-    return init.headerSelect.value !== c.treatment ? el('span', 't-badge', BADGES[c.treatment]) : null;
+  /**
+   * The always-visible per-row treatment chip: the only way into the detail
+   * editor. Row taps toggle visibility (the layer-list expectation), so the
+   * editor needs an explicit, discoverable control instead of a whole-row
+   * tap that reads as random on a phone.
+   */
+  function treatmentChip(c: LayerConfig): HTMLElement {
+    const chip = el('button', `t-chip${expandedId === c.id ? ' on' : ''}`, BADGES[c.treatment]);
+    chip.title = `treatment: ${TREATMENT_LABELS[c.treatment]}`;
+    chip.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      expandedId = expandedId === c.id ? null : c.id;
+      render();
+    });
+    return chip;
   }
 
   function detailRow(c: LayerConfig): HTMLElement {
@@ -207,7 +203,8 @@ export function createPanel(init: PanelInit): void {
   }
 
   function instrumentRow(c: LayerConfig, flatSatName?: string): HTMLElement {
-    const row = el('div', `p-row ${flatSatName ? 'sat' : 'instr'}${c.enabled ? '' : ' off'}`);
+    const expanded = expandedId === c.id;
+    const row = el('div', `p-row ${flatSatName ? 'sat' : 'instr'}${c.enabled ? '' : ' off'}${expanded ? ' expanded' : ''}`);
     row.appendChild(checkbox(c.enabled, false, (v) => {
       c.enabled = v;
       reconcile();
@@ -222,16 +219,18 @@ export function createPanel(init: PanelInit): void {
       label.append(c.instrument.label);
     }
     row.appendChild(label);
-    const badge = treatmentBadge(c);
-    if (badge) row.appendChild(badge);
+    row.appendChild(treatmentChip(c));
     row.appendChild(onlyButton([c.id]));
+    // The whole row is the visibility toggle, same as the checkbox: the
+    // layer-list expectation, and a far bigger tap target on a phone.
     row.addEventListener('click', () => {
-      expandedId = expandedId === c.id ? null : c.id;
+      c.enabled = !c.enabled;
+      reconcile();
       render();
     });
     const frag = el('div');
     frag.appendChild(row);
-    if (expandedId === c.id) frag.appendChild(detailRow(c));
+    if (expanded) frag.appendChild(detailRow(c));
     return frag;
   }
 
@@ -286,6 +285,36 @@ export function createPanel(init: PanelInit): void {
     return credit;
   }
 
+  // The bulk treatment macro over per-layer treatment, relocated from the
+  // page header so all layer config lives in the panel; 'MIXED' appears
+  // only when layers diverge.
+  function bulkTreatmentLine(): HTMLElement {
+    const line = el('div', 'foot-line');
+    line.appendChild(el('span', 'cap', 'treatment'));
+    const select = el('select');
+    for (const t of TREATMENTS) {
+      const option = el('option', undefined, TREATMENT_LABELS[t]);
+      option.value = t;
+      select.appendChild(option);
+    }
+    const mixed = el('option', undefined, 'MIXED');
+    mixed.value = '__mixed';
+    mixed.hidden = true;
+    select.appendChild(mixed);
+    select.value = bulkValue();
+    select.addEventListener('change', () => {
+      const value = select.value as Treatment | '__mixed';
+      if (value === '__mixed') return;
+      for (const c of configs) {
+        c.treatment = value;
+        c.layer.setTreatment(value);
+      }
+      render();
+    });
+    line.appendChild(select);
+    return line;
+  }
+
   function segControl(caption: string, values: readonly string[], current: string, onPick: (v: string) => void): HTMLElement {
     const line = el('div', 'foot-line');
     line.appendChild(el('span', 'cap', caption));
@@ -303,7 +332,6 @@ export function createPanel(init: PanelInit): void {
   }
 
   function render(): void {
-    init.headerSelect.value = headerValue();
     pill.textContent = `satellites · ${onCount()} on`;
 
     root.textContent = '';
@@ -331,6 +359,7 @@ export function createPanel(init: PanelInit): void {
     root.appendChild(tree);
 
     const foot = el('div', 'panel-foot');
+    foot.appendChild(bulkTreatmentLine());
     foot.appendChild(segControl('basemap', Object.keys(init.baseMaps), baseName, setBase));
     foot.appendChild(segControl('scan detail', Object.keys(SCAN_STOPS), scanDetail, (v) => setScanDetail(v as ScanStop)));
     foot.appendChild(tileCredit());
