@@ -10,7 +10,7 @@ import 'leaflet/dist/leaflet.css';
 import * as L from 'leaflet';
 import { trackStrip, withStateRule } from 'argelander-core';
 import type { Strip } from 'argelander-core';
-import { AcquisitionLayer, TREATMENTS, TREATMENT_LABELS } from 'argelander-leaflet';
+import { AcquisitionLayer } from 'argelander-leaflet';
 import type { Treatment } from 'argelander-leaflet';
 import { parseTle, remoteStateProvider } from 'argelander-providers';
 import type { StatePortLike } from 'argelander-providers';
@@ -55,29 +55,20 @@ legendToggle.addEventListener('click', () => {
 const worker = new Worker(`./sgp4-worker.js?v=${__BUILD_ID__}`);
 const provider = remoteStateProvider(worker as unknown as StatePortLike, 'sgp4');
 
-const treatmentSelect = document.getElementById('treatment') as HTMLSelectElement;
 const speedSelect = document.getElementById('speed') as HTMLSelectElement;
 const pauseButton = document.getElementById('pause') as HTMLButtonElement;
 const clockLabel = document.getElementById('clock') as HTMLSpanElement;
 const statusLabel = document.getElementById('status') as HTMLSpanElement;
 
-for (const t of TREATMENTS) {
-  const option = document.createElement('option');
-  option.value = t;
-  option.textContent = TREATMENT_LABELS[t];
-  if (t === 'now-trail') option.selected = true;
-  treatmentSelect.appendChild(option);
-}
+// The header carries playback only; every treatment control (per-layer
+// chips and the bulk macro) lives in the config panel.
+const DEFAULT_TREATMENT: Treatment = 'now-trail';
 
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 let paused = reduceMotion;
 let speed = 60;
 let tauSec = reduceMotion ? PASS_WINDOW_SEC : 0;
 const satLayers: SatLayer[] = [];
-
-function currentTreatment(): Treatment {
-  return treatmentSelect.value as Treatment;
-}
 
 function applyNow(): void {
   for (const s of satLayers) s.layer.setNow(s.epochEt + tauSec);
@@ -151,7 +142,7 @@ async function start(): Promise<void> {
         const layer = new AcquisitionLayer(
           baseStrips.map((strip) => withStateRule(strip, epochEt + tauSec)),
           {
-            treatment: currentTreatment(),
+            treatment: DEFAULT_TREATMENT,
             paused,
             // Reveal the scan mechanism once footprints are legible, not at
             // the default threshold where they render as sub-pixel dots.
@@ -172,8 +163,7 @@ async function start(): Promise<void> {
     map,
     baseMaps,
     entries: satLayers.map((s) => ({ satName: s.satName, instrument: s.instrument, layer: s.layer })),
-    headerSelect: treatmentSelect,
-    defaultTreatment: 'now-trail',
+    defaultTreatment: DEFAULT_TREATMENT,
   });
   const names = satLayers.length
     ? `${DEMO_SATS.length} satellites, ${satLayers.length} instruments`

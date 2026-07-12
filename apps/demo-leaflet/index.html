@@ -47,8 +47,13 @@ font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--teal);font-s
 .p-row canvas{flex:none}
 .p-row .chev{color:var(--dim);width:12px;text-align:center;flex:none}
 .p-row .n{color:var(--dim);font-size:10.5px}
-.t-badge{color:var(--teal);font-family:ui-monospace,monospace;font-size:10px;border:1px solid var(--line);
-border-radius:4px;padding:0 3px;flex:none}
+/* The per-row treatment chip: the explicit way into the detail editor,
+   sized as a real tap target since row taps toggle visibility instead. */
+.t-chip{background:none;color:var(--teal);font:10px ui-monospace,SFMono-Regular,Menlo,monospace;
+border:1px solid var(--line);border-radius:4px;padding:3px 6px;cursor:pointer;flex:none}
+.t-chip:hover,.t-chip.on{border-color:var(--teal);background:rgba(127,216,204,0.1)}
+/* The expanded row and its editor share a tint so ownership is obvious. */
+.p-row.expanded,.detail-row{background:rgba(127,216,204,0.09)}
 .only-btn{background:none;border:none;color:var(--dim);font-size:10.5px;cursor:pointer;padding:1px 4px;
 opacity:0;flex:none}
 .p-row:hover .only-btn{opacity:1}
@@ -60,6 +65,8 @@ padding:2px 5px;font-size:11.5px}
 .panel-foot{border-top:1px solid var(--line);padding:8px 10px;display:flex;flex-direction:column;gap:7px}
 .foot-line{display:flex;align-items:center;gap:8px;color:var(--dim);font-size:11px}
 .foot-line .cap{width:74px;flex:none}
+.foot-line select{flex:1;background:var(--bg);color:var(--txt);border:1px solid var(--line);
+border-radius:6px;padding:3px 5px;font-size:11px}
 .seg{display:flex;gap:2px;flex:1}
 .seg button{flex:1;background:var(--bg);color:var(--dim);border:1px solid var(--line);padding:3px 0;
 font-size:11px;cursor:pointer}
@@ -112,7 +119,6 @@ border-radius:16px;font-size:11.5px;color:var(--txt)}
 <body>
 <header>
   <h1>argelander demo</h1>
-  <label>treatment <select id="treatment"></select></label>
   <label>speed <select id="speed">
     <option value="10">10x</option>
     <option value="60" selected>60x</option>
