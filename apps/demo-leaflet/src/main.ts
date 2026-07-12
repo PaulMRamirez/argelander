@@ -155,7 +155,9 @@ async function start(): Promise<void> {
             mechanismMinWidthPx: 16,
           },
         );
-        layer.addTo(map);
+        // Off-at-start instruments stay listed in the control; their states
+        // keep updating so enabling one lands on the current clock.
+        if (instrument.startOn !== false) layer.addTo(map);
         overlays[`${sat.name} &middot; ${instrument.label}`] = layer;
         satLayers.push({ layer, epochEt, baseStrips });
       } catch (err) {
@@ -179,13 +181,15 @@ async function start(): Promise<void> {
     lastMs = nowMs;
     if (!paused) {
       tauSec = (tauSec + dt * speed) % PASS_WINDOW_SEC;
-      // Re-emit states only when the clock crosses a segment boundary.
+      // Clock first, then states: updateStates repaints the static
+      // treatments, and its now marker must not lag the state front by a
+      // segment (the SWOT field report).
+      applyNow();
       const stateTick = Math.floor(tauSec / PASS_STEP_SEC);
       if (stateTick !== lastStateTick) {
         lastStateTick = stateTick;
         applyStates();
       }
-      applyNow();
     }
     requestAnimationFrame(tick);
   };

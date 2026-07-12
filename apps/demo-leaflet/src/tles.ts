@@ -31,6 +31,8 @@ export interface DemoInstrument {
    * Omitted means the instrument acquires through the whole pass.
    */
   taskWindowsSec?: ReadonlyArray<readonly [number, number]>;
+  /** Listed in the layers control but not added to the map at start. */
+  startOn?: boolean;
 }
 
 export interface DemoSat {
@@ -57,6 +59,12 @@ export const DEMO_SATS: readonly DemoSat[] = [
           footprintSemiMinorKm: 8,
           footprintGrowthFactor: 0.8,
         },
+      },
+      {
+        id: 'gedi',
+        label: 'GEDI: four lidar bead tracks',
+        beadOffsetsKm: [-2.1, -0.7, 0.7, 2.1],
+        startOn: false,
       },
     ],
   },
@@ -124,6 +132,45 @@ export const DEMO_SATS: readonly DemoSat[] = [
         id: 'poseidon-3c',
         label: 'Poseidon-3C: nadir altimeter',
         beadOffsetsKm: [0],
+      },
+    ],
+  },
+  {
+    name: 'NISAR',
+    line1: '1 65053U 25163A   26192.78928818  .00000109  00000+0  46015-4 0  9996',
+    line2: '2 65053  98.4056  20.0951 0001229  90.0381 270.0950 14.42505732 49936',
+    instruments: [
+      {
+        id: 'l-sar',
+        label: 'L-SAR SweepSAR: 242 km, left-looking',
+        offsetRangeKm: { nearKm: 150, farKm: 392, side: 'left' },
+        startOn: false,
+      },
+    ],
+  },
+  {
+    name: 'METOP-C',
+    line1: '1 43689U 18087A   26192.84435542  .00000032  00000+0  34298-4 0  9993',
+    line2: '2 43689  98.6632 251.9957 0002218  98.2696 261.8733 14.21518425398336',
+    instruments: [
+      {
+        id: 'ascat',
+        label: 'ASCAT: twin 550 km scatterometer swaths',
+        bilateralKm: { gapKm: 336, outerKm: 886 },
+        startOn: false,
+      },
+    ],
+  },
+  {
+    name: 'SENTINEL-6A',
+    line1: '1 46984U 20086A   26192.83555476 -.00000071  00000+0 -42358-4 0  9995',
+    line2: '2 46984  66.0413  83.8588 0007811 269.9235  90.0885 12.80930061263489',
+    instruments: [
+      {
+        id: 'poseidon-4',
+        label: 'Poseidon-4: nadir altimeter',
+        beadOffsetsKm: [0],
+        startOn: false,
       },
     ],
   },
