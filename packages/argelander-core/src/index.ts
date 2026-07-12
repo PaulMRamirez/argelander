@@ -30,5 +30,5 @@ export {
 export type {
   BistaticScene, SpotlightPatch, SpotlightScene, StripmapScene,
 } from './samplers-radar.js';
-export { trackStrip } from './track.js';
+export { trackStrip, withStateRule } from './track.js';
 export type { TrackStripOptions } from './track.js';

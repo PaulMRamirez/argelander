@@ -98,6 +98,27 @@ function trianglePosition(phase: number): number {
   return Math.abs(fract * 2 - 1) * 2 - 1;
 }
 
+/**
+ * Recompute segment states for an engine clock (AGE-13 groundwork): the last
+ * segment at or before nowEtSec is acquiring, earlier ones committed, later
+ * ones planned; a clock before the first segment leaves the whole strip
+ * planned. Pure: returns a new strip sharing all segment geometry, which is
+ * what lets a demo or a scrubbing clock re-emit states every tick cheaply.
+ */
+export function withStateRule(strip: Strip, nowEtSec: number): Strip {
+  let acquiringIndex = -1;
+  for (let i = 0; i < strip.segments.length; i++) {
+    if (strip.segments[i]!.etSec <= nowEtSec + 1e-9) acquiringIndex = i;
+  }
+  return {
+    ...strip,
+    segments: strip.segments.map((s, i) => ({
+      ...s,
+      state: i < acquiringIndex ? 'committed' : i === acquiringIndex ? 'acquiring' : 'planned',
+    })),
+  };
+}
+
 export function trackStrip(batch: StateBatch, targetIndex: number, options: TrackStripOptions): Strip {
   const n = batch.epochs.length;
   if (n === 0) throw new RangeError('trackStrip requires a non-empty batch');

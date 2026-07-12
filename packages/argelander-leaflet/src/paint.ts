@@ -331,6 +331,9 @@ export function paintNowLine(ctx: Canvas2DLike, geo: GeoStrip, project: Projecto
     else break;
   }
   if (!current) return;
+  // No marker once the acquisition is over: a tasked strip whose window has
+  // passed must not park a stale now on its last segment.
+  if (r.nowEtSec - current.etSec > geo.medianStepSec * 1.5 + 1e-9) return;
   if (current.widthKm > 0) {
     strokeLine(ctx, project, current.left, current.right, r.palette.acquiring, 3.5);
   }

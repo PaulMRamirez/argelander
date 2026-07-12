@@ -8,7 +8,8 @@
  */
 import 'leaflet/dist/leaflet.css';
 import * as L from 'leaflet';
-import { trackStrip } from 'argelander-core';
+import { trackStrip, withStateRule } from 'argelander-core';
+import type { Strip } from 'argelander-core';
 import { AcquisitionLayer, TREATMENTS } from 'argelander-leaflet';
 import type { Treatment } from 'argelander-leaflet';
 import { parseTle, remoteStateProvider } from 'argelander-providers';
@@ -20,6 +21,8 @@ const EARTH_RADIUS_KM = 6371;
 interface SatLayer {
   layer: AcquisitionLayer;
   epochEt: number;
+  /** Geometry with the state rule not yet applied; states re-emit per tick. */
+  baseStrips: readonly Strip[];
 }
 
 const map = L.map('map', { worldCopyJump: true, zoomControl: true }).setView([25, 0], 2);
@@ -62,56 +65,77 @@ function applyNow(): void {
   clockLabel.textContent = `pass + ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
+/** Execute the plan: re-emit segment states for the current clock (AGE-13). */
+function applyStates(): void {
+  for (const s of satLayers) {
+    s.layer.updateStates(s.baseStrips.map((strip) => withStateRule(strip, s.epochEt + tauSec)));
+  }
+}
+
 async function start(): Promise<void> {
   statusLabel.textContent = 'propagating in the worker...';
   const overlays: Record<string, L.Layer> = {};
   for (const sat of DEMO_SATS) {
     const epochEt = parseTle(sat.line1, sat.line2, sat.name).epochEt;
-    const batch = await provider.states({
-      targets: [sat.name],
-      observer: 'EARTH',
-      frame: 'ITRF93',
-      correction: 'NONE',
-      epochs: { start: epochEt, end: epochEt + PASS_WINDOW_SEC, step: PASS_STEP_SEC },
-    });
-    const strip = trackStrip(batch, 0, {
-      id: `demo-${sat.name}`,
-      body: 'EARTH',
-      bodyRadiusKm: EARTH_RADIUS_KM,
-      instrumentId: sat.name,
-      authority: provider.id,
-      generatedBy: 'demo-leaflet',
-      missionId: 'demo',
-      passId: 'pass-0',
-      // Snapshot the state rule at 60 percent of the pass so committed,
-      // acquiring, and planned hues all appear (AGE-08 vocabulary).
-      nowEtSec: epochEt + PASS_WINDOW_SEC * 0.6,
-      ...(sat.swathHalfWidthKm !== undefined ? { swathHalfWidthKm: sat.swathHalfWidthKm } : {}),
-      ...(sat.beadOffsetsKm !== undefined ? { beadOffsetsKm: sat.beadOffsetsKm } : {}),
-      ...(sat.scan !== undefined ? { scan: sat.scan } : {}),
-      ...(sat.offsetRangeKm !== undefined ? { offsetRangeKm: sat.offsetRangeKm } : {}),
-    });
-    const layer = new AcquisitionLayer([strip], {
-      treatment: currentTreatment(),
-      paused,
-      // Reveal the scan mechanism once footprints are legible, not at the
-      // default threshold where they render as sub-pixel dots.
-      mechanismMinWidthPx: 16,
-    });
+    // One strip per tasked window, sharing the passId; gaps between windows
+    // are real and never ribboned over (SPEC-STRIP section 2).
+    const windows = sat.taskWindowsSec ?? [[0, PASS_WINDOW_SEC] as const];
+    const baseStrips: Strip[] = [];
+    for (let w = 0; w < windows.length; w++) {
+      const [fromSec, toSec] = windows[w]!;
+      const batch = await provider.states({
+        targets: [sat.name],
+        observer: 'EARTH',
+        frame: 'ITRF93',
+        correction: 'NONE',
+        epochs: { start: epochEt + fromSec, end: epochEt + toSec, step: PASS_STEP_SEC },
+      });
+      baseStrips.push(trackStrip(batch, 0, {
+        id: `demo-${sat.name}-w${w}`,
+        body: 'EARTH',
+        bodyRadiusKm: EARTH_RADIUS_KM,
+        instrumentId: sat.name,
+        authority: provider.id,
+        generatedBy: 'demo-leaflet',
+        missionId: 'demo',
+        passId: 'pass-0',
+        ...(sat.swathHalfWidthKm !== undefined ? { swathHalfWidthKm: sat.swathHalfWidthKm } : {}),
+        ...(sat.beadOffsetsKm !== undefined ? { beadOffsetsKm: sat.beadOffsetsKm } : {}),
+        ...(sat.scan !== undefined ? { scan: sat.scan } : {}),
+        ...(sat.offsetRangeKm !== undefined ? { offsetRangeKm: sat.offsetRangeKm } : {}),
+      }));
+    }
+    const layer = new AcquisitionLayer(
+      baseStrips.map((strip) => withStateRule(strip, epochEt + tauSec)),
+      {
+        treatment: currentTreatment(),
+        paused,
+        // Reveal the scan mechanism once footprints are legible, not at the
+        // default threshold where they render as sub-pixel dots.
+        mechanismMinWidthPx: 16,
+      },
+    );
     layer.addTo(map);
     overlays[sat.label] = layer;
-    satLayers.push({ layer, epochEt });
+    satLayers.push({ layer, epochEt, baseStrips });
   }
   L.control.layers(undefined, overlays, { collapsed: true }).addTo(map);
-  statusLabel.textContent = `${DEMO_SATS.map((s) => s.name).join(' | ')}  |  zoom in over a swath to reveal the scan mechanism`;
+  statusLabel.textContent = `${DEMO_SATS.map((s) => s.name).join(' | ')}  |  simulated plan: the clock executes it (amber ahead, teal behind)  |  zoom in for the scan mechanism`;
   applyNow();
 
   let lastMs = performance.now();
+  let lastStateTick = -1;
   const tick = (nowMs: number): void => {
     const dt = (nowMs - lastMs) / 1000;
     lastMs = nowMs;
     if (!paused) {
       tauSec = (tauSec + dt * speed) % PASS_WINDOW_SEC;
+      // Re-emit states only when the clock crosses a segment boundary.
+      const stateTick = Math.floor(tauSec / PASS_STEP_SEC);
+      if (stateTick !== lastStateTick) {
+        lastStateTick = stateTick;
+        applyStates();
+      }
       applyNow();
     }
     requestAnimationFrame(tick);

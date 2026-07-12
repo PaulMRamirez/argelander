@@ -22,6 +22,12 @@ export interface DemoSat {
   };
   /** Side-looking offset ribbon; nadir is never imaged. */
   offsetRangeKm?: { nearKm: number; farKm: number; side: 'left' | 'right' };
+  /**
+   * Tasked acquisition windows, seconds from the element epoch: one strip
+   * per window sharing the passId, with honest gaps between (SPEC-STRIP).
+   * Omitted means the instrument acquires through the whole pass.
+   */
+  taskWindowsSec?: ReadonlyArray<readonly [number, number]>;
   label: string;
 }
 
@@ -47,7 +53,8 @@ export const DEMO_SATS: readonly DemoSat[] = [
     line1: '1 39634U 14016A   26192.77890475 -.00000105  00000+0 -12473-4 0  9992',
     line2: '2 39634  98.1786 199.9525 0001444  86.5450 273.5915 14.59199380653608',
     offsetRangeKm: { nearKm: 250, farKm: 400, side: 'right' },
-    label: 'Sentinel-1A: side-looking IW ribbon, nadir never imaged',
+    taskWindowsSec: [[480, 1080], [2040, 2580], [3660, 4440]],
+    label: 'Sentinel-1A: tasked side-looking IW slots, nadir never imaged',
   },
   {
     name: 'ICESAT-2',
