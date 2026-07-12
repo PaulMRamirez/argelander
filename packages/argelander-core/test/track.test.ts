@@ -109,6 +109,14 @@ describe('trackStrip: the provider-to-strip bridge (AGE-04)', () => {
     }
     const majors = footprints.map((f) => (f.kind === 'footprint' ? f.semiMajorKm : 0));
     expect(Math.max(...majors)).toBeGreaterThan(Math.min(...majors));
+    // Scan segments record the swept footprint size range in meters, so the
+    // quality-gradient treatment has real variation to paint.
+    for (const s of strip.segments) {
+      const [lo, hi] = s.quality!.resolutionM!;
+      expect(lo).toBeGreaterThanOrEqual(scan.footprintSemiMajorKm * 1000 - 1e-6);
+      expect(hi).toBeLessThanOrEqual(scan.footprintSemiMajorKm * (1 + scan.footprintGrowthFactor) * 1000 + 1e-6);
+      expect(lo).toBeLessThanOrEqual(hi);
+    }
     expect(() => trackStrip(equatorialBatch(2, 15), 0, { ...BASE, scan })).toThrow(/swathHalfWidthKm/);
   });
 

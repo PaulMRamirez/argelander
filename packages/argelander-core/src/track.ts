@@ -143,6 +143,8 @@ export function trackStrip(batch: StateBatch, targetIndex: number, options: Trac
         points: options.beadOffsetsKm.map((d) => surfacePoint(radius, nadir, cross, d)),
       });
     }
+    let minGrow = Infinity;
+    let maxGrow = -Infinity;
     if (scan) {
       const nextEt = i + 1 < n ? batch.epochs[i + 1]! : et;
       for (let j = 0; j === 0 || et + j * scan.subStepSec < nextEt - 1e-9; j++) {
@@ -160,6 +162,8 @@ export function trackStrip(batch: StateBatch, targetIndex: number, options: Trac
         ]);
         const tri = trianglePosition(tt * scan.scanRateHz);
         const grow = 1 + scan.footprintGrowthFactor * tri * tri;
+        if (grow < minGrow) minGrow = grow;
+        if (grow > maxGrow) maxGrow = grow;
         sub.push({
           kind: 'footprint',
           center: surfacePoint(radius, sNadir, sCross, tri * halfWidth),
@@ -176,6 +180,16 @@ export function trackStrip(batch: StateBatch, targetIndex: number, options: Trac
       right: surfacePoint(radius, nadir, cross, halfWidth),
       state: i < acquiringIndex ? 'committed' : i === acquiringIndex ? 'acquiring' : 'planned',
       ...(sub.length ? { sub } : {}),
+      // Scan segments record the footprint size range they actually swept,
+      // in meters, which gives the quality-gradient treatment real variation.
+      ...(scan && Number.isFinite(minGrow) ? {
+        quality: {
+          resolutionM: [
+            scan.footprintSemiMajorKm * minGrow * 1000,
+            scan.footprintSemiMajorKm * maxGrow * 1000,
+          ] as const,
+        },
+      } : {}),
     });
   }
 

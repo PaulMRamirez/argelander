@@ -122,6 +122,11 @@ export class AcquisitionLayer extends L.Layer {
     }
     L.DomUtil.setPosition(this.canvas, this.map.containerPointToLayerPoint([0, 0]));
     if (this.treatment === 'now-trail') {
+      // The trail pixels live in container space, so any view change
+      // invalidates them: clear before rebuilding or successive projections
+      // smear stale copies across the canvas.
+      const trailCtx = this.trailCanvas.getContext('2d')!;
+      trailCtx.clearRect(0, 0, this.trailCanvas.width, this.trailCanvas.height);
       this.trailPaintedToEtSec = -Infinity;
       this.drawNowFrame(0);
       if (!this.paused) this.startAnimation();
