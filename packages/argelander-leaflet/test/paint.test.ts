@@ -225,6 +225,25 @@ describe('antimeridian and polar painting (AGE-10)', () => {
     }
   });
 
+  it('paints point features on every visible world copy, not just quads', () => {
+    // The field report: envelope quads crossing the antimeridian duplicated
+    // onto both copies, but footprints and beads painted once and stopped
+    // dead at the seam, flipping sides after a pan.
+    const geo = stripToGeo(fixtureStrip('whiskbroom'));
+    const single = new FakeCtx();
+    paintStrip(single, geo, WIDE, { treatment: 'mechanism' });
+    const doubled = new FakeCtx();
+    paintStrip(doubled, geo, WIDE, { treatment: 'mechanism', worldCopies: [0, 360] });
+    expect(doubled.ellipses().filter((e) => e.op === 'fill'))
+      .toHaveLength(2 * single.ellipses().filter((e) => e.op === 'fill').length);
+    expect(doubled.fills().length).toBe(2 * single.fills().length);
+    const beadsSingle = new FakeCtx();
+    paintStrip(beadsSingle, stripToGeo(fixtureStrip('profiler')), WIDE, { treatment: 'flat-fill' });
+    const beadsDoubled = new FakeCtx();
+    paintStrip(beadsDoubled, stripToGeo(fixtureStrip('profiler')), WIDE, { treatment: 'flat-fill', worldCopies: [0, 360] });
+    expect(beadsDoubled.dots()).toHaveLength(2 * beadsSingle.dots().length);
+  });
+
   it('paints a polar pass without blowing up', () => {
     const strip = syntheticStrip([
       [88, 0, 2, 0],
