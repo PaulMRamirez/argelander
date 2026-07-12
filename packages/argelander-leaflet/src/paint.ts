@@ -12,7 +12,7 @@ import { kmPerDegLat, toGeo, unwrapLon, worldCopyOffsets } from './geo.js';
 import type { Palette } from './palette.js';
 import { ATLAS_PALETTE, dashPatternFor, stateColor, withAlpha } from './palette.js';
 
-/** The six treatments (AGE-07), selectable per layer at runtime. */
+/** The six treatments (AGE-07), selectable per layer at runtime, atlas order. */
 export type Treatment =
   | 'outline' | 'flat-fill' | 'now-trail'
   | 'mechanism' | 'quality-gradient' | 'time-gradient';
@@ -20,6 +20,16 @@ export type Treatment =
 export const TREATMENTS: readonly Treatment[] = [
   'outline', 'flat-fill', 'now-trail', 'mechanism', 'quality-gradient', 'time-gradient',
 ];
+
+/** The atlas names, for hosts that surface the treatments to people. */
+export const TREATMENT_LABELS: Readonly<Record<Treatment, string>> = {
+  'outline': 'OUTLINE ONLY',
+  'flat-fill': 'FLAT FILL',
+  'now-trail': 'NOW + FADING TRAIL',
+  'mechanism': 'MECHANISM TEXTURE',
+  'quality-gradient': 'QUALITY GRADIENT',
+  'time-gradient': 'TIME GRADIENT',
+};
 
 /** The 2D-context subset the painters use; satisfied by CanvasRenderingContext2D. */
 export interface Canvas2DLike {
@@ -41,6 +51,9 @@ export interface Canvas2DLike {
   ellipse(x: number, y: number, rx: number, ry: number, rot: number, a0: number, a1: number): void;
   setLineDash(pattern: readonly number[]): void;
   fillRect(x: number, y: number, w: number, h: number): void;
+  createLinearGradient(x0: number, y0: number, x1: number, y1: number): {
+    addColorStop(offset: number, color: string): void;
+  };
 }
 
 /** Geographic point to container pixels; the layer supplies the CRS. */
@@ -124,6 +137,18 @@ function tracePath(ctx: Canvas2DLike, project: Projector, points: readonly GeoPo
   }
 }
 
+/** Projected quad corners per world copy: [aLeft, aRight, bRight, bLeft]. */
+function eachQuadCopy(
+  project: Projector, a: GeoSegment, b: GeoSegment,
+  cb: (pts: ReadonlyArray<readonly [number, number]>) => void,
+): void {
+  const points = [a.left, a.right, b.right, b.left];
+  const lons = ringLons(points);
+  for (const offset of worldCopyOffsets(lons)) {
+    cb(points.map((p, i) => project({ lonDeg: lons[i]! + offset, latDeg: p.latDeg })));
+  }
+}
+
 function fillQuad(ctx: Canvas2DLike, project: Projector, a: GeoSegment, b: GeoSegment, style: string): void {
   ctx.fillStyle = style;
   tracePath(ctx, project, [a.left, a.right, b.right, b.left], true);
@@ -177,15 +202,6 @@ export function qualityAlphaScale(geo: GeoStrip): (s: GeoSegment) => number {
     const m = metric(s);
     if (m === undefined || !(span > 0)) return 1;
     return 0.25 + (0.75 * (m - min)) / span;
-  };
-}
-
-/** Alpha policy for the time gradient: older coverage fades toward the floor. */
-export function timeAlphaScale(nowEtSec: number, windowSec: number): (etSec: number) => number {
-  return (etSec) => {
-    const age = nowEtSec - etSec;
-    if (age < 0) return 0.15;
-    return Math.max(0.08, 1 - age / windowSec);
   };
 }
 
@@ -356,7 +372,7 @@ export function paintTrailWindow(
   fromEtSec: number, toEtSec: number,
 ): number {
   const r = resolve(geo, options);
-  const painted = paintQuads(ctx, geo, project, r, () => 0.6, fromEtSec, toEtSec);
+  const painted = paintQuads(ctx, geo, project, r, () => 0.85, fromEtSec, toEtSec);
   for (const s of geo.segments) {
     if (s.etSec > fromEtSec && s.etSec <= toEtSec) paintMechanism(ctx, geo, project, r, s);
   }
@@ -384,13 +400,50 @@ export function paintStrip(ctx: Canvas2DLike, geo: GeoStrip, project: Projector,
     return;
   }
 
-  if (treatment === 'flat-fill' || treatment === 'quality-gradient' || treatment === 'time-gradient') {
-    const alphaOf = treatment === 'flat-fill'
-      ? () => 1
-      : treatment === 'quality-gradient'
-        ? qualityAlphaScale(geo)
-        : (s: GeoSegment) => timeAlphaScale(r.nowEtSec, r.timeWindowSec)(s.etSec);
-    paintQuads(ctx, geo, project, r, alphaOf, -Infinity, Infinity);
+  if (treatment === 'flat-fill') {
+    paintQuads(ctx, geo, project, r, () => 1, -Infinity, Infinity);
+    paintLoneSegments(ctx, geo, project, r, 3);
+    for (const s of geo.segments) paintSparse(ctx, project, r, s);
+    return;
+  }
+
+  if (treatment === 'quality-gradient') {
+    // The atlas recipe: a cross-swath edge fade, transparent at the edges
+    // and strongest at the center, its strength scaled by segment quality.
+    const scale = qualityAlphaScale(geo);
+    for (let i = 0; i + 1 < geo.segments.length; i++) {
+      if (!geo.connect[i]) continue;
+      const later = geo.segments[i + 1]!;
+      const color = stateColor(r.palette, quadState(later));
+      const alpha = Math.min(1, r.fillAlpha * 1.6 * scale(later));
+      eachQuadCopy(project, geo.segments[i]!, later, (pts) => {
+        const grad = ctx.createLinearGradient(pts[0]![0], pts[0]![1], pts[1]![0], pts[1]![1]);
+        grad.addColorStop(0, withAlpha(color, 0));
+        grad.addColorStop(0.5, withAlpha(color, alpha));
+        grad.addColorStop(1, withAlpha(color, 0));
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        pts.forEach(([x, y], j) => (j === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
+        ctx.closePath();
+        ctx.fill();
+      });
+    }
+    paintLoneSegments(ctx, geo, project, r, 3);
+    for (const s of geo.segments) paintSparse(ctx, project, r, s);
+    return;
+  }
+
+  if (treatment === 'time-gradient') {
+    // The atlas recipe: hue runs along track from early to late in the pass,
+    // hsla(196 + 92 sf). Hue encoding time is the explicit AGE-08 override.
+    const first = geo.segments[0]!.etSec;
+    const span = Math.max(geo.segments[geo.segments.length - 1]!.etSec - first, 1e-9);
+    for (let i = 0; i + 1 < geo.segments.length; i++) {
+      if (!geo.connect[i]) continue;
+      const later = geo.segments[i + 1]!;
+      const frac = (later.etSec - first) / span;
+      fillQuad(ctx, project, geo.segments[i]!, later, `hsla(${196 + 92 * frac},65%,60%,${r.fillAlpha})`);
+    }
     paintLoneSegments(ctx, geo, project, r, 3);
     for (const s of geo.segments) paintSparse(ctx, project, r, s);
     return;
@@ -403,20 +456,24 @@ export function paintStrip(ctx: Canvas2DLike, geo: GeoStrip, project: Projector,
     return;
   }
 
-  // mechanism: LOD gate on projected swath width (AGE-09). A strip with no
-  // mechanism detail keeps its full envelope; only strips that will draw
-  // detail on top dim the envelope to a backdrop.
+  // mechanism: LOD gate on projected swath width (AGE-09); below the
+  // threshold the strip falls back to its envelope.
   const widthPx = medianProjectedWidthPx(geo, project);
-  const hasMechanismDetail = geo.segments.some((s) =>
-    s.sub?.some((e) => e.kind === 'footprint' || e.kind === 'frame' || e.kind === 'look' || e.kind === 'baseline'));
-  if (!hasMechanismDetail || (decideLod(widthPx, r.mechanismMinWidthPx) === 'envelope' && widthPx > 0)) {
+  if (decideLod(widthPx, r.mechanismMinWidthPx) === 'envelope' && widthPx > 0) {
     paintQuads(ctx, geo, project, r, () => 1, -Infinity, Infinity);
     paintLoneSegments(ctx, geo, project, r, 3);
     for (const s of geo.segments) paintSparse(ctx, project, r, s);
     return;
   }
-  paintQuads(ctx, geo, project, r, () => 0.35, -Infinity, Infinity);
+  // The atlas mechanism texture: a faint backdrop with cross-track hatching
+  // in the instrument's dash pattern, plus whatever sub-structure detail the
+  // strip carries on top.
+  paintQuads(ctx, geo, project, r, () => 0.4, -Infinity, Infinity);
   ctx.setLineDash(r.dash);
+  for (const s of geo.segments) {
+    if (s.widthKm <= 0) continue;
+    strokeLine(ctx, project, s.left, s.right, withAlpha(stateColor(r.palette, s.state), 0.4), 1);
+  }
   paintLoneSegments(ctx, geo, project, r, 3);
   for (const s of geo.segments) paintMechanism(ctx, geo, project, r, s);
   ctx.setLineDash([]);

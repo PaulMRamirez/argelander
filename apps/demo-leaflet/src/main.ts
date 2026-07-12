@@ -10,7 +10,7 @@ import 'leaflet/dist/leaflet.css';
 import * as L from 'leaflet';
 import { trackStrip, withStateRule } from 'argelander-core';
 import type { Strip } from 'argelander-core';
-import { AcquisitionLayer, TREATMENTS } from 'argelander-leaflet';
+import { AcquisitionLayer, TREATMENTS, TREATMENT_LABELS } from 'argelander-leaflet';
 import type { Treatment } from 'argelander-leaflet';
 import { parseTle, remoteStateProvider } from 'argelander-providers';
 import type { StatePortLike } from 'argelander-providers';
@@ -43,7 +43,7 @@ const statusLabel = document.getElementById('status') as HTMLSpanElement;
 for (const t of TREATMENTS) {
   const option = document.createElement('option');
   option.value = t;
-  option.textContent = t;
+  option.textContent = TREATMENT_LABELS[t];
   if (t === 'now-trail') option.selected = true;
   treatmentSelect.appendChild(option);
 }
@@ -90,8 +90,7 @@ async function start(): Promise<void> {
         correction: 'NONE',
         epochs: { start: epochEt + fromSec, end: epochEt + toSec, step: PASS_STEP_SEC },
       });
-      baseStrips.push(trackStrip(batch, 0, {
-        id: `demo-${sat.name}-w${w}`,
+      const common = {
         body: 'EARTH',
         bodyRadiusKm: EARTH_RADIUS_KM,
         instrumentId: sat.name,
@@ -99,11 +98,34 @@ async function start(): Promise<void> {
         generatedBy: 'demo-leaflet',
         missionId: 'demo',
         passId: 'pass-0',
-        ...(sat.swathHalfWidthKm !== undefined ? { swathHalfWidthKm: sat.swathHalfWidthKm } : {}),
-        ...(sat.beadOffsetsKm !== undefined ? { beadOffsetsKm: sat.beadOffsetsKm } : {}),
-        ...(sat.scan !== undefined ? { scan: sat.scan } : {}),
-        ...(sat.offsetRangeKm !== undefined ? { offsetRangeKm: sat.offsetRangeKm } : {}),
-      }));
+      } as const;
+      if (sat.bilateralKm) {
+        // Two swaths plus the nadir chain, three strips sharing the passId
+        // (the SPEC-STRIP bilateral decomposition, live).
+        const { gapKm, outerKm } = sat.bilateralKm;
+        baseStrips.push(
+          trackStrip(batch, 0, {
+            ...common, id: `demo-${sat.name}-w${w}-left`,
+            offsetRangeKm: { nearKm: gapKm, farKm: outerKm, side: 'left' },
+          }),
+          trackStrip(batch, 0, {
+            ...common, id: `demo-${sat.name}-w${w}-right`,
+            offsetRangeKm: { nearKm: gapKm, farKm: outerKm, side: 'right' },
+          }),
+          trackStrip(batch, 0, {
+            ...common, id: `demo-${sat.name}-w${w}-nadir`, beadOffsetsKm: [0],
+          }),
+        );
+      } else {
+        baseStrips.push(trackStrip(batch, 0, {
+          ...common,
+          id: `demo-${sat.name}-w${w}`,
+          ...(sat.swathHalfWidthKm !== undefined ? { swathHalfWidthKm: sat.swathHalfWidthKm } : {}),
+          ...(sat.beadOffsetsKm !== undefined ? { beadOffsetsKm: sat.beadOffsetsKm } : {}),
+          ...(sat.scan !== undefined ? { scan: sat.scan } : {}),
+          ...(sat.offsetRangeKm !== undefined ? { offsetRangeKm: sat.offsetRangeKm } : {}),
+        }));
+      }
     }
     const layer = new AcquisitionLayer(
       baseStrips.map((strip) => withStateRule(strip, epochEt + tauSec)),
