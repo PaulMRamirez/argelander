@@ -31,7 +31,7 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
 }).addTo(map);
 
-const worker = new Worker('./sgp4-worker.js');
+const worker = new Worker(`./sgp4-worker.js?v=${__BUILD_ID__}`);
 const provider = remoteStateProvider(worker as unknown as StatePortLike, 'sgp4');
 
 const treatmentSelect = document.getElementById('treatment') as HTMLSelectElement;
@@ -75,7 +75,9 @@ function applyStates(): void {
 async function start(): Promise<void> {
   statusLabel.textContent = 'propagating in the worker...';
   const overlays: Record<string, L.Layer> = {};
+  const failures: string[] = [];
   for (const sat of DEMO_SATS) {
+    try {
     const epochEt = parseTle(sat.line1, sat.line2, sat.name).epochEt;
     // One strip per tasked window, sharing the passId; gaps between windows
     // are real and never ribboned over (SPEC-STRIP section 2).
@@ -140,9 +142,15 @@ async function start(): Promise<void> {
     layer.addTo(map);
     overlays[sat.label] = layer;
     satLayers.push({ layer, epochEt, baseStrips });
+    } catch (err) {
+      // One satellite failing must not take the constellation down.
+      failures.push(`${sat.name}: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
   L.control.layers(undefined, overlays, { collapsed: true }).addTo(map);
-  statusLabel.textContent = `${DEMO_SATS.map((s) => s.name).join(' | ')}  |  simulated plan: the clock executes it (amber ahead, teal behind)  |  zoom in for the scan mechanism`;
+  const names = satLayers.length ? `${satLayers.length} satellites` : 'no satellites loaded';
+  const failed = failures.length ? `  |  failed: ${failures.join('; ')}` : '';
+  statusLabel.textContent = `${names}  |  simulated plan: the clock executes it (amber ahead, teal behind)  |  zoom in for the scan mechanism${failed}`;
   applyNow();
 
   let lastMs = performance.now();

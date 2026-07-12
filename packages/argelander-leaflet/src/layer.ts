@@ -182,7 +182,8 @@ export class AcquisitionLayer extends L.Layer {
   private drawNowFrame(dtSec: number): void {
     if (!this.map || !this.canvas || !this.trailCanvas) return;
     const trailCtx = this.trailCanvas.getContext('2d')!;
-    const now = this.nowEtSec ?? Infinity;
+    // No clock yet means no coverage swept yet, not all of it.
+    const now = this.nowEtSec ?? -Infinity;
     if (now < this.trailPaintedToEtSec) {
       // The clock ran backward (a scrub or a looping pass): rebuild the trail.
       trailCtx.clearRect(0, 0, this.trailCanvas.width, this.trailCanvas.height);

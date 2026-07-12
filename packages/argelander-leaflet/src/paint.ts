@@ -168,12 +168,18 @@ function dot(ctx: Canvas2DLike, project: Projector, p: GeoPoint, radiusPx: numbe
   ctx.fill();
 }
 
-/** Pixels per kilometer at a point, probed through the projector. */
+/**
+ * Pixels per kilometer at a point, probed through the projector over a half
+ * degree of latitude. The wide baseline matters: Leaflet rounds projected
+ * points to integer pixels, and a 1 km probe collapses to 0 or explodes to
+ * a full pixel, inflating footprints forty-fold at world zoom.
+ */
 function localScalePxPerKm(geo: GeoStrip, project: Projector, at: GeoPoint): number {
-  const dLat = 1 / kmPerDegLat(geo.radiusKm);
+  const baselineDeg = 0.5;
+  const step = at.latDeg > 89 ? -baselineDeg : baselineDeg;
   const [x0, y0] = project(at);
-  const [x1, y1] = project({ lonDeg: at.lonDeg, latDeg: at.latDeg + dLat });
-  return Math.hypot(x1 - x0, y1 - y0);
+  const [x1, y1] = project({ lonDeg: at.lonDeg, latDeg: at.latDeg + step });
+  return Math.hypot(x1 - x0, y1 - y0) / (kmPerDegLat(geo.radiusKm) * baselineDeg);
 }
 
 /** Quad state: the state in force when its swath area finished acquiring. */
