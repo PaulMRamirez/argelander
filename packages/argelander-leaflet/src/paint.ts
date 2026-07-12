@@ -244,8 +244,9 @@ function paintMechanism(ctx: Canvas2DLike, geo: GeoStrip, project: Projector, r:
       // Floor the scale so a footprint never falls below a legible pixel
       // size; the aspect ratio survives the floor.
       const scale = Math.max(localScalePxPerKm(geo, project, g), 1.6 / entry.semiMajorKm);
-      ctx.strokeStyle = withAlpha(color, 0.85);
-      ctx.fillStyle = withAlpha(color, 0.45);
+      const acquiring = (stateOverride ?? segment.state) === 'acquiring';
+      ctx.strokeStyle = withAlpha(color, acquiring ? 1 : 0.85);
+      ctx.fillStyle = withAlpha(color, acquiring ? 0.85 : 0.45);
       ctx.lineWidth = 1;
       ctx.beginPath();
       // rotationRad is counterclockwise from east; canvas y grows down.
@@ -302,7 +303,10 @@ function paintQuads(
     if (later.etSec <= fromEtSec || later.etSec > toEtSec) continue;
     const alpha = alphaOf(later);
     if (alpha <= 0) continue;
-    fillQuad(ctx, project, geo.segments[i]!, later, withAlpha(stateColor(r.palette, quadState(later)), r.fillAlpha * alpha));
+    const state = quadState(later);
+    // The now pops: the acquiring band paints near opaque in every mode.
+    const fillAlphaHere = state === 'acquiring' ? Math.max(r.fillAlpha * alpha, 0.9) : r.fillAlpha * alpha;
+    fillQuad(ctx, project, geo.segments[i]!, later, withAlpha(stateColor(r.palette, state), fillAlphaHere));
     painted++;
   }
   return painted;
@@ -316,7 +320,11 @@ function paintLoneSegments(ctx: Canvas2DLike, geo: GeoStrip, project: Projector,
     const before = i > 0 ? geo.connect[i - 1]! : false;
     const after = i < geo.connect.length ? geo.connect[i]! : false;
     if (before || after) continue;
-    strokeLine(ctx, project, s.left, s.right, withAlpha(stateColor(r.palette, s.state), 0.9), widthPx);
+    strokeLine(
+      ctx, project, s.left, s.right,
+      withAlpha(stateColor(r.palette, s.state), s.state === 'acquiring' ? 1 : 0.9),
+      s.state === 'acquiring' ? widthPx + 1 : widthPx,
+    );
   }
 }
 
@@ -357,7 +365,11 @@ export function paintNowLine(ctx: Canvas2DLike, geo: GeoStrip, project: Projecto
   // passed must not park a stale now on its last segment.
   if (r.nowEtSec - current.etSec > geo.medianStepSec * 1.5 + 1e-9) return;
   if (current.widthKm > 0) {
-    strokeLine(ctx, project, current.left, current.right, r.palette.acquiring, 3.5);
+    ctx.save();
+    ctx.shadowColor = r.palette.acquiring;
+    ctx.shadowBlur = 8;
+    strokeLine(ctx, project, current.left, current.right, r.palette.acquiring, 4);
+    ctx.restore();
   }
   // Glowing beam-center marker, the atlas platform dot.
   const at = current.widthKm > 0 ? midpoint(current.left, current.right) : current.left;
@@ -411,9 +423,11 @@ export function paintStrip(ctx: Canvas2DLike, geo: GeoStrip, project: Projector,
       if (!geo.connect[i]) continue;
       const a = geo.segments[i]!;
       const b = geo.segments[i + 1]!;
-      const style = withAlpha(stateColor(r.palette, quadState(b)), 0.9);
-      strokeLine(ctx, project, a.left, b.left, style, r.lineWidthPx);
-      strokeLine(ctx, project, a.right, b.right, style, r.lineWidthPx);
+      const state = quadState(b);
+      const style = withAlpha(stateColor(r.palette, state), state === 'acquiring' ? 1 : 0.9);
+      const width = state === 'acquiring' ? r.lineWidthPx + 1 : r.lineWidthPx;
+      strokeLine(ctx, project, a.left, b.left, style, width);
+      strokeLine(ctx, project, a.right, b.right, style, width);
     }
     paintLoneSegments(ctx, geo, project, r, r.lineWidthPx);
     for (const s of geo.segments) paintSparse(ctx, project, r, s);
@@ -435,7 +449,9 @@ export function paintStrip(ctx: Canvas2DLike, geo: GeoStrip, project: Projector,
       if (!geo.connect[i]) continue;
       const later = geo.segments[i + 1]!;
       const color = stateColor(r.palette, quadState(later));
-      const alpha = Math.min(1, r.fillAlpha * 1.6 * scale(later));
+      const alpha = quadState(later) === 'acquiring'
+        ? 0.95
+        : Math.min(1, r.fillAlpha * 1.6 * scale(later));
       eachQuadCopy(project, geo.segments[i]!, later, (pts) => {
         const grad = ctx.createLinearGradient(pts[0]![0], pts[0]![1], pts[1]![0], pts[1]![1]);
         grad.addColorStop(0, withAlpha(color, 0));
@@ -492,7 +508,12 @@ export function paintStrip(ctx: Canvas2DLike, geo: GeoStrip, project: Projector,
   ctx.setLineDash(r.dash);
   for (const s of geo.segments) {
     if (s.widthKm <= 0) continue;
-    strokeLine(ctx, project, s.left, s.right, withAlpha(stateColor(r.palette, s.state), 0.4), 1);
+    const acquiring = s.state === 'acquiring';
+    strokeLine(
+      ctx, project, s.left, s.right,
+      withAlpha(stateColor(r.palette, s.state), acquiring ? 0.95 : 0.4),
+      acquiring ? 2 : 1,
+    );
   }
   paintLoneSegments(ctx, geo, project, r, 3);
   for (const s of geo.segments) paintMechanism(ctx, geo, project, r, s);
