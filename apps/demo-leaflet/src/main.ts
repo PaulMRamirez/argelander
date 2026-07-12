@@ -41,7 +41,7 @@ for (const t of TREATMENTS) {
   const option = document.createElement('option');
   option.value = t;
   option.textContent = t;
-  if (t === 'now-trail') option.selected = true;
+  if (t === 'mechanism') option.selected = true;
   treatmentSelect.appendChild(option);
 }
 
@@ -84,6 +84,7 @@ async function start(): Promise<void> {
       passId: 'pass-0',
       ...(sat.swathHalfWidthKm !== undefined ? { swathHalfWidthKm: sat.swathHalfWidthKm } : {}),
       ...(sat.beadOffsetsKm !== undefined ? { beadOffsetsKm: sat.beadOffsetsKm } : {}),
+      ...(sat.scan !== undefined ? { scan: sat.scan } : {}),
     });
     const layer = new AcquisitionLayer([strip], {
       treatment: currentTreatment(),
@@ -92,7 +93,7 @@ async function start(): Promise<void> {
     layer.addTo(map);
     satLayers.push({ layer, epochEt });
   }
-  statusLabel.textContent = DEMO_SATS.map((s) => s.label).join('  |  ');
+  statusLabel.textContent = `${DEMO_SATS.map((s) => s.label).join('  |  ')}  |  zoom in over a swath to reveal the scan mechanism`;
   applyNow();
 
   let lastMs = performance.now();
