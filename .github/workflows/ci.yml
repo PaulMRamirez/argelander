@@ -15,6 +15,9 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
+          # pnpm arrives via corepack on the next step; the v5 default cache
+          # probe fails looking for it here.
+          package-manager-cache: false
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: pnpm verify
@@ -30,10 +33,11 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
+          package-manager-cache: false
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: pnpm docs:build
