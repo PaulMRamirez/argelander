@@ -1,25 +1,33 @@
 /**
- * demo-leaflet: live SGP4 footprints over open tiles (PHASE-1). States come
- * from the worker-hosted provider through the port seam, trackStrip turns
- * them into strips, and one AcquisitionLayer per satellite paints them; the
- * main thread only paints (AGE-05). Each satellite runs its own Et clock
- * from its element epoch, driven by a shared pass fraction. Respects
- * prefers-reduced-motion by starting paused on one rendered pass (AGE-16).
+ * demo-leaflet: live footprints over open tiles (PHASE-1). Earth states come
+ * from the worker-hosted SGP4 provider through the port seam; the Moon and
+ * Mars come from PresampledProvider tables, the planetary posture, and the
+ * engine cannot tell the difference (AGE-05). trackStrip turns states into
+ * strips and one AcquisitionLayer per instrument paints them. Each platform
+ * runs its own Et clock from its epoch, driven by a shared pass fraction.
+ * Worlds own their map: switching tears the Leaflet map down and rebuilds
+ * it with the right CRS, because a Leaflet map cannot change CRS in place.
+ * Respects prefers-reduced-motion by starting paused (AGE-16).
  */
 import 'leaflet/dist/leaflet.css';
 import * as L from 'leaflet';
 import { trackStrip, withStateRule } from 'argelander-core';
-import type { Strip } from 'argelander-core';
+import type { StateProvider, Strip } from 'argelander-core';
 import { AcquisitionLayer } from 'argelander-leaflet';
 import type { Treatment } from 'argelander-leaflet';
-import { parseTle, remoteStateProvider } from 'argelander-providers';
+import { PresampledProvider, parseTle, remoteStateProvider } from 'argelander-providers';
 import { createPanel } from './panel.js';
+import type { WorldHost } from './panel.js';
+import { sampleOrbit } from './orbits.js';
 import type { DemoInstrument } from './tles.js';
 import { DEMO_SATS, PASS_STEP_SEC, PASS_WINDOW_SEC } from './tles.js';
+import { WORLDS, worldByKey } from './worlds.js';
+import type { WorldSpec } from './worlds.js';
 
 const EARTH_RADIUS_KM = 6371;
 
 interface SatLayer {
+  world: string;
   layer: AcquisitionLayer;
   epochEt: number;
   satName: string;
@@ -28,20 +36,33 @@ interface SatLayer {
   baseStrips: readonly Strip[];
 }
 
-// No attribution control on the map: the tile credit is a license
-// obligation, so it moves into the config panel footer instead of
-// overlaying map pixels (createPanel renders it per basemap).
-const map = L.map('map', { worldCopyJump: true, zoomControl: true, attributionControl: false })
-  .setView([25, 0], 2);
+function createMap(world: WorldSpec): L.Map {
+  const map = world.epsg4326
+    ? L.map('map', { crs: L.CRS.EPSG4326, zoomControl: true, attributionControl: false, minZoom: 1 })
+    : L.map('map', { worldCopyJump: true, zoomControl: true, attributionControl: false });
+  return map.setView([world.center[0], world.center[1]], world.zoom);
+}
 
-const baseMaps: Record<string, L.TileLayer> = {
-  'Dark': L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 12 }),
-  'Streets': L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 12 }),
-  'Terrain': L.tileLayer('https://tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 12 }),
+const satLayers: SatLayer[] = [];
+let map = createMap(worldByKey('earth'));
+
+// No attribution control on any map: the tile credit is a license
+// obligation and renders in the config panel footer per basemap.
+const host: WorldHost = {
+  get map() {
+    return map;
+  },
+  setWorld(key: string): void {
+    for (const s of satLayers) {
+      if (map.hasLayer(s.layer)) map.removeLayer(s.layer);
+    }
+    map.remove();
+    map = createMap(worldByKey(key));
+  },
 };
-baseMaps['Dark']!.addTo(map);
-// The dark ground is a CSS filter over the tile pane; it belongs to the
-// Dark basemap only. The config panel owns basemap switching.
+
+// The opening basemap; the panel owns every later basemap change.
+worldByKey('earth').bases[0]!.layer.addTo(map);
 map.getContainer().classList.add('dark-tiles');
 
 const legend = document.getElementById('legend')!;
@@ -52,7 +73,7 @@ legendToggle.addEventListener('click', () => {
 });
 
 const worker = new Worker(`./sgp4-worker.js?v=${__BUILD_ID__}`);
-const provider = remoteStateProvider(worker, 'sgp4');
+const earthProvider = remoteStateProvider(worker, 'sgp4');
 
 const speedSelect = document.getElementById('speed') as HTMLSelectElement;
 const pauseButton = document.getElementById('pause') as HTMLButtonElement;
@@ -67,7 +88,6 @@ const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').match
 let paused = reduceMotion;
 let speed = 60;
 let tauSec = reduceMotion ? PASS_WINDOW_SEC : 0;
-const satLayers: SatLayer[] = [];
 
 function applyNow(): void {
   for (const s of satLayers) s.layer.setNow(s.epochEt + tauSec);
@@ -83,6 +103,83 @@ function applyStates(): void {
   }
 }
 
+/**
+ * One instrument's strips for one pass: a states query per tasked window so
+ * the gaps between windows are real (SPEC-STRIP section 2), the bilateral
+ * pair decomposed into two strips sharing the passId.
+ */
+async function instrumentStrips(
+  provider: StateProvider,
+  target: string,
+  satName: string,
+  instrument: DemoInstrument,
+  epochEt: number,
+  geometry: { observer: string; frame: string; bodyRadiusKm: number },
+): Promise<Strip[]> {
+  const windows = instrument.taskWindowsSec ?? [[0, PASS_WINDOW_SEC] as const];
+  const strips: Strip[] = [];
+  for (let w = 0; w < windows.length; w++) {
+    const [fromSec, toSec] = windows[w]!;
+    const batch = await provider.states({
+      targets: [target],
+      observer: geometry.observer,
+      frame: geometry.frame,
+      correction: 'NONE',
+      epochs: { start: epochEt + fromSec, end: epochEt + toSec, step: PASS_STEP_SEC },
+    });
+    const common = {
+      body: geometry.observer,
+      bodyRadiusKm: geometry.bodyRadiusKm,
+      instrumentId: `${satName}/${instrument.id}`,
+      authority: provider.id,
+      generatedBy: 'demo-leaflet',
+      missionId: 'demo',
+      passId: 'pass-0',
+    } as const;
+    if (instrument.bilateralKm) {
+      const { gapKm, outerKm } = instrument.bilateralKm;
+      strips.push(
+        trackStrip(batch, 0, {
+          ...common, id: `demo-${satName}-${instrument.id}-w${w}-left`,
+          offsetRangeKm: { nearKm: gapKm, farKm: outerKm, side: 'left' },
+        }),
+        trackStrip(batch, 0, {
+          ...common, id: `demo-${satName}-${instrument.id}-w${w}-right`,
+          offsetRangeKm: { nearKm: gapKm, farKm: outerKm, side: 'right' },
+        }),
+      );
+    } else {
+      strips.push(trackStrip(batch, 0, {
+        ...common,
+        id: `demo-${satName}-${instrument.id}-w${w}`,
+        ...(instrument.swathHalfWidthKm !== undefined ? { swathHalfWidthKm: instrument.swathHalfWidthKm } : {}),
+        ...(instrument.beadOffsetsKm !== undefined ? { beadOffsetsKm: instrument.beadOffsetsKm } : {}),
+        ...(instrument.scan !== undefined ? { scan: instrument.scan } : {}),
+        ...(instrument.offsetRangeKm !== undefined ? { offsetRangeKm: instrument.offsetRangeKm } : {}),
+      }));
+    }
+  }
+  return strips;
+}
+
+function registerLayer(world: string, satName: string, instrument: DemoInstrument, epochEt: number, baseStrips: readonly Strip[]): void {
+  const layer = new AcquisitionLayer(
+    baseStrips.map((strip) => withStateRule(strip, epochEt + tauSec)),
+    {
+      treatment: DEFAULT_TREATMENT,
+      paused,
+      // Reveal the scan mechanism once footprints are legible, not at
+      // the default threshold where they render as sub-pixel dots.
+      mechanismMinWidthPx: 16,
+    },
+  );
+  // Only Earth layers land on the opening map; the panel reconciles the
+  // active world's layers from then on. Off-at-start instruments stay
+  // listed with their states updating, so enabling lands on the clock.
+  if (world === 'earth' && instrument.startOn !== false) layer.addTo(map);
+  satLayers.push({ world, layer, epochEt, satName, instrument, baseStrips });
+}
+
 async function start(): Promise<void> {
   statusLabel.textContent = 'propagating in the worker...';
   const failures: string[] = [];
@@ -92,80 +189,49 @@ async function start(): Promise<void> {
     // provider states, and each gets its own toggleable layer.
     for (const instrument of sat.instruments) {
       try {
-        // One strip per tasked window, sharing the passId; gaps between
-        // windows are real and never ribboned over (SPEC-STRIP section 2).
-        const windows = instrument.taskWindowsSec ?? [[0, PASS_WINDOW_SEC] as const];
-        const baseStrips: Strip[] = [];
-        for (let w = 0; w < windows.length; w++) {
-          const [fromSec, toSec] = windows[w]!;
-          const batch = await provider.states({
-            targets: [sat.name],
-            observer: 'EARTH',
-            frame: 'ITRF93',
-            correction: 'NONE',
-            epochs: { start: epochEt + fromSec, end: epochEt + toSec, step: PASS_STEP_SEC },
-          });
-          const common = {
-            body: 'EARTH',
-            bodyRadiusKm: EARTH_RADIUS_KM,
-            instrumentId: `${sat.name}/${instrument.id}`,
-            authority: provider.id,
-            generatedBy: 'demo-leaflet',
-            missionId: 'demo',
-            passId: 'pass-0',
-          } as const;
-          if (instrument.bilateralKm) {
-            // Two swaths sharing the passId, the bilateral decomposition.
-            const { gapKm, outerKm } = instrument.bilateralKm;
-            baseStrips.push(
-              trackStrip(batch, 0, {
-                ...common, id: `demo-${sat.name}-${instrument.id}-w${w}-left`,
-                offsetRangeKm: { nearKm: gapKm, farKm: outerKm, side: 'left' },
-              }),
-              trackStrip(batch, 0, {
-                ...common, id: `demo-${sat.name}-${instrument.id}-w${w}-right`,
-                offsetRangeKm: { nearKm: gapKm, farKm: outerKm, side: 'right' },
-              }),
-            );
-          } else {
-            baseStrips.push(trackStrip(batch, 0, {
-              ...common,
-              id: `demo-${sat.name}-${instrument.id}-w${w}`,
-              ...(instrument.swathHalfWidthKm !== undefined ? { swathHalfWidthKm: instrument.swathHalfWidthKm } : {}),
-              ...(instrument.beadOffsetsKm !== undefined ? { beadOffsetsKm: instrument.beadOffsetsKm } : {}),
-              ...(instrument.scan !== undefined ? { scan: instrument.scan } : {}),
-              ...(instrument.offsetRangeKm !== undefined ? { offsetRangeKm: instrument.offsetRangeKm } : {}),
-            }));
-          }
-        }
-        const layer = new AcquisitionLayer(
-          baseStrips.map((strip) => withStateRule(strip, epochEt + tauSec)),
-          {
-            treatment: DEFAULT_TREATMENT,
-            paused,
-            // Reveal the scan mechanism once footprints are legible, not at
-            // the default threshold where they render as sub-pixel dots.
-            mechanismMinWidthPx: 16,
-          },
-        );
-        // Off-at-start instruments stay listed in the panel; their states
-        // keep updating so enabling one lands on the current clock.
-        if (instrument.startOn !== false) layer.addTo(map);
-        satLayers.push({ layer, epochEt, satName: sat.name, instrument, baseStrips });
+        const baseStrips = await instrumentStrips(earthProvider, sat.name, sat.name, instrument, epochEt, {
+          observer: 'EARTH', frame: 'ITRF93', bodyRadiusKm: EARTH_RADIUS_KM,
+        });
+        registerLayer('earth', sat.name, instrument, epochEt, baseStrips);
       } catch (err) {
         // One instrument failing must not take the constellation down.
         failures.push(`${sat.name}/${instrument.id}: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
   }
+
+  // The planetary worlds: demonstration orbits sampled into tables and
+  // served through the pre-sampled seam, epoch zero by convention.
+  for (const world of WORLDS) {
+    if (world.sats.length === 0) continue;
+    const provider = new PresampledProvider(
+      world.sats.map((s) => sampleOrbit(s.orbit, 0, PASS_WINDOW_SEC, PASS_STEP_SEC)),
+      [],
+      { id: `demo-presampled-${world.key}` },
+    );
+    for (const sat of world.sats) {
+      for (const instrument of sat.instruments) {
+        try {
+          const baseStrips = await instrumentStrips(provider, sat.orbit.target, sat.name, instrument, 0, {
+            observer: sat.orbit.body, frame: sat.orbit.frame, bodyRadiusKm: sat.orbit.bodyRadiusKm,
+          });
+          registerLayer(world.key, sat.name, instrument, 0, baseStrips);
+        } catch (err) {
+          failures.push(`${sat.name}/${instrument.id}: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
+    }
+  }
+
   createPanel({
-    map,
-    baseMaps,
-    entries: satLayers.map((s) => ({ satName: s.satName, instrument: s.instrument, layer: s.layer })),
+    host,
+    worlds: WORLDS,
+    currentWorld: 'earth',
+    entries: satLayers.map((s) => ({ world: s.world, satName: s.satName, instrument: s.instrument, layer: s.layer })),
     defaultTreatment: DEFAULT_TREATMENT,
   });
   const names = satLayers.length
-    ? `${DEMO_SATS.length} satellites, ${satLayers.length} instruments`
+    ? `${new Set(satLayers.map((s) => s.satName)).size} satellites, ${satLayers.length} instruments, 3 worlds`
     : 'no instruments loaded';
   const failed = failures.length ? `  |  failed: ${failures.join('; ')}` : '';
   statusLabel.textContent = `${names}  |  simulated plan: the clock executes it (amber ahead, teal behind)  |  zoom in for the scan mechanism${failed}`;
@@ -178,9 +244,6 @@ async function start(): Promise<void> {
     lastMs = nowMs;
     if (!paused) {
       tauSec = (tauSec + dt * speed) % PASS_WINDOW_SEC;
-      // Clock first, then states: updateStates repaints the static
-      // treatments, and its now marker must not lag the state front by a
-      // segment (the SWOT field report).
       applyNow();
       const stateTick = Math.floor(tauSec / PASS_STEP_SEC);
       if (stateTick !== lastStateTick) {

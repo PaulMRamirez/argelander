@@ -1,20 +1,32 @@
 /**
- * The layer configuration panel: satellites over instruments, rendered from
- * a plain array of AGE-12-shaped per-layer config records. The DOM is a
- * render of the array; every handler writes a field and reconciles, so the
- * panel is a working prototype of layer-config-as-data (AGE-07, AGE-12).
- * Grouping by satellite is derived from the data, never stored, because a
- * satellite is not a config entity in the AGE-12 schema. Scan detail note:
- * the Early / Standard / Late stops gate the mechanism treatment's LOD only;
- * now-trail paints mechanism sub-structure with the trail unconditionally
- * (paintTrailWindow, the atlas behavior), so there is deliberately no OFF.
+ * The layer configuration panel: worlds over satellites over instruments,
+ * rendered from a plain array of AGE-12-shaped per-layer config records.
+ * The DOM is a render of the array; every handler writes a field and
+ * reconciles, so the panel is a working prototype of layer-config-as-data
+ * (AGE-07, AGE-12). Grouping by satellite is derived from the data, never
+ * stored, because a satellite is not a config entity in the AGE-12 schema.
+ * The world control swaps the whole map (a Leaflet map cannot change CRS in
+ * place), then reconciles that world's layers onto the fresh map. Scan
+ * detail note: the Early / Standard / Late stops gate the mechanism
+ * treatment's LOD only; now-trail paints mechanism sub-structure with the
+ * trail unconditionally (paintTrailWindow, the atlas behavior), so there is
+ * deliberately no OFF.
  */
 import * as L from 'leaflet';
 import { TREATMENTS, TREATMENT_LABELS, dashPatternFor } from 'argelander-leaflet';
 import type { AcquisitionLayer, Treatment } from 'argelander-leaflet';
 import type { DemoInstrument } from './tles.js';
+import { MAP_CLASSES, worldByKey } from './worlds.js';
+import type { CreditPart, WorldSpec } from './worlds.js';
+
+/** The map owner: the panel reads .map fresh because setWorld replaces it. */
+export interface WorldHost {
+  readonly map: L.Map;
+  setWorld(key: string): void;
+}
 
 export interface PanelEntry {
+  world: string;
   satName: string;
   instrument: DemoInstrument;
   layer: AcquisitionLayer;
@@ -22,6 +34,7 @@ export interface PanelEntry {
 
 interface LayerConfig {
   id: string;
+  world: string;
   satName: string;
   instrument: DemoInstrument;
   layer: AcquisitionLayer;
@@ -30,8 +43,9 @@ interface LayerConfig {
 }
 
 export interface PanelInit {
-  map: L.Map;
-  baseMaps: Record<string, L.TileLayer>;
+  host: WorldHost;
+  worlds: readonly WorldSpec[];
+  currentWorld: string;
   entries: readonly PanelEntry[];
   defaultTreatment: Treatment;
 }
@@ -60,6 +74,7 @@ export function createPanel(init: PanelInit): void {
 
   const configs: LayerConfig[] = init.entries.map((e) => ({
     id: `${e.satName}/${e.instrument.id}`,
+    world: e.world,
     satName: e.satName,
     instrument: e.instrument,
     layer: e.layer,
@@ -70,23 +85,50 @@ export function createPanel(init: PanelInit): void {
   const openSats = new Set<string>();
   let expandedId: string | null = null;
   let scanDetail: ScanStop = 'Standard';
-  let baseName = 'Dark';
+  let world = init.currentWorld;
+  const baseChoice = new Map(init.worlds.map((w) => [w.key, w.defaultBase]));
   let open = !window.matchMedia('(max-width: 640px)').matches;
 
+  function visible(): LayerConfig[] {
+    return configs.filter((c) => c.world === world);
+  }
+
   function reconcile(): void {
-    for (const c of configs) {
-      const on = init.map.hasLayer(c.layer);
-      if (c.enabled && !on) c.layer.addTo(init.map);
-      else if (!c.enabled && on) init.map.removeLayer(c.layer);
+    for (const c of visible()) {
+      const on = init.host.map.hasLayer(c.layer);
+      if (c.enabled && !on) c.layer.addTo(init.host.map);
+      else if (!c.enabled && on) init.host.map.removeLayer(c.layer);
     }
   }
 
+  /** Show the remembered basemap for the current world, tone class included. */
+  function applyBase(): void {
+    const spec = worldByKey(world);
+    const name = baseChoice.get(world)!;
+    for (const b of spec.bases) {
+      if (b.name !== name && init.host.map.hasLayer(b.layer)) init.host.map.removeLayer(b.layer);
+    }
+    const base = spec.bases.find((b) => b.name === name)!;
+    if (!init.host.map.hasLayer(base.layer)) base.layer.addTo(init.host.map);
+    const container = init.host.map.getContainer();
+    for (const cls of MAP_CLASSES) container.classList.remove(cls);
+    if (base.mapClass) container.classList.add(base.mapClass);
+  }
+
   function setBase(name: string): void {
-    if (name === baseName) return;
-    init.map.removeLayer(init.baseMaps[baseName]!);
-    init.baseMaps[name]!.addTo(init.map);
-    init.map.getContainer().classList.toggle('dark-tiles', name === 'Dark');
-    baseName = name;
+    if (name === baseChoice.get(world)) return;
+    baseChoice.set(world, name);
+    applyBase();
+  }
+
+  function setWorld(key: string): void {
+    if (key === world) return;
+    world = key;
+    expandedId = null;
+    init.host.setWorld(key);
+    applyBase();
+    reconcile();
+    render();
   }
 
   function setScanDetail(stop: ScanStop): void {
@@ -95,7 +137,7 @@ export function createPanel(init: PanelInit): void {
   }
 
   function only(ids: readonly string[]): void {
-    for (const c of configs) c.enabled = ids.includes(c.id);
+    for (const c of visible()) c.enabled = ids.includes(c.id);
     reconcile();
     render();
   }
@@ -107,8 +149,13 @@ export function createPanel(init: PanelInit): void {
       c.layer.setTreatment(init.defaultTreatment);
     }
     setScanDetail('Standard');
-    setBase('Dark');
+    for (const w of init.worlds) baseChoice.set(w.key, w.defaultBase);
     expandedId = null;
+    if (world !== 'earth') {
+      world = 'earth';
+      init.host.setWorld('earth');
+    }
+    applyBase();
     reconcile();
     render();
   }
@@ -142,7 +189,7 @@ export function createPanel(init: PanelInit): void {
   }
 
   function onCount(): number {
-    return configs.filter((c) => c.enabled).length;
+    return visible().filter((c) => c.enabled).length;
   }
 
   function checkbox(checked: boolean, indeterminate: boolean, onChange: (v: boolean) => void): HTMLInputElement {
@@ -260,34 +307,29 @@ export function createPanel(init: PanelInit): void {
 
   /**
    * The tile credit lives here, not on the map: the attribution overlay was
-   * costing map pixels, and ODbL asks for reasonable calculation of credit,
-   * not a permanent on-map box. Rendered per basemap so Terrain also
-   * credits OpenTopoMap.
+   * costing map pixels, and the licenses ask for reasonable credit, not a
+   * permanent on-map box. Rendered per world and basemap.
    */
   function tileCredit(): HTMLElement {
     const credit = el('div', 'credit');
-    credit.append('map data © ');
-    const osm = el('a', undefined, 'OpenStreetMap');
-    osm.href = 'https://www.openstreetmap.org/copyright';
-    osm.target = '_blank';
-    osm.rel = 'noopener';
-    credit.appendChild(osm);
-    credit.append(' contributors');
-    if (baseName === 'Terrain') {
-      credit.append(' · tiles ');
-      const otm = el('a', undefined, 'OpenTopoMap');
-      otm.href = 'https://opentopomap.org';
-      otm.target = '_blank';
-      otm.rel = 'noopener';
-      credit.appendChild(otm);
-      credit.append(' (CC-BY-SA)');
+    const spec = worldByKey(world);
+    const base = spec.bases.find((b) => b.name === baseChoice.get(world))!;
+    for (const part of base.credit) {
+      if (part.href) {
+        const link = el('a', undefined, part.text);
+        link.href = part.href;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        credit.appendChild(link);
+      } else {
+        credit.append(part.text);
+      }
     }
     return credit;
   }
 
-  // The bulk treatment macro over per-layer treatment, relocated from the
-  // page header so all layer config lives in the panel; 'MIXED' appears
-  // only when layers diverge.
+  // The bulk treatment macro over per-layer treatment, every world at once;
+  // 'MIXED' appears only when layers diverge.
   function bulkTreatmentLine(): HTMLElement {
     const line = el('div', 'foot-line');
     line.appendChild(el('span', 'cap', 'treatment'));
@@ -332,11 +374,12 @@ export function createPanel(init: PanelInit): void {
   }
 
   function render(): void {
-    pill.textContent = `satellites · ${onCount()} on`;
+    const worldLabel = worldByKey(world).label;
+    pill.textContent = `${worldLabel.toLowerCase()} · ${onCount()} on`;
 
     root.textContent = '';
     const head = el('div', 'panel-head');
-    head.appendChild(el('span', 'count', `SATELLITES · ${onCount()}/${configs.length} on`));
+    head.appendChild(el('span', 'count', `${worldLabel.toUpperCase()} · ${onCount()}/${visible().length} on`));
     const resetBtn = el('button', undefined, 'reset');
     resetBtn.addEventListener('click', reset);
     head.appendChild(resetBtn);
@@ -347,7 +390,7 @@ export function createPanel(init: PanelInit): void {
 
     const tree = el('div', 'panel-tree');
     const bySat = new Map<string, LayerConfig[]>();
-    for (const c of configs) {
+    for (const c of visible()) {
       const list = bySat.get(c.satName) ?? [];
       list.push(c);
       bySat.set(c.satName, list);
@@ -359,13 +402,20 @@ export function createPanel(init: PanelInit): void {
     root.appendChild(tree);
 
     const foot = el('div', 'panel-foot');
+    foot.appendChild(segControl('world', init.worlds.map((w) => w.label), worldLabel, (label) => {
+      const picked = init.worlds.find((w) => w.label === label)!;
+      setWorld(picked.key);
+    }));
     foot.appendChild(bulkTreatmentLine());
-    foot.appendChild(segControl('basemap', Object.keys(init.baseMaps), baseName, setBase));
+    const spec = worldByKey(world);
+    if (spec.bases.length > 1) {
+      foot.appendChild(segControl('basemap', spec.bases.map((b) => b.name), baseChoice.get(world)!, setBase));
+    }
     // The stops gate the mechanism treatment's LOD and nothing else; a
     // control that silently no-ops reads as broken, so it dims and says
     // why whenever no visible layer would respond to it.
     const scanLine = segControl('scan detail', Object.keys(SCAN_STOPS), scanDetail, (v) => setScanDetail(v as ScanStop));
-    const mechanismLive = configs.some((c) => c.enabled && c.treatment === 'mechanism');
+    const mechanismLive = visible().some((c) => c.enabled && c.treatment === 'mechanism');
     foot.appendChild(scanLine);
     if (!mechanismLive) {
       scanLine.classList.add('dim');

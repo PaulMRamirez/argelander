@@ -89,6 +89,12 @@ cursor:pointer}
 /* The atlas palette is designed for a dark ground: the Dark basemap darkens
    the OSM tiles so teal, cyan, and amber read the way the atlas reads. */
 .dark-tiles .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) saturate(0.5) brightness(0.85) contrast(0.9)}
+/* Planetary tiles darken toward the atlas ground so the palette reads the
+   same on every world; container tones match the darkened tile average. */
+.leaflet-container.moon-tiles{background:#2b2b2e}
+.moon-tiles .leaflet-tile-pane{filter:brightness(0.72)}
+.leaflet-container.mars-tiles{background:#42250f}
+.mars-tiles .leaflet-tile-pane{filter:brightness(0.7) saturate(0.9)}
 /* Zoom control restyled to the panel chrome; the .leaflet-touch selector
    outranks Leaflet's own touch border so phones get the same look. */
 .leaflet-bar,.leaflet-touch .leaflet-bar{border:1px solid var(--line);border-radius:8px;
