@@ -1,6 +1,6 @@
 # ADR-0008: argelander-providers: standalone state providers below the seam
 
-Status: proposed. Date: 2026-07-11.
+Status: accepted. Date: 2026-07-11.
 
 ## Decision
 
