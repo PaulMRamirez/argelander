@@ -61,7 +61,7 @@ export type Projector = (p: GeoPoint) => readonly [number, number];
 
 export interface PaintOptions {
   treatment: Treatment;
-  /** Engine clock for now-trail and time-gradient; defaults to the last segment. */
+  /** Engine clock for the now overlay and the trail extrusion; defaults to the last segment. */
   nowEtSec?: number;
   /**
    * World-copy longitude offsets the view can see (0, 360, -360), computed
@@ -76,8 +76,6 @@ export interface PaintOptions {
   mechanismMinWidthPx?: number;
   fillAlpha?: number;
   lineWidthPx?: number;
-  /** Age span of the time gradient; defaults to the strip time span. */
-  timeWindowSec?: number;
 }
 
 interface Resolved {
@@ -86,7 +84,6 @@ interface Resolved {
   mechanismMinWidthPx: number;
   fillAlpha: number;
   lineWidthPx: number;
-  timeWindowSec: number;
   dash: readonly number[];
   worldCopies: readonly number[];
 }
@@ -94,7 +91,6 @@ interface Resolved {
 const BASE_COPIES: readonly number[] = [0];
 
 function resolve(geo: GeoStrip, options: PaintOptions): Resolved {
-  const first = geo.segments[0]!.etSec;
   const last = geo.segments[geo.segments.length - 1]!.etSec;
   return {
     palette: options.palette ?? ATLAS_PALETTE,
@@ -102,7 +98,6 @@ function resolve(geo: GeoStrip, options: PaintOptions): Resolved {
     mechanismMinWidthPx: options.mechanismMinWidthPx ?? 8,
     fillAlpha: options.fillAlpha ?? 0.35,
     lineWidthPx: options.lineWidthPx ?? 1.5,
-    timeWindowSec: options.timeWindowSec ?? Math.max(last - first, 1e-9),
     dash: dashPatternFor(geo.strip.instrumentId),
     worldCopies: options.worldCopies ?? BASE_COPIES,
   };
@@ -378,6 +373,24 @@ export function paintGuide(ctx: Canvas2DLike, geo: GeoStrip, project: Projector,
     }
   }
   ctx.setLineDash([]);
+}
+
+/**
+ * The now marker's visual position for a clock: the segment index the marker
+ * sits on, or -1 when no marker paints (a clock before the strip, or an
+ * acquisition over by more than 1.5 median steps, the paintNowLine expiry).
+ * Two clocks with equal indexes paint identical markers, which is what lets
+ * a host skip static repaints between segment boundaries (AGE-16).
+ */
+export function nowMarkerIndex(geo: GeoStrip, nowEtSec: number): number {
+  let index = -1;
+  for (let i = 0; i < geo.segments.length; i++) {
+    if (geo.segments[i]!.etSec <= nowEtSec + 1e-9) index = i;
+    else break;
+  }
+  if (index < 0) return -1;
+  if (nowEtSec - geo.segments[index]!.etSec > geo.medianStepSec * 1.5 + 1e-9) return -1;
+  return index;
 }
 
 /** The bright cross-track line at the engine clock (the now of now-trail). */

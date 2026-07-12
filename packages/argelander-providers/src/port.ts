@@ -12,10 +12,17 @@ import type {
 
 const TAG = 'argelander-state-provider';
 
-/** Structural subset of Worker, DedicatedWorkerGlobalScope, and MessagePort. */
+/**
+ * Structural subset of Worker, DedicatedWorkerGlobalScope, and MessagePort.
+ * The transfer parameter is deliberately loose: the DOM lib types
+ * postMessage with overloads (Transferable[] and StructuredSerializeOptions)
+ * that no precise dependency-free signature matches, and a Worker should
+ * assign here without a cast. The implementation only ever passes an
+ * ArrayBuffer array.
+ */
 export interface StatePortLike {
-  postMessage(message: unknown, transfer?: readonly ArrayBuffer[]): void;
-  addEventListener(type: 'message', listener: (event: { data: unknown }) => void): void;
+  postMessage(message: any, transfer?: any): void;
+  addEventListener(type: 'message', listener: (event: any) => void): void;
 }
 
 interface WireError {

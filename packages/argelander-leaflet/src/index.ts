@@ -3,7 +3,7 @@ export {
 } from './geo.js';
 export type { GeoPoint, GeoSegment, GeoStrip, StripToGeoOptions } from './geo.js';
 export {
-  TREATMENTS, TREATMENT_LABELS, decideLod, medianProjectedWidthPx,
+  TREATMENTS, TREATMENT_LABELS, decideLod, medianProjectedWidthPx, nowMarkerIndex,
   paintGuide, paintNowLine, paintStrip, paintTrailWindow, qualityAlphaScale,
 } from './paint.js';
 export type { Canvas2DLike, PaintOptions, Projector, Treatment } from './paint.js';

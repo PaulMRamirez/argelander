@@ -13,7 +13,6 @@ import type { Strip } from 'argelander-core';
 import { AcquisitionLayer } from 'argelander-leaflet';
 import type { Treatment } from 'argelander-leaflet';
 import { parseTle, remoteStateProvider } from 'argelander-providers';
-import type { StatePortLike } from 'argelander-providers';
 import { createPanel } from './panel.js';
 import type { DemoInstrument } from './tles.js';
 import { DEMO_SATS, PASS_STEP_SEC, PASS_WINDOW_SEC } from './tles.js';
@@ -53,7 +52,7 @@ legendToggle.addEventListener('click', () => {
 });
 
 const worker = new Worker(`./sgp4-worker.js?v=${__BUILD_ID__}`);
-const provider = remoteStateProvider(worker as unknown as StatePortLike, 'sgp4');
+const provider = remoteStateProvider(worker, 'sgp4');
 
 const speedSelect = document.getElementById('speed') as HTMLSelectElement;
 const pauseButton = document.getElementById('pause') as HTMLButtonElement;

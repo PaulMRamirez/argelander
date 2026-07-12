@@ -62,6 +62,8 @@ function render(srcPath, outPath, depth = 0) {
 const entries = [];
 entries.push(['Survey', 'survey.html',
   render(join(ROOT, 'docs/acquisition-geometry-survey.md'), join(SITE, 'survey.html'))]);
+entries.push(['Guide', 'configuring-layers.html',
+  render(join(ROOT, 'docs/configuring-layers.md'), join(SITE, 'configuring-layers.html'))]);
 entries.push(['Requirements', 'requirements.html',
   render(join(ROOT, 'REQUIREMENTS.md'), join(SITE, 'requirements.html'))]);
 for (const f of ['SPEC-STRIP', 'SPEC-INSTRUMENT-MODEL', 'SPEC-PROVIDER']) {
@@ -82,8 +84,10 @@ const index = `
 <a href="demo/index.html">Live demo</a>: SGP4 footprints propagated in a worker, painted by argelander-leaflet over open tiles.</p>
 <h2>Foundation</h2>
 <p><a href="survey.html">${entries[0][2]}</a><br><a href="requirements.html">Requirements AGE-01 through AGE-20</a></p>
+<h2>Guides</h2>
+<p><a href="configuring-layers.html">${entries[1][2]}</a></p>
 <h2>Contracts</h2>
-<p>${entries.slice(2).map(([n, h]) => `<a href="${h}">${n}</a>`).join('<br>')}</p>
+<p>${entries.slice(3).map(([n, h]) => `<a href="${h}">${n}</a>`).join('<br>')}</p>
 <h2>Decisions</h2>
 <p>${adrs.map(([t, h]) => `<a href="${h}">${t}</a>`).join('<br>')}</p>
 <h2>API</h2>
