@@ -29,27 +29,21 @@ interface SatLayer {
   baseStrips: readonly Strip[];
 }
 
-const map = L.map('map', { worldCopyJump: true, zoomControl: true }).setView([25, 0], 2);
+// No attribution control on the map: the tile credit is a license
+// obligation, so it moves into the config panel footer instead of
+// overlaying map pixels (createPanel renders it per basemap).
+const map = L.map('map', { worldCopyJump: true, zoomControl: true, attributionControl: false })
+  .setView([25, 0], 2);
 
-const OSM_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 const baseMaps: Record<string, L.TileLayer> = {
-  'Dark': L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 12, attribution: OSM_ATTRIBUTION,
-  }),
-  'Streets': L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 12, attribution: OSM_ATTRIBUTION,
-  }),
-  'Terrain': L.tileLayer('https://tile.opentopomap.org/{z}/{x}/{y}.png', {
-    maxZoom: 12,
-    attribution: `${OSM_ATTRIBUTION}, <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)`,
-  }),
+  'Dark': L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 12 }),
+  'Streets': L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 12 }),
+  'Terrain': L.tileLayer('https://tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 12 }),
 };
 baseMaps['Dark']!.addTo(map);
 // The dark ground is a CSS filter over the tile pane; it belongs to the
 // Dark basemap only. The config panel owns basemap switching.
 map.getContainer().classList.add('dark-tiles');
-// The Leaflet prefix goes; the OSM credit is a license obligation and stays.
-map.attributionControl.setPrefix(false);
 
 const legend = document.getElementById('legend')!;
 const legendToggle = document.getElementById('legend-toggle')!;
