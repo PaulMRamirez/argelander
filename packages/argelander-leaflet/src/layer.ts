@@ -124,7 +124,9 @@ export class AcquisitionLayer extends L.Layer {
   setPaused(paused: boolean): void {
     this.paused = paused;
     if (paused) this.stopAnimation();
-    else if (this.treatment === 'now-trail') this.startAnimation();
+    // A layer off the map has nothing to animate; resuming one would spin a
+    // perpetual no-op frame loop. onAdd's resetView starts it on landing.
+    else if (this.treatment === 'now-trail' && this.map) this.startAnimation();
   }
 
   setSpeedScale(scale: number): void {

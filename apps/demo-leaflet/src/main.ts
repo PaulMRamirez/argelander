@@ -201,14 +201,21 @@ async function start(): Promise<void> {
   }
 
   // The planetary worlds: demonstration orbits sampled into tables and
-  // served through the pre-sampled seam, epoch zero by convention.
+  // served through the pre-sampled seam, epoch zero by convention. One bad
+  // world spec must not take the healthy worlds down, so table sampling
+  // and provider construction sit inside the same isolation as queries.
   for (const world of WORLDS) {
     if (world.sats.length === 0) continue;
-    const provider = new PresampledProvider(
-      world.sats.map((s) => sampleOrbit(s.orbit, 0, PASS_WINDOW_SEC, PASS_STEP_SEC)),
-      [],
-      { id: `demo-presampled-${world.key}` },
-    );
+    let provider: PresampledProvider;
+    try {
+      provider = new PresampledProvider(
+        world.sats.map((s) => sampleOrbit(s.orbit, 0, PASS_WINDOW_SEC, PASS_STEP_SEC)),
+        { id: `demo-presampled-${world.key}` },
+      );
+    } catch (err) {
+      failures.push(`${world.key}: ${err instanceof Error ? err.message : String(err)}`);
+      continue;
+    }
     for (const sat of world.sats) {
       for (const instrument of sat.instruments) {
         try {
@@ -231,7 +238,7 @@ async function start(): Promise<void> {
     defaultTreatment: DEFAULT_TREATMENT,
   });
   const names = satLayers.length
-    ? `${new Set(satLayers.map((s) => s.satName)).size} satellites, ${satLayers.length} instruments, 3 worlds`
+    ? `${new Set(satLayers.map((s) => s.satName)).size} satellites, ${satLayers.length} instruments, ${new Set(satLayers.map((s) => s.world)).size} worlds`
     : 'no instruments loaded';
   const failed = failures.length ? `  |  failed: ${failures.join('; ')}` : '';
   statusLabel.textContent = `${names}  |  simulated plan: the clock executes it (amber ahead, teal behind)  |  zoom in for the scan mechanism${failed}`;

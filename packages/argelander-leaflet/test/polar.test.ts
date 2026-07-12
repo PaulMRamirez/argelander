@@ -20,8 +20,9 @@ const MOON_RADIUS_KM = 1737.4;
  * 50 km over the Moon, sampled through the pole crossing. Positions ride a
  * meridian plane; velocities point along it, so trackStrip's orbit normal
  * (r cross v) is the genuine cross-track direction through the pole.
+ * pole +1 crosses the north pole mid-window, -1 the south.
  */
-function polarBatch(): StateBatch {
+function polarBatch(pole: 1 | -1): StateBatch {
   const orbitKm = MOON_RADIUS_KM + 50;
   const periodSec = 6786;
   const n = 41;
@@ -30,8 +31,7 @@ function polarBatch(): StateBatch {
   const omega = (2 * Math.PI) / periodSec;
   for (let i = 0; i < n; i++) {
     const t = i * 10;
-    // Phase chosen so the pass crosses the north pole mid-window.
-    const phase = omega * t + Math.PI / 2 - omega * ((n - 1) * 10) / 2;
+    const phase = omega * t + pole * Math.PI / 2 - omega * ((n - 1) * 10) / 2;
     epochs[i] = t;
     states[i * 6 + 0] = orbitKm * Math.cos(phase);
     states[i * 6 + 1] = 0;
@@ -49,6 +49,16 @@ function polarBatch(): StateBatch {
     states,
     lightTimes: new Float64Array(n),
   };
+}
+
+/** Great-circle separation between two geographic points, degrees. */
+function angularSepDeg(a: { latDeg: number; lonDeg: number }, b: { latDeg: number; lonDeg: number }): number {
+  const toRad = Math.PI / 180;
+  const la = a.latDeg * toRad;
+  const lb = b.latDeg * toRad;
+  const dLon = (b.lonDeg - a.lonDeg) * toRad;
+  const cosSep = Math.sin(la) * Math.sin(lb) + Math.cos(la) * Math.cos(lb) * Math.cos(dLon);
+  return Math.acos(Math.min(1, Math.max(-1, cosSep))) / toRad;
 }
 
 function polarStripOptions(extra: object): Parameters<typeof trackStrip>[2] {
@@ -69,12 +79,15 @@ function allCoords(ctx: FakeCtx): ReadonlyArray<readonly [number, number]> {
   return ctx.ops.flatMap((op) => op.path);
 }
 
-describe('polar passes through a plate-carree projector (EPSG:4326 hosts)', () => {
-  const geo = stripToGeo(trackStrip(polarBatch(), 0, polarStripOptions({ swathHalfWidthKm: 30 })));
+describe.each([
+  { name: 'north', pole: 1 as const },
+  { name: 'south', pole: -1 as const },
+])('a pass through the $name pole, plate-carree projector (EPSG:4326 hosts)', ({ pole }) => {
+  const geo = stripToGeo(trackStrip(polarBatch(pole), 0, polarStripOptions({ swathHalfWidthKm: 30 })));
 
   it('the pass genuinely crosses the pole', () => {
-    const maxLat = Math.max(...geo.segments.map((s) => (s.left.latDeg + s.right.latDeg) / 2));
-    expect(maxLat).toBeGreaterThan(88);
+    const extremeLat = Math.max(...geo.segments.map((s) => pole * (s.left.latDeg + s.right.latDeg) / 2));
+    expect(extremeLat).toBeGreaterThan(88);
   });
 
   it('every treatment paints finite coordinates over the pole', () => {
@@ -89,18 +102,23 @@ describe('polar passes through a plate-carree projector (EPSG:4326 hosts)', () =
     }
   });
 
-  it('swath edges stay near the swath width even at the pole crossing', () => {
-    // 30 km half-width on the Moon is about one degree of arc; an edge
-    // point more than a few degrees from its nadir means the cross-track
-    // offset degenerated at the pole.
+  it('swath edges hold their great-circle width through the pole crossing', () => {
+    // 30 km half-width on the Moon subtends 0.989 degrees per side, 1.978
+    // between the edges, invariant along the pass. A degenerated offset at
+    // the pole (inflated, collapsed, or folded to one side) breaks the
+    // separation; latitude differences alone cannot see it, because this
+    // meridian-plane pass keeps the two edges at identical latitudes.
+    const expected = (2 * 30) / MOON_RADIUS_KM * (180 / Math.PI);
     for (const s of geo.segments) {
-      const dLat = Math.abs(s.left.latDeg - s.right.latDeg);
-      expect(dLat).toBeLessThan(8);
+      expect(angularSepDeg(s.left, s.right)).toBeGreaterThan(expected * 0.95);
+      expect(angularSepDeg(s.left, s.right)).toBeLessThan(expected * 1.05);
     }
   });
+});
 
+describe('polar sub-structure through a plate-carree projector', () => {
   it('scan footprints stay bounded through the pole (the scale probe clamps)', () => {
-    const scanned = stripToGeo(trackStrip(polarBatch(), 0, polarStripOptions({
+    const scanned = stripToGeo(trackStrip(polarBatch(1), 0, polarStripOptions({
       swathHalfWidthKm: 30,
       scan: { scanRateHz: 0.1, subStepSec: 2.5, footprintSemiMajorKm: 8, footprintSemiMinorKm: 5, footprintGrowthFactor: 0.5 },
     })));
@@ -118,7 +136,7 @@ describe('polar passes through a plate-carree projector (EPSG:4326 hosts)', () =
   });
 
   it('bead chains ride the meridian through the pole without ribboning', () => {
-    const beads = stripToGeo(trackStrip(polarBatch(), 0, polarStripOptions({ beadOffsetsKm: [-1, 0, 1] })));
+    const beads = stripToGeo(trackStrip(polarBatch(1), 0, polarStripOptions({ beadOffsetsKm: [-1, 0, 1] })));
     const ctx = new FakeCtx();
     paintStrip(ctx, beads, PLATE_CARREE, { treatment: 'flat-fill' });
     expect(ctx.fills().filter((f) => f.shape === 'path')).toHaveLength(0);

@@ -154,3 +154,12 @@ describe('PresampledProvider against the frozen seam (AGE-04, AGE-06)', () => {
     expect(() => parsePresampledCsv('\n# only comments\n', meta)).toThrow(/no header/);
   });
 });
+
+describe('constructor options in the second position', () => {
+  it('names the authority without an empty quatTables positional', () => {
+    const short = new PresampledProvider([circularTable()], { id: 'ephemeris-service' });
+    expect(short.id).toBe('ephemeris-service');
+    const long = new PresampledProvider([circularTable()], [], { id: 'ephemeris-service' });
+    expect(long.id).toBe('ephemeris-service');
+  });
+});

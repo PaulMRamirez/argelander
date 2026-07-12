@@ -66,11 +66,24 @@ export class PresampledProvider implements StateProvider {
   private readonly tables = new Map<string, PresampledStateTable>();
   private readonly quatTables = new Map<string, PresampledQuatTable>();
 
+  /**
+   * Orientation tables are the rarer input, so the options bag may take
+   * their place: `new PresampledProvider(tables, { id })` names the
+   * authority without threading an empty quatTables positional, matching
+   * the Sgp4Provider shape. The three-argument form stays.
+   */
+  constructor(tables: readonly PresampledStateTable[], options?: PresampledProviderOptions);
+  constructor(tables: readonly PresampledStateTable[], quatTables?: readonly PresampledQuatTable[], options?: PresampledProviderOptions);
   constructor(
     tables: readonly PresampledStateTable[],
-    quatTables: readonly PresampledQuatTable[] = [],
-    options: PresampledProviderOptions = {},
+    quatTablesOrOptions: readonly PresampledQuatTable[] | PresampledProviderOptions = [],
+    optionsMaybe: PresampledProviderOptions = {},
   ) {
+    // Array.isArray does not narrow readonly arrays out of a union, so the
+    // non-array branch is cast; the overloads above keep callers honest.
+    const isQuats = Array.isArray(quatTablesOrOptions);
+    const quatTables = isQuats ? (quatTablesOrOptions as readonly PresampledQuatTable[]) : [];
+    const options = isQuats ? optionsMaybe : (quatTablesOrOptions as PresampledProviderOptions);
     this.id = options.id ?? 'presampled';
     if (tables.length === 0) throw new Error('PresampledProvider requires at least one state table');
     for (const table of tables) {
