@@ -80,8 +80,6 @@ cursor:pointer}
   #panel{top:auto;left:0;right:0;bottom:0;width:auto;max-height:50vh;border-radius:12px 12px 0 0;border-bottom:none}
   .p-row{min-height:44px}
   .detail-row{padding-left:26px}
-  /* The sheet rises from the bottom; the top-anchored legend stays put. */
-  #stage.sheet-open #legend{right:10px}
 }
 .leaflet-container{background:#aad3df}
 .leaflet-container.dark-tiles{background:#2d3e48}
@@ -104,7 +102,10 @@ border-bottom:1px solid var(--line)}
 #legend{position:absolute;top:10px;right:10px;z-index:1000;display:flex;align-items:center;gap:10px;
 padding:5px 9px;background:rgba(18,27,39,0.92);border:1px solid var(--line);
 border-radius:16px;font-size:11.5px;color:var(--txt);transition:right .15s}
-#stage.sheet-open #legend{right:300px}
+/* Scoped to widths where the panel is a side panel: on phones it is a
+   bottom sheet and the legend must not move (this rule sits after the
+   mobile block, so an unscoped version would win the cascade there). */
+@media(min-width:641px){#stage.sheet-open #legend{right:300px}}
 #legend .cap{font:10px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--teal);letter-spacing:.08em}
 #legend .items{display:flex;gap:12px;align-items:center}
 #legend.min .items,#legend.min .cap{display:none}
