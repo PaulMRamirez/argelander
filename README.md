@@ -8,14 +8,15 @@ The product line: Cosmolabe is what you see, Bessel is what computes, Argelander
 
 | Path | Purpose |
 | --- | --- |
-| `packages/argelander-core` | Renderer-agnostic engine: strip schema, instrument models, validation. Zero runtime dependencies. |
+| `packages/argelander-core` | Renderer-agnostic engine: strip schema, instrument models, family samplers, validation. Zero runtime dependencies. |
+| `packages/argelander-providers` | Standalone StateProviders below the seam: near-earth SGP4 from source, pre-sampled playback, worker port marshalling (ADR-0008). |
 | `packages/argelander-leaflet` | Leaflet adapter (MMGIS 2D Map first target). Phase 1. |
 | `packages/argelander-three` | Three.js adapter (MMGIS Globe and Cosmolabe hosts). Phase 2, blocked on ADR-0006. |
 | `packages/argelander` | Umbrella package re-exporting core (claims the npm name). |
 | `apps/atlas` | The Acquisition Geometry Atlas: 21 geometry families, 6 treatments. Day-one public demo and the visual regression corpus. |
 | `apps/demo-leaflet` | First host-shaped demo: SGP4-driven live footprints over open tiles. Phase 1. |
 | `specs/` | SPEC-STRIP, SPEC-INSTRUMENT-MODEL, SPEC-PROVIDER. Source of truth; code follows spec. |
-| `adr/` | Architecture decision records 0001-0006. |
+| `adr/` | Architecture decision records. |
 | `goals/` | Phase goal files with exit criteria. Claude Code executes these. |
 
 ## Quickstart
