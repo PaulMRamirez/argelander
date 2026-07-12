@@ -48,6 +48,15 @@ baseMaps['Dark']!.addTo(map);
 // The dark ground is a CSS filter over the tile pane; it belongs to the
 // Dark basemap only. The config panel owns basemap switching.
 map.getContainer().classList.add('dark-tiles');
+// The Leaflet prefix goes; the OSM credit is a license obligation and stays.
+map.attributionControl.setPrefix(false);
+
+const legend = document.getElementById('legend')!;
+const legendToggle = document.getElementById('legend-toggle')!;
+legendToggle.addEventListener('click', () => {
+  const min = legend.classList.toggle('min');
+  legendToggle.textContent = min ? 'key' : 'hide';
+});
 
 const worker = new Worker(`./sgp4-worker.js?v=${__BUILD_ID__}`);
 const provider = remoteStateProvider(worker as unknown as StatePortLike, 'sgp4');
