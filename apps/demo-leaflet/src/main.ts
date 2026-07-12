@@ -89,6 +89,9 @@ async function start(): Promise<void> {
     const layer = new AcquisitionLayer([strip], {
       treatment: currentTreatment(),
       paused,
+      // Reveal the scan mechanism once footprints are legible, not at the
+      // default threshold where they render as sub-pixel dots.
+      mechanismMinWidthPx: 16,
     });
     layer.addTo(map);
     satLayers.push({ layer, epochEt });
