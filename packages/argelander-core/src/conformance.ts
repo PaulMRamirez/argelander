@@ -77,11 +77,13 @@ export function planeToBody(scene: ConformanceScene, p: PlanePoint): Vec3 {
   return [scene.radiusKm * k, east * k, north * k];
 }
 
-function stateAt(i: number, acquiringIndex: number): AcquisitionState {
+/** State rule shared by every conformance-plane sampler (spec section 5). */
+export function stateAt(i: number, acquiringIndex: number): AcquisitionState {
   return i < acquiringIndex ? 'committed' : i === acquiringIndex ? 'acquiring' : 'planned';
 }
 
-function numberParam(model: InstrumentModel, key: string): number {
+/** Required numeric param access shared by the family samplers. */
+export function numberParam(model: InstrumentModel, key: string): number {
   const v = model.params[key];
   if (typeof v !== 'number' || !Number.isFinite(v)) {
     throw new TypeError(`model ${model.instrumentId}: numeric param ${key} missing`);
@@ -89,7 +91,8 @@ function numberParam(model: InstrumentModel, key: string): number {
   return v;
 }
 
-function conformanceStrip(model: InstrumentModel, scene: ConformanceScene, tile: string, segments: readonly StripSegment[]): Strip {
+/** Strip envelope shared by every conformance-plane sampler. */
+export function conformanceStrip(model: InstrumentModel, scene: ConformanceScene, tile: string, segments: readonly StripSegment[]): Strip {
   return {
     id: `conformance-${model.kind}`,
     body: scene.body,
