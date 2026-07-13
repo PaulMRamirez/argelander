@@ -168,7 +168,7 @@ import { czmlProvider } from 'argelander-providers';
 const provider = czmlProvider(czmlText, { observer: 'EARTH', frame: 'ITRF93' }, { id: 'ops-czml' });
 ```
 
-Scope is honest and narrow. Supported: packets carrying an ISO `epoch` plus time-tagged `cartesian` samples (offset seconds, meters, converted to kilometers), `referenceFrame` FIXED, which is the CZML default and the body-fixed reading the seam wants. Refused with named errors: INERTIAL frames (rotating them body-fixed is frames math, the non-goal), `cartographicDegrees`, constant positions, and ISO-string sample times. Velocities are derived from the samples by weighted central differences, rendering grade and stated as such; each packet's `id` is the target name you query.
+Scope is honest and narrow. Supported: packets carrying an ISO `epoch` plus time-tagged `cartesian` samples (offset seconds, meters, converted to kilometers), `referenceFrame` FIXED, which is the CZML default and the body-fixed reading the seam wants. Refused, each with a plain `Error` whose message names the boundary (not a typed class, unlike `CoverageRefusalError` above): INERTIAL frames (rotating them body-fixed is frames math, the non-goal), `cartographicDegrees`, constant positions, and ISO-string sample times. A zone-less epoch is read as UTC to match Cesium, and declared interpolation hints are not honored: the samples are re-interpolated by `PresampledProvider`'s cubic Hermite, and velocities are derived from them by weighted central differences, rendering grade and stated as such. Each packet's `id` is the target name you query.
 
 **The HTTP service wire** (`serveStateRequest`, `httpStateProvider`), the states-from-a-service posture. The server side is a pure request-in, response-out function you mount on any framework; the client is a `StateProvider` over `fetch`:
 
@@ -232,7 +232,7 @@ const strips = await passStrips(provider, {
 });
 ```
 
-One `states()` query runs per window (atomic, so a refusal poisons nothing), every strip shares the `passId` (default `'pass-0'`), `authority` defaults to the provider's `id`, and the posture options are the `trackStrip` ones plus `bilateralKm` for the pair. Errors propagate as thrown: isolating failures across a constellation is host policy, one try/catch per instrument, exactly as before.
+One `states()` query runs per window (atomic, so a refusal poisons nothing), every strip shares the `passId` (default `'pass-0'`), `authority` defaults to the provider's `id`, and the posture options are the `trackStrip` ones plus `bilateralKm` for the pair, with the same exclusivity: `bilateralKm` cannot combine with a single-strip posture, and empty `windows` throws. Strip ids default to `${instrumentId with '/' folded to '-'}-${passId}-w${n}` (the fold is lossy, so give `idPrefix` explicitly when sibling instruments would collapse to the same prefix). `passStrips` takes any `StateProvider`, so the identical call builds the Moon and Mars layers over a `PresampledProvider`, just with that world's `observer`, `frame`, and `bodyRadiusKm`. Errors propagate as thrown: isolating failures across a constellation is host policy, one try/catch per instrument, exactly as before.
 
 ## Layer options and treatments
 
@@ -294,16 +294,20 @@ That whole loop is packaged as `AcquisitionClock`, the driver the demo proved an
 import { AcquisitionClock } from 'argelander-leaflet';
 
 const clock = new AcquisitionClock(
+  // Each entry is a ClockEntry: the layer, its pass anchor, and the strips
+  // before the state rule (the clock re-states them per boundary).
   [{ layer, epochEt, baseStrips }],
-  { windowSec: 5400, stepSec: 15, speed: 60, onTick: (tau) => label.textContent = `${tau.toFixed(0)} s` },
+  { windowSec: 5400, stepSec: 15, speed: 60, paused: reduceMotion,
+    onTick: (tau) => label.textContent = `${tau.toFixed(0)} s` },
 );
 clock.setPaused(true);     // forwards to every layer and freezes the loop
 clock.setSpeed(300);
 clock.seek(2700);          // scrub to mid-pass and apply immediately (AGE-13)
-clock.dispose();           // cancel the frame loop when tearing down
+const at = clock.tauSec;   // read the pass offset, e.g. to carry across a reload
+clock.dispose();           // terminal: cancels the loop, resume will not restart
 ```
 
-The clock applies an opening frame even when constructed paused (a paused clock shows the pass at tau zero, not a blank map), the first resumed frame carries no wall-clock gap (a long pause never teleports the clock), and tau wraps at the window. One browser fact to know: hidden tabs suspend `requestAnimationFrame`, so the clock freezes with the tab and jumps forward on the next visible frame; pass a custom `schedule` if you need different pacing. Hand-rolling the loop stays fully supported; the clock is the loop, packaged.
+The clock applies an opening frame even when constructed `paused` (a paused clock shows the pass at tau zero, not a blank map), the first resumed frame carries no wall-clock gap (a long pause never teleports the clock), and tau wraps at the window. It is re-entrancy safe: calling `setPaused(true)` or `dispose()` from inside `onTick` (the stop-at-end-of-pass pattern) stops cleanly, and `dispose()` is terminal. One browser fact to know: hidden tabs suspend `requestAnimationFrame`, so the clock freezes with the tab and jumps forward on the next visible frame; pass a custom `schedule` (with its matching `cancel`, since the pair must agree on handle identity) if you need different pacing. Hand-rolling the loop stays fully supported; the clock is the loop, packaged.
 
 ## Level of detail
 
@@ -328,7 +332,8 @@ Everything above is per-layer imperative calls. Hosts that manage many layers sh
 ```ts
 interface LayerConfig {
   id: string;                       // "SWOT/karin"
-  strips: readonly Strip[];         // geometry, the live state rule applied per tick
+  epochEt: number;                  // pass anchor, also the clock entry's
+  baseStrips: readonly Strip[];     // geometry before the state rule
   layer: AcquisitionLayer;
   enabled: boolean;
   treatment: Treatment;
@@ -342,6 +347,8 @@ function reconcile(map: L.Map, configs: readonly LayerConfig[]): void {
   }
 }
 ```
+
+The record carries `epochEt` and `baseStrips` precisely so it also feeds the clock: `new AcquisitionClock(configs.map(({ layer, epochEt, baseStrips }) => ({ layer, epochEt, baseStrips })), ...)` drives every layer from the same array the panel renders. The demo's `SatLayer` record is this shape, feeding both.
 
 Every UI handler writes a field and calls `reconcile` plus a render; nothing queries the map for truth.
 
@@ -362,7 +369,10 @@ paintStrip(ctx, geo, myProjector, { treatment: 'flat-fill', worldCopies: [0] });
 
 | Symptom | Cause | Fix |
 | --- | --- | --- |
-| DeepSpaceUnsupportedError building the provider | TLE with a period of 225 minutes or more | Serve that object from a `PresampledProvider`; SGP4 here is near-earth only |
+| DeepSpaceUnsupportedError building the provider (inline), or `connectSgp4Worker` rejecting with it | TLE with a period of 225 minutes or more | Serve that object from a `PresampledProvider`; SGP4 here is near-earth only. Over the worker the error keeps its type, so `instanceof DeepSpaceUnsupportedError` still matches |
+| `connectSgp4Worker` promise never settles | Worker file missing its one-import of `argelander-providers/sgp4-worker`, wrong worker URL (404), or a CSP block | Fix the worker entry; on a real `Worker` the load failure rejects via its `error` event, and `timeoutMs` is the backstop for ports without one |
+| CZML packet rejected with an `Error` | INERTIAL frame, `cartographicDegrees`, a constant position, or ISO-string sample times | These are out of the honest scope; supply FIXED-frame time-tagged cartesian samples. The message names the boundary (a plain `Error`, not a typed class) |
+| HTTP provider throws a plain status Error instead of `CoverageRefusalError` | The refusal body was not returned to the client | `httpStateProvider` revives a refusal whatever the status, but the server must return the `serveStateRequest` body (do not swallow it on a 4xx) |
 | CoverageRefusalError on load | Query outside the TLE fence or the pre-sampled table | Anchor to `parseTle(..).epochEt` for TLEs, the table's first epoch for pre-sampled; `coverage(body)` names the servable window |
 | Ribbon drawn across an ocean the instrument never imaged | One continuous batch sliced into windows | One `states()` query per tasked window, strips share a `passId` |
 | Mechanism texture never appears | Treatment is not `mechanism`, or swath projects below `mechanismMinWidthPx` | Switch treatment; zoom in or lower the threshold |
