@@ -1,6 +1,6 @@
 # ADR-0010: an optional radius on the event sub-structure
 
-Status: proposed. Date: 2026-07-12.
+Status: accepted. Date: 2026-07-12.
 
 ## Decision
 
