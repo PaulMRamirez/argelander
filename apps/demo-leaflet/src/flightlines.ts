@@ -64,10 +64,16 @@ function slerp(a: Vec3, b: Vec3, f: number, omega: number): Vec3 {
  * radius), the position sits at that direction scaled to body radius plus
  * altitude, and velocity is a central finite difference so it is exactly
  * consistent with the positions. A platform that runs out of path parks at the
- * last waypoint, where the along-track velocity vanishes and trackStrip renders
- * a stare (ADR-0012) rather than failing.
+ * last waypoint, where the along-track velocity vanishes; since it was moving
+ * beforehand, trackStrip carries the last valid cross-track direction forward
+ * and renders an ordinary held-orientation segment there (ADR-0012's mid-track
+ * hover), not a stare. The stare is reserved for a line that begins degenerate,
+ * which here would take a zero groundspeed or a zero-length path.
  */
 export function sampleFlightLine(line: DemoFlightLine, startEt: number, durationSec: number, stepSec: number): PresampledStateTable {
+  if (line.waypoints.length < 2) {
+    throw new RangeError(`flight line ${line.target} needs at least two waypoints, got ${line.waypoints.length}`);
+  }
   const r = line.bodyRadiusKm + line.altitudeKm;
   const pts = line.waypoints.map(([lat, lon]) => toUnit(lat, lon));
   const legs: Array<{ a: Vec3; b: Vec3; omega: number; start: number }> = [];
@@ -77,6 +83,12 @@ export function sampleFlightLine(line: DemoFlightLine, startEt: number, duration
     const b = pts[k + 1]!;
     const dot = Math.max(-1, Math.min(1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2]));
     const omega = Math.acos(dot);
+    // The great circle through antipodal points is not unique, so slerp's
+    // 1/sin(omega) blows up; refuse it with a clear message rather than emit a
+    // numerically garbage table that would slide past trackStrip's guards.
+    if (Math.PI - omega < 1e-6) {
+      throw new RangeError(`flight line ${line.target} has antipodal waypoints at leg ${k}: the great-circle path is undefined`);
+    }
     legs.push({ a, b, omega, start: total });
     total += omega;
   }

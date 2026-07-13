@@ -203,7 +203,14 @@ export function trackStrip(batch: StateBatch, targetIndex: number, options: Trac
       crosses.push(lastCross);
       stares.push(false);
     } else if (lastCross) {
-      crosses.push(lastCross);
+      // Mid-track hover: hold the last valid cross, re-orthogonalized to the
+      // current nadir so the edges stay on the sphere if the platform drifted
+      // while its heading was undefined (falls back to east if the held
+      // direction has rotated onto the nadir).
+      const d = nadir[0] * lastCross[0] + nadir[1] * lastCross[1] + nadir[2] * lastCross[2];
+      const proj: Vec3 = [lastCross[0] - d * nadir[0], lastCross[1] - d * nadir[1], lastCross[2] - d * nadir[2]];
+      const pm2 = Math.hypot(proj[0], proj[1], proj[2]);
+      crosses.push(pm2 > 1e-9 ? [proj[0] / pm2, proj[1] / pm2, proj[2] / pm2] : localEast(nadir));
       stares.push(false);
     } else {
       // Leading hover: no orientation yet, so a zero-width stare. The cross is
@@ -281,11 +288,14 @@ export function trackStrip(batch: StateBatch, targetIndex: number, options: Trac
     const cross = crosses[i]!;
 
     if (stares[i]) {
-      // No along-track direction was ever established: a zero-width stare, the
-      // nadir ground point with no cross-track extent (ADR-0012). The
-      // connection rule refuses to ribbon it and the painter draws it sparse.
+      // No along-track direction was ever established: a zero-width stare at
+      // the nadir ground point (ADR-0012). It carries a single bead there so
+      // the existing sparse path renders it as a dot; a bare zero-width segment
+      // draws nothing (the sparse painter needs sub-structure, and the lone
+      // and quad paths skip zero width). The connection rule refuses to ribbon
+      // it, so it stays a lone point.
       const at = surfacePoint(radius, nadir, cross, 0);
-      segments.push({ etSec: et, left: at, right: at, state: 'planned' });
+      segments.push({ etSec: et, left: at, right: at, state: 'planned', sub: [{ kind: 'beads', points: [at] }] });
       continue;
     }
 

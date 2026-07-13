@@ -184,6 +184,9 @@ describe('trackStrip: the provider-to-strip bridge (AGE-04)', () => {
     expect(validateStrip(strip).errors).toEqual([]);
     expect(width(strip.segments[0]!)).toBe(0);
     expect(strip.segments[0]!.left).toEqual(strip.segments[0]!.right);
+    // The stare carries a single nadir bead so the sparse path draws it as a
+    // dot; a bare zero-width segment would render nothing.
+    expect(strip.segments[0]!.sub).toEqual([{ kind: 'beads', points: [strip.segments[0]!.left] }]);
     expect(width(strip.segments[1]!)).toBeGreaterThan(0);
   });
 
