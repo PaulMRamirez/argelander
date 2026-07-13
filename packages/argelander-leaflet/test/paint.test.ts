@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Strip } from 'argelander-core';
 import { stripToGeo } from '../src/geo.js';
-import { decideLod, medianProjectedWidthPx, nowMarkerIndex, paintNowLine, paintStrip, paintTrailWindow } from '../src/paint.js';
+import type { GeoSegment, GeoStrip } from '../src/geo.js';
+import { decideLod, medianProjectedWidthPx, nowMarkerIndex, paintNowLine, paintStrip, paintTrailWindow, qualityAlphaScale } from '../src/paint.js';
 import type { PaintOptions, Treatment } from '../src/paint.js';
 import { ATLAS_PALETTE, dashPatternFor } from '../src/palette.js';
 import { FakeCtx, alphaOf, fixtureStrip, fromGeo, makeProjector, sameHue, syntheticStrip } from './fake-ctx.js';
@@ -127,6 +128,19 @@ describe('mechanism treatment and LOD (AGE-09)', () => {
     expect(ctx.dashCalls.some((call) => call === dash)).toBe(true);
   });
 
+  it('orients each footprint by minus its rotationRad, the sign the golden alone would not lock', () => {
+    // rotationRad is counterclockwise from east and canvas y grows down, so
+    // the painter negates it. The golden captures the value, but an explicit
+    // sign check survives a careless snapshot regeneration; whiskbroom carries
+    // a rotated footprint on every segment, so the sequence is non-trivial.
+    const expected = fixtureStrip('whiskbroom').segments.flatMap((s) =>
+      (s.sub ?? []).filter((e) => e.kind === 'footprint').map((e) => -(e as { rotationRad: number }).rotationRad));
+    expect(expected.length).toBeGreaterThan(0);
+    expect(expected.some((r) => r !== 0)).toBe(true);
+    const fills = paint('whiskbroom', { treatment: 'mechanism' }).ellipses().filter((e) => e.op === 'fill');
+    expect(fills.map((e) => e.rot)).toEqual(expected);
+  });
+
   it('draws framing frames and bistatic baselines above the threshold', () => {
     // Framing frames project to 7.9 px at the shared scale, just under the
     // default LOD threshold; zoom in so the mechanism grade engages.
@@ -162,6 +176,31 @@ describe('quality gradient (atlas: cross-swath edge fade)', () => {
     };
     const alphas = fills.map((f) => centerAlpha(f.fillStyle));
     expect(Math.max(...alphas)).toBeGreaterThan(Math.min(...alphas) * 1.5);
+  });
+
+  // The flyby fixture above only exercises the resolutionM metric; the fixtures
+  // for the other two metrics carry a constant value, so their span is zero and
+  // the scale collapses to a uniform 1, leaving the incidenceDeg and lookCount
+  // arms of qualityAlphaScale unobserved. Drive them with a varying synthetic
+  // quality so a regression in either metric or its ordering is caught.
+  const scaleOver = (quality: ReadonlyArray<GeoSegment['quality']>): number[] => {
+    const segments = quality.map((q, i) => ({ etSec: i, quality: q })) as unknown as GeoSegment[];
+    const scale = qualityAlphaScale({ segments } as unknown as GeoStrip);
+    return segments.map((s) => scale(s));
+  };
+
+  it('scales alpha by incidence: a steeper look is brighter (the SAR branch)', () => {
+    const a = scaleOver([{ incidenceDeg: [20, 20] }, { incidenceDeg: [30, 30] }, { incidenceDeg: [45, 45] }]);
+    expect(new Set(a).size).toBe(3); // genuinely varies, not the span-zero uniform 1
+    expect(a[0]).toBeGreaterThan(a[1]!);
+    expect(a[1]).toBeGreaterThan(a[2]!);
+  });
+
+  it('scales alpha by look count: more looks is brighter (the multi-angle branch)', () => {
+    const a = scaleOver([{ lookCount: 1 }, { lookCount: 3 }, { lookCount: 7 }]);
+    expect(new Set(a).size).toBe(3);
+    expect(a[2]).toBeGreaterThan(a[1]!);
+    expect(a[1]).toBeGreaterThan(a[0]!);
   });
 });
 
