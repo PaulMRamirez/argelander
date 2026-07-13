@@ -114,6 +114,13 @@ function unit(v: Vec3): Vec3 {
   return [v[0] / m, v[1] / m, v[2] / m];
 }
 
+/** Local east unit at the nadir ground point; [1, 0, 0] where east degenerates at a pole. */
+function localEast(nadir: Vec3): Vec3 {
+  const em = Math.hypot(-nadir[1], nadir[0]);
+  if (em < 1e-9) return [1, 0, 0];
+  return [-nadir[1] / em, nadir[0] / em, 0];
+}
+
 /**
  * Footprint orientation: the cross-track direction from local east,
  * counterclockwise seen from outside the body, folded to [0, pi). East
@@ -172,19 +179,38 @@ export function trackStrip(batch: StateBatch, targetIndex: number, options: Trac
 
   const nadirs: Vec3[] = [];
   const crosses: Vec3[] = [];
+  // A segment whose along-track direction is undefined, the platform hovering,
+  // loitering, or ascending so position and velocity are parallel, holds the
+  // last valid cross-track direction; a track that begins that way, with no
+  // prior direction to hold, renders as a zero-width stare at nadir (ADR-0012).
+  // Only a body-center position, which has no nadir at all, still throws.
+  const stares: boolean[] = [];
+  let lastCross: Vec3 | undefined;
   for (let i = 0; i < n; i++) {
     const sample = decodeState(batch, targetIndex, i);
     const [px, py, pz] = sample.positionKm;
     const [vx, vy, vz] = sample.velocityKmS;
     const pm = Math.hypot(px, py, pz);
     if (!(pm > 0)) throw new RangeError(`degenerate position at epoch index ${i}`);
-    nadirs.push([px / pm, py / pm, pz / pm]);
+    const nadir: Vec3 = [px / pm, py / pm, pz / pm];
+    nadirs.push(nadir);
     const hx = py * vz - pz * vy;
     const hy = pz * vx - px * vz;
     const hz = px * vy - py * vx;
     const hm = Math.hypot(hx, hy, hz);
-    if (!(hm > 0)) throw new RangeError(`degenerate state at epoch index ${i}: position and velocity are parallel`);
-    crosses.push([hx / hm, hy / hm, hz / hm]);
+    if (hm > 0) {
+      lastCross = [hx / hm, hy / hm, hz / hm];
+      crosses.push(lastCross);
+      stares.push(false);
+    } else if (lastCross) {
+      crosses.push(lastCross);
+      stares.push(false);
+    } else {
+      // Leading hover: no orientation yet, so a zero-width stare. The cross is
+      // unused (a zero offset ignores it) but must stay finite for the loop.
+      crosses.push(localEast(nadir));
+      stares.push(true);
+    }
   }
 
   const scan = options.scan;
@@ -253,6 +279,15 @@ export function trackStrip(batch: StateBatch, targetIndex: number, options: Trac
     const et = batch.epochs[i]!;
     const nadir = nadirs[i]!;
     const cross = crosses[i]!;
+
+    if (stares[i]) {
+      // No along-track direction was ever established: a zero-width stare, the
+      // nadir ground point with no cross-track extent (ADR-0012). The
+      // connection rule refuses to ribbon it and the painter draws it sparse.
+      const at = surfacePoint(radius, nadir, cross, 0);
+      segments.push({ etSec: et, left: at, right: at, state: 'planned' });
+      continue;
+    }
 
     const sub: SubStructure[] = [];
     if (options.beadOffsetsKm?.length) {

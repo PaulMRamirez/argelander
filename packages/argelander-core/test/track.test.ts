@@ -158,10 +158,45 @@ describe('trackStrip: the provider-to-strip bridge (AGE-04)', () => {
     expect(late.segments.slice(0, -1).every((s) => s.state === 'committed')).toBe(true);
   });
 
-  it('refuses degenerate input', () => {
+  const width = (s: { left: readonly number[]; right: readonly number[] }): number =>
+    Math.hypot(s.left[0]! - s.right[0]!, s.left[1]! - s.right[1]!, s.left[2]! - s.right[2]!);
+
+  it('carries the cross-track forward through a mid-track hover (ADR-0012)', () => {
+    // Segment 1 hovers in place at segment 0's position with zero velocity, so
+    // its along-track direction is undefined; the policy holds segment 0's
+    // cross-track, and at the same position that reproduces segment 0's edges.
+    const batch = equatorialBatch(3, 10);
+    for (let k = 0; k < 3; k++) batch.states[6 + k] = batch.states[k]!;
+    for (let k = 3; k < 6; k++) batch.states[6 + k] = 0;
+    const strip = trackStrip(batch, 0, { ...BASE, swathHalfWidthKm: 50 });
+    expect(validateStrip(strip).errors).toEqual([]);
+    expect(width(strip.segments[1]!)).toBeGreaterThan(0);
+    expect(strip.segments[1]!.left).toEqual(strip.segments[0]!.left);
+    expect(strip.segments[1]!.right).toEqual(strip.segments[0]!.right);
+  });
+
+  it('renders a zero-width stare when a track begins degenerate (ADR-0012)', () => {
+    // Segment 0 has zero velocity and no prior direction to hold, so it is a
+    // point at nadir; segment 1 moves and renders a normal swath.
     const batch = equatorialBatch(2, 10);
     batch.states.fill(0, 3, 6);
-    expect(() => trackStrip(batch, 0, { ...BASE, swathHalfWidthKm: 50 })).toThrow(/parallel|degenerate/);
+    const strip = trackStrip(batch, 0, { ...BASE, swathHalfWidthKm: 50 });
+    expect(validateStrip(strip).errors).toEqual([]);
+    expect(width(strip.segments[0]!)).toBe(0);
+    expect(strip.segments[0]!.left).toEqual(strip.segments[0]!.right);
+    expect(width(strip.segments[1]!)).toBeGreaterThan(0);
+  });
+
+  it('leaves an ordinary moving track without any stares', () => {
+    const strip = trackStrip(equatorialBatch(5, 10), 0, { ...BASE, swathHalfWidthKm: 100 });
+    expect(strip.segments.every((s) => width(s) > 0)).toBe(true);
+  });
+
+  it('still throws on a body-center position and a non-positive radius', () => {
+    // A body-center position has no nadir at all, so it stays a thrown error.
+    const centered = equatorialBatch(1, 10);
+    centered.states.fill(0, 0, 3);
+    expect(() => trackStrip(centered, 0, { ...BASE, swathHalfWidthKm: 50 })).toThrow(/degenerate position/);
     expect(() => trackStrip(equatorialBatch(1, 10), 0, { ...BASE, bodyRadiusKm: 0 })).toThrow(/positive/);
   });
 });
