@@ -58,6 +58,12 @@ export interface PaintOp {
   lineWidth: number;
   dash: readonly number[];
   composite: string;
+  /** Ellipse rotation in force (radians); 0 for every other shape. A footprint's
+   * orientation lives only here, so a recorder that drops it is blind to it. */
+  rot: number;
+  /** Shadow (the now-line and platform-dot glow) in force at the draw. */
+  shadowColor: string;
+  shadowBlur: number;
 }
 
 export class FakeCtx implements Canvas2DLike {
@@ -71,6 +77,7 @@ export class FakeCtx implements Canvas2DLike {
   readonly dashCalls: Array<readonly number[]> = [];
   private path: Array<readonly [number, number]> = [];
   private shape: PaintOp['shape'] = 'path';
+  private rot = 0;
   private dash: readonly number[] = [];
   private readonly stack: Array<{ composite: unknown; dash: readonly number[] }> = [];
 
@@ -90,6 +97,7 @@ export class FakeCtx implements Canvas2DLike {
   beginPath(): void {
     this.path = [];
     this.shape = 'path';
+    this.rot = 0;
   }
 
   moveTo(x: number, y: number): void {
@@ -107,9 +115,10 @@ export class FakeCtx implements Canvas2DLike {
     this.shape = 'arc';
   }
 
-  ellipse(x: number, y: number, rx: number, ry: number, _rot: number, _a0: number, _a1: number): void {
+  ellipse(x: number, y: number, rx: number, ry: number, rot: number, _a0: number, _a1: number): void {
     this.path.push([x, y], [x + rx, y + ry]);
     this.shape = 'ellipse';
+    this.rot = rot;
   }
 
   setLineDash(pattern: readonly number[]): void {
@@ -152,6 +161,9 @@ export class FakeCtx implements Canvas2DLike {
       lineWidth: this.lineWidth,
       dash: this.dash,
       composite: String(this.globalCompositeOperation),
+      rot: shape === 'ellipse' ? this.rot : 0,
+      shadowColor: String(this.shadowColor),
+      shadowBlur: this.shadowBlur,
     });
   }
 
