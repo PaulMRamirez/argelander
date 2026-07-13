@@ -1,0 +1,14 @@
+{
+  "kind": "pushbroom",
+  "name": "Sentinel-3A OLCI",
+  "instrumentId": "sentinel-3a-olci",
+  "mount": [],
+  "timing": {
+    "segmentStepSec": 1
+  },
+  "params": {
+    "swathHalfWidthKm": 635,
+    "sourceUrl": "https://github.com/ryanpavlick/hyplan",
+    "sourceNote": "OLCI; swath 1270 km (HyPlan SATELLITE_REGISTRY, satellites.py), so swathHalfWidthKm is swath/2. Modeled as a symmetric nadir swath."
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "kind": "whiskbroom",
+  "name": "MASTER whiskbroom scanner",
+  "instrumentId": "master",
+  "mount": [
+    {
+      "kind": "scan-mirror"
+    }
+  ],
+  "timing": {
+    "segmentStepSec": 0.5,
+    "subStepSec": 0.1
+  },
+  "params": {
+    "swathHalfWidthKm": 18.624,
+    "scanRateHz": 25,
+    "footprintSemiMajorKm": 0.02094,
+    "footprintSemiMinorKm": 0.02094,
+    "footprintGrowthFactor": 0.867,
+    "sourceUrl": "https://masterweb.jpl.nasa.gov/",
+    "sourceNote": "MASTER 85.92 deg FOV, 716 px, 25 Hz scan (HyPlan line_scanner registry / MASTER ASAP datasheet); swathHalfWidthKm and footprint at a nominal 20 km altitude."
+  }
+}

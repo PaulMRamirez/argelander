@@ -9,6 +9,7 @@
   "files": [
     "src",
     "fixtures",
+    "catalog",
     "README.md"
   ],
   "scripts": {

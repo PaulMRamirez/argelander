@@ -1,0 +1,16 @@
+{
+  "kind": "stripmap-sar",
+  "name": "UAVSAR P-band SAR (AirMOSS)",
+  "instrumentId": "uavsar-pband",
+  "mount": [],
+  "timing": {
+    "segmentStepSec": 0.5
+  },
+  "params": {
+    "nearRangeKm": 6.435,
+    "farRangeKm": 13.8,
+    "side": "left",
+    "sourceUrl": "https://uavsar.jpl.nasa.gov/",
+    "sourceNote": "P-band 0.430 GHz; 25-45 deg incidence (Hensley et al. 2008, HyPlan radar). nearRangeKm/farRangeKm are ground ranges at a nominal 13.8 km platform altitude, left-looking."
+  }
+}

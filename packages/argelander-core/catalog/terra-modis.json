@@ -1,0 +1,14 @@
+{
+  "kind": "pushbroom",
+  "name": "Terra MODIS",
+  "instrumentId": "terra-modis",
+  "mount": [],
+  "timing": {
+    "segmentStepSec": 1
+  },
+  "params": {
+    "swathHalfWidthKm": 1165,
+    "sourceUrl": "https://github.com/ryanpavlick/hyplan",
+    "sourceNote": "MODIS; swath 2330 km (HyPlan SATELLITE_REGISTRY, satellites.py), so swathHalfWidthKm is swath/2. Modeled as a symmetric nadir swath."
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "kind": "whiskbroom",
+  "name": "G-LiHT ALS (RIEGL VQ-480i) scanning lidar",
+  "instrumentId": "gliht-als",
+  "mount": [
+    {
+      "kind": "scan-mirror"
+    }
+  ],
+  "timing": {
+    "segmentStepSec": 0.5,
+    "subStepSec": 0.1
+  },
+  "params": {
+    "swathHalfWidthKm": 0.346,
+    "scanRateHz": 100,
+    "footprintSemiMajorKm": 0.00009,
+    "footprintSemiMinorKm": 0.00009,
+    "footprintGrowthFactor": 0.333,
+    "sourceUrl": "https://gliht.gsfc.nasa.gov/",
+    "sourceNote": "RIEGL VQ-480i 30 deg half-scan angle, 0.3 mrad beam divergence (HyPlan als_lidar G-LiHT dual VQ-480i unit, per the G-LiHT V2.0 User Guide; these are the VQ-480i values G-LiHT flies, not the newer VQ-480 II). scanRateHz nominal. Footprint and swath at a nominal 0.6 km low-altitude ALS platform."
+  }
+}

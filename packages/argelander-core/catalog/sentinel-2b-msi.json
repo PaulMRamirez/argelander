@@ -1,0 +1,14 @@
+{
+  "kind": "pushbroom",
+  "name": "Sentinel-2B MSI",
+  "instrumentId": "sentinel-2b-msi",
+  "mount": [],
+  "timing": {
+    "segmentStepSec": 1
+  },
+  "params": {
+    "swathHalfWidthKm": 145,
+    "sourceUrl": "https://github.com/ryanpavlick/hyplan",
+    "sourceNote": "MSI; swath 290 km (HyPlan SATELLITE_REGISTRY, satellites.py), so swathHalfWidthKm is swath/2. Modeled as a symmetric nadir swath."
+  }
+}
