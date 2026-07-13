@@ -383,8 +383,9 @@ describe('sub-swath quilt rendering (AGE-09)', () => {
     // hatching; count strokes whose endpoints span along track (dlat != 0).
     const alongLines = ctx.strokes().filter((o) => o.shape === 'path' && o.path.length === 2
       && Math.abs(o.path[0]![1] - o.path[1]![1]) > 1);
-    // 3 connected pairs times 4 interior dividers = 12 along-track dividers.
-    expect(alongLines.length).toBeGreaterThanOrEqual(12);
+    // 3 connected pairs times 4 interior dividers, exactly: an over-count
+    // (drawing bands rather than bands-1) would fail this.
+    expect(alongLines.length).toBe(12);
   });
 
   it('draws no dividers for a single sub-swath per segment (a burst, not a divided swath)', () => {
