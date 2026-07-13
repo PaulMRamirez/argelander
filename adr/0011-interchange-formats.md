@@ -1,6 +1,6 @@
 # ADR-0011: coverage and state interchange via GeoJSON, MMGIS Enhanced GeoJSON, and CZML
 
-Status: proposed. Date: 2026-07-12.
+Status: accepted. Date: 2026-07-12.
 
 ## Decision
 
