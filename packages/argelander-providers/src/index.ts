@@ -28,9 +28,13 @@ export {
   deltaAtSeconds, etToUtcUnix, gmstRad, gmstRadAtEt, jdUt1FromEt, utcUnixToEt, yearDayToUtcUnix,
 } from './time.js';
 export {
-  RESERVED_COORD_PROPERTIES, enhancedGeoJsonToStrip, geoJsonToStrip, stripToEnhancedGeoJson, stripToGeoJson,
+  RESERVED_COORD_PROPERTIES, enhancedGeoJsonToStrip, geoJsonToStrip, geographicToVec3,
+  stripToEnhancedGeoJson, stripToGeoJson,
 } from './geojson.js';
 export type {
   EnhancedGeoJsonImportOptions, EnhancedGeoJsonOptions, GeoJsonFeature, GeoJsonFeatureCollection,
   GeoJsonGeometry, StripFromGeoJson, StripPassthrough,
 } from './geojson.js';
+export { geoJsonStateProvider, parseGeoJsonStates } from './geojson-state.js';
+export type { GeoJsonStateMeta } from './geojson-state.js';
+export { statesFromPositions } from './trajectory.js';

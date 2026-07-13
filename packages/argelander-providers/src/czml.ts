@@ -14,6 +14,7 @@ import type { BodyId, Correction, FrameId } from 'argelander-core';
 import { PresampledProvider } from './presampled.js';
 import type { PresampledProviderOptions, PresampledStateTable } from './presampled.js';
 import { utcUnixToEt } from './time.js';
+import { statesFromPositions } from './trajectory.js';
 
 export interface CzmlTableMeta {
   /** The central body the states are relative to; default EARTH. */
@@ -80,36 +81,13 @@ function packetTable(packet: CzmlPacket, meta: Required<CzmlTableMeta>): Presamp
     p[i * 3 + 2] = (cartesian[i * 4 + 3] as number) / 1000;
   }
 
-  const states = new Float64Array(n * 6);
-  for (let i = 0; i < n; i++) {
-    states[i * 6 + 0] = p[i * 3 + 0]!;
-    states[i * 6 + 1] = p[i * 3 + 1]!;
-    states[i * 6 + 2] = p[i * 3 + 2]!;
-    // Weighted central differences on the non-uniform grid; one-sided ends.
-    const lo = Math.max(0, i - 1);
-    const hi = Math.min(n - 1, i + 1);
-    for (let axis = 0; axis < 3; axis++) {
-      let v: number;
-      if (lo === i || hi === i) {
-        v = (p[hi * 3 + axis]! - p[lo * 3 + axis]!) / (t[hi]! - t[lo]!);
-      } else {
-        const dtLo = t[i]! - t[lo]!;
-        const dtHi = t[hi]! - t[i]!;
-        const slopeLo = (p[i * 3 + axis]! - p[lo * 3 + axis]!) / dtLo;
-        const slopeHi = (p[hi * 3 + axis]! - p[i * 3 + axis]!) / dtHi;
-        v = (slopeLo * dtHi + slopeHi * dtLo) / (dtLo + dtHi);
-      }
-      states[i * 6 + 3 + axis] = v;
-    }
-  }
-
   return {
     body: id,
     observer: meta.observer,
     frame: meta.frame,
     correction: meta.correction,
     epochs: t,
-    states,
+    states: statesFromPositions(t, p),
   };
 }
 

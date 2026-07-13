@@ -18,6 +18,7 @@
  */
 import type { PresampledStateTable } from 'argelander-providers';
 import type { DemoInstrument } from './tles.js';
+import { ER2_TRACK_GEOJSON } from './er2-track.js';
 
 const DEG = Math.PI / 180;
 
@@ -39,6 +40,9 @@ export interface AirbornePlatform {
   name: string;
   line: DemoFlightLine;
   instruments: readonly DemoInstrument[];
+  /** Trajectory as Enhanced GeoJSON, loaded through geoJsonStateProvider; the
+   * line sampler is the fallback when absent or when the GeoJSON fails. */
+  trackGeoJson?: object;
 }
 
 type Vec3 = [number, number, number];
@@ -159,6 +163,7 @@ export const AIRBORNE_PLATFORMS: readonly AirbornePlatform[] = [
   {
     name: 'ER-2',
     line: ER2_LINE,
+    trackGeoJson: ER2_TRACK_GEOJSON,
     instruments: [
       {
         id: 'aviris',
