@@ -25,6 +25,10 @@
   header h1{font-size:clamp(22px,4.4vw,32px);font-weight:650;letter-spacing:-0.02em;margin:6px 0 8px}
   header .thesis{color:var(--dim);font-size:14px;line-height:1.55;max-width:70ch}
   header .thesis b{color:var(--txt);font-weight:600}
+  header .note{margin:14px 0 0;padding:10px 14px;border:1px solid var(--amber);border-radius:6px;background:rgba(240,178,85,.06);color:var(--dim);font-size:13px;line-height:1.5;max-width:70ch}
+  header .note b{color:var(--txt);font-weight:600}
+  header .note a{color:var(--cyan);text-decoration:none}
+  header .note a:hover{text-decoration:underline}
 
   .bar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin:16px 0 6px;padding:10px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
   .legend{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;font-family:var(--mono);font-size:10.5px;color:var(--dim)}
@@ -86,6 +90,7 @@
   <div class="eyebrow">Swath / FOV rendering study &middot; 2D surface &middot; live simulation</div>
   <h1>Acquisition Geometry Atlas</h1>
   <p class="thesis">Twenty-one ways instruments actually touch the ground, past, current, and upcoming, animated on a neutral map, then <b>six ways to paint the same coverage</b>. Geometry and treatment are independent decisions; the target is a renderer-agnostic component for MMGIS, with Leaflet and three.js adapters. This page exists so those decisions get made deliberately.</p>
+  <p class="note"><b>Design exploration, not the engine.</b> This atlas is hand-authored to decide how each geometry and treatment should read; it is not the Argelander engine's output. The <a href="../demo/index.html">live Leaflet demo</a> holds the true current visualization state, rendered by the engine from real states.</p>
   <div class="bar">
     <div class="legend">
       <span><i class="sw now"></i>instantaneous aperture</span>

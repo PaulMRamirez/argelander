@@ -8,7 +8,7 @@ The product line: Cosmolabe is what you see, Bessel is what computes, Argelander
 
 ## See it, use it
 
-Instrument models and ephemerides in, time-tagged footprint strips out, painted on a map. Open `apps/atlas/index.html` in a browser for the 21-family atlas: no build, no server. The live Leaflet demo (SGP4 and pre-sampled footprints over Earth, the Moon, and Mars) ships on GitHub Pages. To put your own footprint on a map, start with the [layer configuration guide](docs/configuring-layers.md); the short path is one call:
+Instrument models and ephemerides in, time-tagged footprint strips out, painted on a map. The live Leaflet demo (SGP4 and pre-sampled footprints over Earth, the Moon, and Mars) is the true current visualization state, the engine's own output, and ships on GitHub Pages. The 21-family atlas (`apps/atlas/index.html`, no build, no server) is a separate thing: a hand-authored design exploration of how each geometry and treatment should read, not the Argelander engine's rendering. To put your own footprint on a map, start with the [layer configuration guide](docs/configuring-layers.md); the short path is one call:
 
 ```ts
 import { passStrips } from 'argelander-core';
@@ -45,8 +45,8 @@ The boundary is his too. Argelander accepted arcminute positions in exchange for
 | `packages/argelander-leaflet` | Leaflet adapter (MMGIS 2D Map first target): six treatments, the decay trail, the pass clock. Phase 1. |
 | `packages/argelander-three` | Three.js adapter (MMGIS Globe and Cosmolabe hosts). Phase 2, blocked on ADR-0006. |
 | `packages/argelander` | Umbrella package re-exporting core (claims the npm name). |
-| `apps/atlas` | The Acquisition Geometry Atlas: 21 geometry families, 6 treatments. Day-one public demo and the visual regression corpus. |
-| `apps/demo-leaflet` | Host-shaped demo: live footprints across three worlds, Earth from an SGP4 worker, Moon and Mars pre-sampled over NASA Trek tiles. Phase 1. |
+| `apps/atlas` | The Acquisition Geometry Atlas: a hand-authored design-exploration study of the 21 geometry families and 6 treatments, how each should read. Not the engine's output: the samplers were transcribed from its tiles, but the true current visualization is `apps/demo-leaflet`. |
+| `apps/demo-leaflet` | The true current visualization state: the engine's own live footprints across three worlds, Earth from an SGP4 worker, Moon and Mars pre-sampled over NASA Trek tiles, rendered through argelander-leaflet. Phase 1. |
 | `specs/` | SPEC-STRIP, SPEC-INSTRUMENT-MODEL, SPEC-PROVIDER. Source of truth; code follows spec. |
 | `docs/` | The acquisition-geometry survey and the layer-configuration guide. |
 | `adr/` | Architecture decision records. |
