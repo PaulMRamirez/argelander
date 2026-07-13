@@ -31,5 +31,6 @@ export {
   RESERVED_COORD_PROPERTIES, enhancedGeoJsonToStrip, geoJsonToStrip, stripToEnhancedGeoJson, stripToGeoJson,
 } from './geojson.js';
 export type {
-  EnhancedGeoJsonOptions, GeoJsonFeature, GeoJsonFeatureCollection, GeoJsonGeometry, StripFromGeoJson, StripPassthrough,
+  EnhancedGeoJsonImportOptions, EnhancedGeoJsonOptions, GeoJsonFeature, GeoJsonFeatureCollection,
+  GeoJsonGeometry, StripFromGeoJson, StripPassthrough,
 } from './geojson.js';

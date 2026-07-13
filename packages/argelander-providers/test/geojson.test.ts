@@ -2,11 +2,12 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { describe, expect, it } from 'vitest';
 import { validateStrip } from 'argelander-core';
-import type { Strip } from 'argelander-core';
+import type { Strip, Vec3 } from 'argelander-core';
 import {
   RESERVED_COORD_PROPERTIES, enhancedGeoJsonToStrip, geoJsonToStrip, stripToEnhancedGeoJson, stripToGeoJson,
 } from '../src/geojson.js';
 import type { GeoJsonFeatureCollection } from '../src/geojson.js';
+import { utcUnixToEt } from '../src/time.js';
 
 const require = createRequire(import.meta.url);
 
@@ -144,5 +145,100 @@ describe('standard GeoJSON (RFC 7946)', () => {
     expect(validateStrip(back).errors).toEqual([]);
     expect(back.segments.every((s) => s.state === 'committed')).toBe(true);
     expect(back.provenance.generatedBy).toMatch(/outline grade/);
+  });
+
+  it('a single-segment strip exports RFC 7946-valid geometry, not a 3-position ring', () => {
+    const one: Strip = {
+      id: 'one', body: 'EARTH', frame: 'ITRF93', instrumentId: 'test',
+      segments: [{ etSec: 0, left: [6371, 0, 5], right: [6371, 0, -5], state: 'committed' }],
+      provenance: { authority: 'test', generatedBy: 'test' },
+    };
+    expect(stripToGeoJson(one).features[0]!.geometry.type).toBe('LineString');
+    const zero: Strip = { ...one, segments: [{ etSec: 0, left: [6371, 0, 0], right: [6371, 0, 0], state: 'committed' }] };
+    expect(stripToGeoJson(zero).features[0]!.geometry.type).toBe('Point');
+  });
+});
+
+describe('codec robustness (review findings)', () => {
+  const enhanced = (family: string): GeoJsonFeatureCollection => stripToEnhancedGeoJson(fixture(family));
+  const mlsCoords = (fc: GeoJsonFeatureCollection): (number | null)[][][] =>
+    (fc.features[0]!.geometry as unknown as { coordinates: (number | null)[][][] }).coordinates;
+
+  it('refuses foreign Enhanced GeoJSON with no bodyRadiusKm, and honors a caller-supplied one', () => {
+    const fc = enhanced('pushbroom');
+    delete (fc.features[0]!.properties as Record<string, unknown>).bodyRadiusKm;
+    expect(() => enhancedGeoJsonToStrip(fc)).toThrow(/bodyRadiusKm/);
+    const back = enhancedGeoJsonToStrip(fc, { bodyRadiusKm: 6371 }).strip;
+    expect(validateStrip(back).errors).toEqual([]);
+  });
+
+  it('reads a NaN coordinate member as absent, never a NaN edge or epoch', () => {
+    const fc = enhanced('pushbroom');
+    const coords = mlsCoords(fc);
+    coords[0]![0]![3] = NaN; // event_seconds of the first left vertex
+    const back = enhancedGeoJsonToStrip(fc).strip;
+    expect(Number.isFinite(back.segments[0]!.etSec)).toBe(true);
+    expect(validateStrip(back).errors).toEqual([]);
+  });
+
+  it('honors a feature-level coord_properties override', () => {
+    const fc = enhanced('stripmap-sar');
+    const feature = { ...fc.features[0]!, coord_properties: [...fc.coord_properties!] };
+    const moved: GeoJsonFeatureCollection = { ...fc, coord_properties: ['longitude', 'latitude', 'elevation'], features: [feature] };
+    const back = enhancedGeoJsonToStrip(moved).strip;
+    expect(back.segments[0]!.quality).toEqual(fixture('stripmap-sar').segments[0]!.quality);
+  });
+
+  it('refuses empty edges and a MultiLineString that is not exactly two edges', () => {
+    const empty = enhanced('pushbroom');
+    (empty.features[0]!.geometry as unknown as { coordinates: unknown[][] }).coordinates = [[], []];
+    expect(() => enhancedGeoJsonToStrip(empty)).toThrow(/must not be empty/);
+    const three = enhanced('pushbroom');
+    const c = mlsCoords(three);
+    (three.features[0]!.geometry as unknown as { coordinates: unknown[] }).coordinates = [c[0]!, c[1]!, c[0]!];
+    expect(() => enhancedGeoJsonToStrip(three)).toThrow(/exactly two edges/);
+  });
+
+  it('defaults an unreadable state to planned and discloses it', () => {
+    const fc = enhanced('pushbroom');
+    const stateIdx = fc.coord_properties!.indexOf('state');
+    mlsCoords(fc).forEach((edge) => edge.forEach((v) => { v[stateIdx] = 9; })); // out of range
+    const back = enhancedGeoJsonToStrip(fc).strip;
+    expect(back.segments.every((s) => s.state === 'planned')).toBe(true);
+    expect(back.provenance.generatedBy).toMatch(/state defaulted to planned/);
+  });
+
+  it('discloses an incomplete quality column rather than dropping it silently', () => {
+    const strip = fixture('stripmap-sar'); // carries incidenceDeg [min, max]
+    const fc = stripToEnhancedGeoJson(strip);
+    // Drop the max member from the document, leaving a half-present pair.
+    const maxIdx = fc.coord_properties!.indexOf('incidence_deg_max');
+    const names = fc.coord_properties!.filter((_, i) => i !== maxIdx);
+    const drop = (edge: (number | null)[][]): (number | null)[][] => edge.map((c) => c.filter((_, i) => i !== maxIdx));
+    const geom = mlsCoords(fc);
+    const partial: GeoJsonFeatureCollection = {
+      ...fc, coord_properties: names,
+      features: [{ ...fc.features[0]!, geometry: { type: 'MultiLineString', coordinates: [drop(geom[0]!), drop(geom[1]!)] } }],
+    };
+    const back = enhancedGeoJsonToStrip(partial).strip;
+    expect(back.segments[0]!.quality?.incidenceDeg).toBeUndefined();
+    expect(back.provenance.generatedBy).toMatch(/incomplete quality columns dropped: incidence_deg_min/);
+  });
+
+  it('keeps the epoch monotonic and rendering grade across a leap boundary (time.ts fixed point)', () => {
+    const etB = utcUnixToEt(Date.UTC(2017, 0, 1) / 1000); // the 2017 leap step
+    const edge = (z: number): Vec3 => [6371, 0, z];
+    const strip: Strip = {
+      id: 'leap', body: 'EARTH', frame: 'ITRF93', instrumentId: 'test',
+      segments: [
+        { etSec: etB - 5.5, left: edge(1), right: edge(-1), state: 'committed' },
+        { etSec: etB - 5.0, left: edge(2), right: edge(-2), state: 'committed' },
+      ],
+      provenance: { authority: 'test', generatedBy: 'test' },
+    };
+    const back = enhancedGeoJsonToStrip(stripToEnhancedGeoJson(strip)).strip;
+    expect(validateStrip(back).errors).toEqual([]); // monotonic etSec survives
+    expect(back.segments[0]!.etSec).toBeCloseTo(etB - 5.5, 4);
+    expect(back.segments[1]!.etSec).toBeCloseTo(etB - 5.0, 4);
   });
 });
