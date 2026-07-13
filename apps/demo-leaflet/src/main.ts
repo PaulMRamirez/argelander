@@ -282,7 +282,7 @@ async function start(): Promise<void> {
   const failed = failures.length ? `  |  failed: ${failures.join('; ')}` : '';
   // The color meaning lives in the legend; the status keeps the volatile
   // counts and the one durable hint a newcomer needs to find the detail.
-  statusLabel.textContent = `${names}  |  a simulated acquisition plan the clock plays forward: zoom in and switch a layer to MECHANISM TEXTURE to see the scan${failed}`;
+  statusLabel.textContent = `${names}  |  a simulated acquisition plan the clock plays forward, the ER-2 and G-III airborne footprints from the source-cited instrument catalog; zoom in and switch a layer to MECHANISM TEXTURE to see the scan${failed}`;
 
   // The promoted loop: setNow per frame, boundary-gated updateStates
   // through withStateRule, clock before states (AGE-13, AGE-16).

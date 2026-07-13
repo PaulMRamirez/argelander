@@ -19,6 +19,10 @@
 import type { PresampledStateTable } from 'argelander-providers';
 import type { DemoInstrument } from './tles.js';
 import { ER2_TRACK_GEOJSON } from './er2-track.js';
+import {
+  CATALOG_AVIRIS3, CATALOG_HYTES, CATALOG_LVIS, CATALOG_MASTER, CATALOG_PRISM,
+  CATALOG_UAVSAR_L, CATALOG_UAVSAR_P,
+} from './catalog.js';
 
 const DEG = Math.PI / 180;
 
@@ -159,18 +163,40 @@ const ER2_LINE: DemoFlightLine = {
   ],
 };
 
+/**
+ * A UAVSAR-carrying G-III (NASA C-20A) transect alongside the ER-2 line: a
+ * lower radar platform whose left-looking SAR ribbons ride off to one side of
+ * the ground track, the side-looking posture the nadir spectrometers never
+ * show. Cited at a nominal 13.8 km platform altitude, matching the catalog.
+ */
+const GIII_LINE: DemoFlightLine = {
+  body: 'EARTH',
+  frame: 'ITRF93',
+  target: 'GIII',
+  bodyRadiusKm: 6371,
+  altitudeKm: 13.8,
+  groundspeedKmS: 0.21,
+  waypoints: [
+    [33.0, -117.4],
+    [37.8, -110.4],
+    [42.6, -103.4],
+  ],
+};
+
 export const AIRBORNE_PLATFORMS: readonly AirbornePlatform[] = [
   {
+    // The ER-2 spectrometer and scanner suite, every footprint sourced from the
+    // instrument catalog (AGE-18): the swaths are the cited values, not figures
+    // typed here. AVIRIS-3 opens the layer; the rest list off, toggleable.
     name: 'ER-2',
     line: ER2_LINE,
     trackGeoJson: ER2_TRACK_GEOJSON,
-    instruments: [
-      {
-        id: 'aviris',
-        label: 'AVIRIS-3: pushbroom imaging spectrometer, ~12 km swath',
-        swathHalfWidthKm: 6,
-        startOn: true,
-      },
-    ],
+    instruments: [CATALOG_AVIRIS3, CATALOG_HYTES, CATALOG_PRISM, CATALOG_MASTER, CATALOG_LVIS],
+  },
+  {
+    // UAVSAR on the G-III, from the catalog: L-band opens, P-band lists off.
+    name: 'G-III (UAVSAR)',
+    line: GIII_LINE,
+    instruments: [CATALOG_UAVSAR_L, CATALOG_UAVSAR_P],
   },
 ];
