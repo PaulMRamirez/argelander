@@ -1,0 +1,14 @@
+{
+  "kind": "pushbroom",
+  "name": "JPSS-2 (NOAA-21) VIIRS",
+  "instrumentId": "jpss-2-viirs",
+  "mount": [],
+  "timing": {
+    "segmentStepSec": 1
+  },
+  "params": {
+    "swathHalfWidthKm": 1500,
+    "sourceUrl": "https://github.com/ryanpavlick/hyplan",
+    "sourceNote": "VIIRS; swath 3000 km (HyPlan SATELLITE_REGISTRY, satellites.py), so swathHalfWidthKm is swath/2. Modeled as a symmetric nadir swath."
+  }
+}

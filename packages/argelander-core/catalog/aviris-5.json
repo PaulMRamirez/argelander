@@ -1,0 +1,14 @@
+{
+  "kind": "pushbroom",
+  "name": "AVIRIS-5 imaging spectrometer",
+  "instrumentId": "aviris-5",
+  "mount": [],
+  "timing": {
+    "segmentStepSec": 0.5
+  },
+  "params": {
+    "swathHalfWidthKm": 7.319,
+    "sourceUrl": "https://aviris.jpl.nasa.gov/",
+    "sourceNote": "PROVISIONAL: 40.2 deg FOV, 1239 px is an EMIT-design estimate, airborne FOV and pixel count unverified (HyPlan flags this source unverified). swathHalfWidthKm at a nominal 20 km altitude."
+  }
+}

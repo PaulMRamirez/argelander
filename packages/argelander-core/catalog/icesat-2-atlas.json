@@ -1,0 +1,14 @@
+{
+  "kind": "pushbroom",
+  "name": "ICESat-2 ATLAS",
+  "instrumentId": "icesat-2-atlas",
+  "mount": [],
+  "timing": {
+    "segmentStepSec": 1
+  },
+  "params": {
+    "swathHalfWidthKm": 3.25,
+    "sourceUrl": "https://github.com/ryanpavlick/hyplan",
+    "sourceNote": "ATLAS beam-pair chain; swath 6.5 km (HyPlan SATELLITE_REGISTRY, satellites.py), so swathHalfWidthKm is swath/2. Modeled as a symmetric nadir swath."
+  }
+}

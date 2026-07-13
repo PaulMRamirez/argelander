@@ -1,0 +1,14 @@
+{
+  "kind": "pushbroom",
+  "name": "Landsat-9 OLI-2",
+  "instrumentId": "landsat-9-oli",
+  "mount": [],
+  "timing": {
+    "segmentStepSec": 1
+  },
+  "params": {
+    "swathHalfWidthKm": 92.5,
+    "sourceUrl": "https://github.com/ryanpavlick/hyplan",
+    "sourceNote": "OLI-2; swath 185 km (HyPlan SATELLITE_REGISTRY, satellites.py), so swathHalfWidthKm is swath/2. Modeled as a symmetric nadir swath."
+  }
+}

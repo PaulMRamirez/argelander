@@ -1,0 +1,23 @@
+{
+  "kind": "whiskbroom",
+  "name": "LVIS full-waveform scanning lidar",
+  "instrumentId": "lvis",
+  "mount": [
+    {
+      "kind": "scan-mirror"
+    }
+  ],
+  "timing": {
+    "segmentStepSec": 0.5,
+    "subStepSec": 0.1
+  },
+  "params": {
+    "swathHalfWidthKm": 2,
+    "scanRateHz": 4,
+    "footprintSemiMajorKm": 0.0079,
+    "footprintSemiMinorKm": 0.0079,
+    "footprintGrowthFactor": 0.01,
+    "sourceUrl": "https://lvis.gsfc.nasa.gov/",
+    "sourceNote": "LVIS +/-5.71 deg half-scan (max swath 0.2 x altitude), 0.79 mrad medium-lens beam divergence (NASA GSFC LVIS coverage spreadsheet). scanRateHz is a nominal demonstration value. Footprint at a nominal 20 km ER-2 altitude."
+  }
+}

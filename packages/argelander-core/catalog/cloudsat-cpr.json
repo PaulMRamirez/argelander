@@ -1,0 +1,14 @@
+{
+  "kind": "pushbroom",
+  "name": "CloudSat CPR",
+  "instrumentId": "cloudsat-cpr",
+  "mount": [],
+  "timing": {
+    "segmentStepSec": 1
+  },
+  "params": {
+    "swathHalfWidthKm": 0.7,
+    "sourceUrl": "https://github.com/ryanpavlick/hyplan",
+    "sourceNote": "CPR profiler; swath 1.4 km (HyPlan SATELLITE_REGISTRY, satellites.py), so swathHalfWidthKm is swath/2. Modeled as a symmetric nadir swath."
+  }
+}

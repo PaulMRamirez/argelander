@@ -1,0 +1,16 @@
+{
+  "kind": "stripmap-sar",
+  "name": "UAVSAR L-band polarimetric SAR",
+  "instrumentId": "uavsar-lband",
+  "mount": [],
+  "timing": {
+    "segmentStepSec": 0.5
+  },
+  "params": {
+    "nearRangeKm": 5.576,
+    "farRangeKm": 29.594,
+    "side": "left",
+    "sourceUrl": "https://uavsar.jpl.nasa.gov/",
+    "sourceNote": "L-band 1.2575 GHz; 22-65 deg incidence (Hensley et al. 2008, HyPlan radar). nearRangeKm/farRangeKm are ground ranges at a nominal 13.8 km platform altitude, left-looking."
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "kind": "pushbroom",
+  "name": "HyTES thermal imaging spectrometer",
+  "instrumentId": "hytes",
+  "mount": [],
+  "timing": {
+    "segmentStepSec": 0.5
+  },
+  "params": {
+    "swathHalfWidthKm": 9.326,
+    "sourceUrl": "https://hytes.jpl.nasa.gov/",
+    "sourceNote": "50 deg cross-track FOV, 512 px (HyPlan line_scanner registry); pushbroom Dyson spectrometer; swathHalfWidthKm at a nominal 20 km altitude."
+  }
+}

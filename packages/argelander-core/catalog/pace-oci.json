@@ -1,0 +1,14 @@
+{
+  "kind": "pushbroom",
+  "name": "PACE OCI",
+  "instrumentId": "pace-oci",
+  "mount": [],
+  "timing": {
+    "segmentStepSec": 1
+  },
+  "params": {
+    "swathHalfWidthKm": 1331.5,
+    "sourceUrl": "https://github.com/ryanpavlick/hyplan",
+    "sourceNote": "OCI ocean color imager; swath 2663 km (HyPlan SATELLITE_REGISTRY, satellites.py), so swathHalfWidthKm is swath/2. Modeled as a symmetric nadir swath."
+  }
+}

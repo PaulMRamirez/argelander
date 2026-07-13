@@ -1,0 +1,14 @@
+{
+  "kind": "pushbroom",
+  "name": "PRISM imaging spectrometer",
+  "instrumentId": "prism",
+  "mount": [],
+  "timing": {
+    "segmentStepSec": 0.5
+  },
+  "params": {
+    "swathHalfWidthKm": 5.49,
+    "sourceUrl": "https://doi.org/10.1364/AO.53.001363",
+    "sourceNote": "Mouroulis et al. 2014 (Appl. Opt. 53, 1363), 30.7 deg FOV, 608 px; swathHalfWidthKm at a nominal 20 km altitude."
+  }
+}
