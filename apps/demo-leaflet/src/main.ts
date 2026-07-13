@@ -15,7 +15,7 @@ import { passStrips, withStateRule } from 'argelander-core';
 import type { StateProvider, Strip } from 'argelander-core';
 import { AcquisitionClock, AcquisitionLayer } from 'argelander-leaflet';
 import type { Treatment } from 'argelander-leaflet';
-import { PresampledProvider, connectSgp4Worker, parseTle } from 'argelander-providers';
+import { PresampledProvider, connectSgp4Worker, geoJsonStateProvider, parseTle } from 'argelander-providers';
 import { createPanel } from './panel.js';
 import type { WorldHost } from './panel.js';
 import { sampleOrbit } from './orbits.js';
@@ -224,12 +224,26 @@ async function start(): Promise<void> {
   // trackStrip pipeline (PHASE-4). Isolated like the other providers: one bad
   // line must not lose the constellation.
   for (const platform of AIRBORNE_PLATFORMS) {
+    const id = `demo-airborne-${platform.name}`;
+    const sampler = (): PresampledProvider =>
+      new PresampledProvider([sampleFlightLine(platform.line, 0, PASS_WINDOW_SEC, PASS_STEP_SEC)], { id });
     let provider: PresampledProvider;
     try {
-      provider = new PresampledProvider(
-        [sampleFlightLine(platform.line, 0, PASS_WINDOW_SEC, PASS_STEP_SEC)],
-        { id: `demo-airborne-${platform.name}` },
-      );
+      // Prefer the Enhanced GeoJSON track through the state provider (proving
+      // the inbound-state path); fall back to the in-code sampler if the
+      // GeoJSON is absent or fails to parse, so one bad track never grounds it.
+      if (platform.trackGeoJson) {
+        try {
+          provider = geoJsonStateProvider(platform.trackGeoJson, {
+            observer: platform.line.body, frame: platform.line.frame, bodyRadiusKm: platform.line.bodyRadiusKm,
+          }, { id });
+        } catch (err) {
+          failures.push(`${platform.name} geojson track, using sampler: ${err instanceof Error ? err.message : String(err)}`);
+          provider = sampler();
+        }
+      } else {
+        provider = sampler();
+      }
     } catch (err) {
       failures.push(`${platform.name}: ${err instanceof Error ? err.message : String(err)}`);
       continue;

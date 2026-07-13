@@ -110,10 +110,16 @@ function toGeographic(v: Vec3, refRadiusKm: number): { lonDeg: number; latDeg: n
   };
 }
 
-function fromGeographic(lonDeg: number, latDeg: number, elevationM: number, refRadiusKm: number): Vec3 {
+/**
+ * Geographic (longitude, latitude degrees; elevation meters above the body
+ * radius) to body-fixed Cartesian km, analytic geocentric spherical: no
+ * ellipsoid and no frames math, so it is rendering grade. Shared by the strip
+ * codec and the GeoJSON state provider so both read a coordinate the same way.
+ */
+export function geographicToVec3(lonDeg: number, latDeg: number, elevationM: number, bodyRadiusKm: number): Vec3 {
   const la = latDeg * DEG2RAD;
   const lo = lonDeg * DEG2RAD;
-  const r = refRadiusKm + elevationM / 1000;
+  const r = bodyRadiusKm + elevationM / 1000;
   const c = Math.cos(la);
   return [r * c * Math.cos(lo), r * c * Math.sin(lo), r * Math.sin(la)];
 }
@@ -308,7 +314,7 @@ function edgeVec(pos: EnhancedPosition, idx: Record<string, number>, ref: number
   const lon = numberAt(pos, idx.longitude ?? 0) ?? 0;
   const lat = numberAt(pos, idx.latitude ?? 1) ?? 0;
   const elev = numberAt(pos, idx.elevation ?? 2) ?? 0;
-  return fromGeographic(lon, lat, elev, ref);
+  return geographicToVec3(lon, lat, elev, ref);
 }
 
 function asString(v: unknown, fallback: string): string {
@@ -405,7 +411,7 @@ export function geoJsonToStrip(fc: GeoJsonFeatureCollection, meta: { body: strin
   const feature = fc.features[0];
   if (!feature) throw new RangeError('geoJsonToStrip expects at least one feature');
   const ref = meta.bodyRadiusKm;
-  const vec = (c: readonly number[]): Vec3 => fromGeographic(c[0] ?? 0, c[1] ?? 0, c[2] ?? 0, ref);
+  const vec = (c: readonly number[]): Vec3 => geographicToVec3(c[0] ?? 0, c[1] ?? 0, c[2] ?? 0, ref);
   let lefts: Vec3[];
   let rights: Vec3[];
   if (feature.geometry.type === 'Point') {
