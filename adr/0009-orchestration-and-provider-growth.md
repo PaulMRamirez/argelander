@@ -1,6 +1,6 @@
 # ADR-0009: pass orchestration helpers and the provider growth set
 
-Status: proposed. Date: 2026-07-12.
+Status: accepted. Date: 2026-07-12.
 
 ## Decision
 
