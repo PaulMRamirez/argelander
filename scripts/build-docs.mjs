@@ -22,6 +22,10 @@ const demo = spawnSync('pnpm', ['--filter', '@app/demo-leaflet', 'build'], { cwd
 if (demo.status !== 0) process.exit(demo.status ?? 1);
 cpSync(join(ROOT, 'apps/demo-leaflet/dist'), join(SITE, 'demo'), { recursive: true });
 
+// The README captures ride along so the homepage hero and any guide that
+// references a figure resolve on the deployed site, not just in the repo view.
+cpSync(join(ROOT, 'docs/media'), join(SITE, 'media'), { recursive: true });
+
 const CSS = `
 :root{--bg:#0C131C;--panel:#121B27;--txt:#D7E1EA;--dim:#8CA0B3;--teal:#7FD8CC;--line:#22303F}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);
@@ -30,6 +34,8 @@ main{max-width:880px;margin:0 auto;padding:40px 22px 80px}
 h1,h2,h3{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.01em;color:var(--teal)}
 h1{font-size:26px;margin:8px 0 18px}h2{font-size:19px;margin-top:34px}h3{font-size:16px;color:var(--txt)}
 a{color:var(--teal);text-decoration:none}a:hover{text-decoration:underline}
+img{max-width:100%;height:auto;border-radius:8px;border:1px solid var(--line)}
+figure{margin:18px 0}figcaption{color:var(--dim);font-size:13px;margin-top:6px}
 table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14px}
 th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
 th{background:var(--panel);color:var(--teal);font-family:ui-monospace,monospace;font-size:12.5px}
@@ -79,6 +85,10 @@ for (const f of readdirSync(join(ROOT, 'adr')).sort()) {
 const index = `
 <h1>argelander</h1>
 <p>Acquisition Geometry Engine (AGE). Cosmolabe is what you see, Bessel is what computes, Argelander is what surveys.</p>
+<figure>
+<img src="media/hero.gif" alt="A constellation of SGP4 footprint strips sweeping Earth in the live Leaflet demo: committed swaths behind each platform, a bright now-line at the acquiring edge, planned coverage ahead.">
+<figcaption>Instrument models and ephemerides in, time-tagged footprint strips out. The <a href="demo/index.html">live demo</a> propagates this in your browser.</figcaption>
+</figure>
 <h2>Demos</h2>
 <p><a href="atlas/index.html">Acquisition Geometry Atlas</a>: 21 geometry families, 6 treatments, the visual regression corpus.<br>
 <a href="demo/index.html">Live demo</a>: SGP4 footprints propagated in a worker, painted by argelander-leaflet over open tiles.</p>
