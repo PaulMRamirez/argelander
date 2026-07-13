@@ -19,6 +19,7 @@ import { PresampledProvider, connectSgp4Worker, parseTle } from 'argelander-prov
 import { createPanel } from './panel.js';
 import type { WorldHost } from './panel.js';
 import { sampleOrbit } from './orbits.js';
+import { AIRBORNE_PLATFORMS, sampleFlightLine } from './flightlines.js';
 import type { DemoInstrument } from './tles.js';
 import { DEMO_SATS, PASS_STEP_SEC, PASS_WINDOW_SEC } from './tles.js';
 import { WORLDS, worldByKey } from './worlds.js';
@@ -217,6 +218,34 @@ async function start(): Promise<void> {
     }
   }
 
+  // Airborne platforms on Earth: a flight line sampled into a body-fixed state
+  // table and served through the same pre-sampled seam as the planetary orbits,
+  // so a non-satellite platform renders footprint strips through the identical
+  // trackStrip pipeline (PHASE-4). Isolated like the other providers: one bad
+  // line must not lose the constellation.
+  for (const platform of AIRBORNE_PLATFORMS) {
+    let provider: PresampledProvider;
+    try {
+      provider = new PresampledProvider(
+        [sampleFlightLine(platform.line, 0, PASS_WINDOW_SEC, PASS_STEP_SEC)],
+        { id: `demo-airborne-${platform.name}` },
+      );
+    } catch (err) {
+      failures.push(`${platform.name}: ${err instanceof Error ? err.message : String(err)}`);
+      continue;
+    }
+    for (const instrument of platform.instruments) {
+      try {
+        const baseStrips = await instrumentStrips(provider, platform.line.target, platform.name, instrument, 0, {
+          observer: platform.line.body, frame: platform.line.frame, bodyRadiusKm: platform.line.bodyRadiusKm,
+        });
+        registerLayer('earth', platform.name, instrument, 0, baseStrips);
+      } catch (err) {
+        failures.push(`${platform.name}/${instrument.id}: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+  }
+
   createPanel({
     host,
     worlds: WORLDS,
@@ -225,7 +254,7 @@ async function start(): Promise<void> {
     defaultTreatment: DEFAULT_TREATMENT,
   });
   const names = satLayers.length
-    ? `${new Set(satLayers.map((s) => s.satName)).size} satellites, ${satLayers.length} instruments, ${new Set(satLayers.map((s) => s.world)).size} worlds`
+    ? `${new Set(satLayers.map((s) => s.satName)).size} platforms, ${satLayers.length} instruments, ${new Set(satLayers.map((s) => s.world)).size} worlds`
     : 'no instruments loaded';
   const failed = failures.length ? `  |  failed: ${failures.join('; ')}` : '';
   // The color meaning lives in the legend; the status keeps the volatile
