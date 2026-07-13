@@ -106,6 +106,8 @@ function postureOf(instrument: DemoInstrument): Record<string, unknown> {
     ...(instrument.scan !== undefined ? { scan: instrument.scan } : {}),
     ...(instrument.stepScan !== undefined ? { stepScan: instrument.stepScan } : {}),
     ...(instrument.conical !== undefined ? { conical: instrument.conical } : {}),
+    ...(instrument.subSwaths !== undefined ? { subSwaths: instrument.subSwaths } : {}),
+    ...(instrument.looks !== undefined ? { looks: instrument.looks } : {}),
     ...(instrument.offsetRangeKm !== undefined ? { offsetRangeKm: instrument.offsetRangeKm } : {}),
     ...(instrument.bilateralKm !== undefined ? { bilateralKm: instrument.bilateralKm } : {}),
   };

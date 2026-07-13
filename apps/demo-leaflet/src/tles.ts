@@ -36,6 +36,10 @@ export interface DemoInstrument {
     footprintSemiMajorKm: number;
     footprintSemiMinorKm: number;
   };
+  /** Sub-swath banding: SweepSAR receive beams (count) or ScanSAR/TOPS bursts (with burstPeriodSec). */
+  subSwaths?: { count: number; burstPeriodSec?: number };
+  /** Azimuth fan-beam looks, radians from east; a fan-beam scatterometer. */
+  looks?: { azimuthsRad: readonly number[] };
   /** Side-looking offset ribbon; nadir is never imaged. */
   offsetRangeKm?: { nearKm: number; farKm: number; side: 'left' | 'right' };
   /** Bilateral pair with a nadir gap: two ribbons sharing the passId. */
@@ -116,8 +120,9 @@ export const DEMO_SATS: readonly DemoSat[] = [
     instruments: [
       {
         id: 'c-sar',
-        label: 'C-SAR: tasked IW slots, right-looking',
+        label: 'C-SAR: tasked IW, TOPS bursts, right-looking',
         offsetRangeKm: { nearKm: 250, farKm: 400, side: 'right' },
+        subSwaths: { count: 3, burstPeriodSec: 120 },
         taskWindowsSec: [[480, 1080], [2040, 2580], [3660, 4440]],
       },
     ],
@@ -159,8 +164,9 @@ export const DEMO_SATS: readonly DemoSat[] = [
     instruments: [
       {
         id: 'l-sar',
-        label: 'L-SAR SweepSAR: 242 km, left-looking',
+        label: 'L-SAR SweepSAR: 242 km, 6 DBF beams, left-looking',
         offsetRangeKm: { nearKm: 150, farKm: 392, side: 'left' },
+        subSwaths: { count: 6 },
         startOn: false,
       },
     ],
@@ -172,8 +178,9 @@ export const DEMO_SATS: readonly DemoSat[] = [
     instruments: [
       {
         id: 'ascat',
-        label: 'ASCAT: twin 550 km scatterometer swaths',
+        label: 'ASCAT: twin fan-beam swaths, fore/mid/aft looks',
         bilateralKm: { gapKm: 336, outerKm: 886 },
+        looks: { azimuthsRad: [-0.79, 0, 0.79] },
         startOn: false,
       },
       {
