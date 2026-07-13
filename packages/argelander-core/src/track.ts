@@ -216,10 +216,8 @@ export function trackStrip(batch: StateBatch, targetIndex: number, options: Trac
 
   const subSwaths = options.subSwaths;
   const looks = options.looks;
-  for (const [name, present] of [['subSwaths', subSwaths], ['looks', looks]] as const) {
-    if (present && (scan || stepScan || conical)) {
-      throw new RangeError(`${name} is exclusive with scan, stepScan, and conical`);
-    }
+  if ((subSwaths || looks) && (scan || stepScan || conical)) {
+    throw new RangeError('subSwaths and looks are exclusive with scan, stepScan, and conical');
   }
   if (subSwaths && (!Number.isInteger(subSwaths.count) || subSwaths.count < 1)) {
     throw new RangeError(`subSwaths.count must be a positive integer, got ${subSwaths.count}`);

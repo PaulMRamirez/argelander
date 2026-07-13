@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { bodyRadiusKm, stripToGeo, toGeo, unwrapLon, worldCopyOffsets } from '../src/geo.js';
-import { fixtureStrip, syntheticStrip } from './fake-ctx.js';
+import { fixtureStrip, fromGeo, syntheticStrip } from './fake-ctx.js';
 
 describe('body-fixed to geographic (AGE-10 groundwork)', () => {
   it('converts the cardinal directions', () => {
@@ -95,15 +95,10 @@ describe('sub-swath bursts break the ribbon (TOPS/ScanSAR)', () => {
   // Build a swath strip whose segments carry one sub-swath tagged by burstId;
   // consecutive segments in different bursts must not ribbon into one quad.
   function burstStrip(burstIds: readonly string[], index: (k: number) => number): ReturnType<typeof stripToGeo> {
-    const R = 6371;
-    const fromGeo = (lat: number, lon: number): [number, number, number] => {
-      const la = (lat * Math.PI) / 180, lo = (lon * Math.PI) / 180;
-      return [R * Math.cos(la) * Math.cos(lo), R * Math.cos(la) * Math.sin(lo), R * Math.sin(la)];
-    };
     return stripToGeo({
       id: 'tops', body: 'EARTH', frame: 'ITRF93', instrumentId: 'test/tops',
       segments: burstIds.map((burstId, k) => ({
-        etSec: k * 10, left: fromGeo(k * 0.4, -1), right: fromGeo(k * 0.4, 1), state: 'committed' as const,
+        etSec: k * 10, left: fromGeo(k * 0.4, -1, 6371), right: fromGeo(k * 0.4, 1, 6371), state: 'committed' as const,
         sub: [{ kind: 'sub-swath' as const, index: index(k), burstId }],
       })),
       provenance: { authority: 'test', generatedBy: 'test' },

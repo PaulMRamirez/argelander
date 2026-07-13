@@ -51,6 +51,9 @@ export interface GeoStrip {
   medianStepSec: number;
   /** connect[i] true when segments i and i+1 ribbon into one quad. */
   connect: readonly boolean[];
+  /** True when any segment carries a sub-swath; lets the divider pass skip the
+   * per-frame walk on the many families that have none (SweepSAR and TOPS aside). */
+  hasSubSwaths: boolean;
 }
 
 export interface StripToGeoOptions {
@@ -118,7 +121,8 @@ export function stripToGeo(strip: Strip, options: StripToGeoOptions = {}): GeoSt
     );
   }
 
-  return { strip, radiusKm: bodyRadiusKm(strip), segments, medianStepSec, connect };
+  const hasSubSwaths = strip.segments.some((s) => s.sub?.some((e) => e.kind === 'sub-swath') ?? false);
+  return { strip, radiusKm: bodyRadiusKm(strip), segments, medianStepSec, connect, hasSubSwaths };
 }
 
 /** Longitude congruent to lonDeg, within 180 degrees of refLonDeg. */

@@ -49,7 +49,7 @@ function trace(family: string, treatment: Treatment): string {
       // Rotation rides only ellipse footprints; the glow only the now overlay.
       // Appending them just where they apply keeps every other line stable and
       // still locks the two channels a recorder that drops them stays blind to.
-      const rot = o.shape === 'ellipse' ? ` rot=${round(o.rot * 1000) / 1000}` : '';
+      const rot = o.shape === 'ellipse' ? ` rot=${Math.round(o.rot * 1000) / 1000}` : '';
       const glow = o.shadowBlur > 0 ? ` glow=${o.shadowColor}/${o.shadowBlur}` : '';
       return `${o.op} ${o.shape} [${path}] f=${o.fillStyle} s=${o.strokeStyle} `
         + `w=${round(o.lineWidth)} dash=[${o.dash.join(',')}] comp=${o.composite}${rot}${glow}`;
