@@ -8,7 +8,7 @@ The product line: Cosmolabe is what you see, Bessel is what computes, Argelander
 
 ## See it, use it
 
-Instrument models and ephemerides in, time-tagged footprint strips out, painted on a map. The live Leaflet demo (SGP4 and pre-sampled footprints over Earth, the Moon, and Mars) is the true current visualization state, the engine's own output, and ships on GitHub Pages. The 21-family atlas (`apps/atlas/index.html`, no build, no server) is a separate thing: a hand-authored design exploration of how each geometry and treatment should read, not the Argelander engine's rendering. To put your own footprint on a map, start with the [layer configuration guide](docs/configuring-layers.md); the short path is one call:
+Instrument models and ephemerides in, time-tagged footprint strips out, painted on a map. The live Leaflet demo (SGP4 and pre-sampled footprints over Earth, the Moon, and Mars) is the true current visualization state, the engine's own output, and ships on GitHub Pages at [paulmramirez.github.io/argelander](https://paulmramirez.github.io/argelander/), where the [live demo](https://paulmramirez.github.io/argelander/demo/) runs in your browser. The 21-family atlas (`apps/atlas/index.html`, no build, no server) is a separate thing: a hand-authored design exploration of how each geometry and treatment should read, not the Argelander engine's rendering. To put your own footprint on a map, start with the [layer configuration guide](docs/configuring-layers.md); the short path is one call:
 
 ```ts
 import { passStrips } from 'argelander-core';
@@ -61,7 +61,7 @@ pnpm verify        # style gate + typecheck + tests
 pnpm docs:build    # renders dist/site: guide, specs, ADRs, API reference, atlas, live demo
 ```
 
-Open `apps/atlas/index.html` in a browser for the atlas: no build step, no server. The full site (atlas, the three-world Leaflet demo, the configuring-layers guide, specs, ADRs, and the generated API reference) is what `pnpm docs:build` assembles and the Pages workflow deploys.
+Open `apps/atlas/index.html` in a browser for the atlas: no build step, no server. The full site (atlas, the three-world Leaflet demo, the configuring-layers guide, specs, ADRs, and the generated API reference) is what `pnpm docs:build` assembles and the Pages workflow deploys to [paulmramirez.github.io/argelander](https://paulmramirez.github.io/argelander/).
 
 ## Governance
 
