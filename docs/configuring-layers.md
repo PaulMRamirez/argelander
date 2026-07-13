@@ -193,10 +193,13 @@ The wire speaks the same three ops as the worker port; batches cross as JSON num
 | `swathHalfWidthKm` | Symmetric ribbon about the nadir track | Pushbroom and whiskbroom imagers |
 | `offsetRangeKm: { nearKm, farKm, side }` | Side-looking ribbon; nadir is never imaged | Stripmap SAR |
 | `beadOffsetsKm: [..]` | Sparse cross-track bead chains, never ribboned | Laser altimeters, nadir sounders |
-| `scan: {..}` | Footprint ellipses sweeping a ribbon on the whiskbroom triangle law, revealed by LOD | Scanning radiometers |
+| `scan: {..}` | Footprint ellipses sweeping a ribbon on the whiskbroom triangle law, revealed by LOD | Whiskbroom radiometers |
+| `stepScan: {..}` | Cross-track ellipse rows, positionsPerRow per segment, growing off-nadir | Cross-track sounders (ATMS, CrIS) |
+| `conical: {..}` | One forward crescent footprint per segment on a constant-incidence circle | Conical radiometers (GMI, AMSR2) |
+| `beadOffsetsKm: [..]` | Sparse cross-track bead chains, never ribboned | Laser altimeters, nadir sounders |
 | none of the above | Zero-width track | Bare ground track |
 
-The combination rules follow the physics. `offsetRangeKm` is exclusive with `swathHalfWidthKm` and `scan`: a side-looking ribbon has no nadir swath to sweep. `scan` requires a positive `swathHalfWidthKm`, because the ellipses sweep that ribbon; it never stands alone (`trackStrip` throws if it does). `beadOffsetsKm` combines freely with any envelope, ribbons included, since beads are per-segment sub-structure rather than an envelope of their own.
+The combination rules follow the physics. `offsetRangeKm` is exclusive with `swathHalfWidthKm`, `scan`, and `stepScan`: a side-looking ribbon has no nadir swath to sweep. `scan` and `stepScan` each require a positive `swathHalfWidthKm`, because they populate that ribbon; `scan` never stands alone. `conical` is a standalone posture, its own forward-circle geometry, exclusive with the swath, `scan`, `stepScan`, `offsetRangeKm`, and `beadOffsetsKm`. `beadOffsetsKm` otherwise combines freely with any envelope, ribbons included, since beads are per-segment sub-structure rather than an envelope of their own. The six exotic families of the atlas (step-scan, conical, limb, geo-raster, agile, target-stare) also have conformance-plane samplers in argelander-core; `stepScan` and `conical` bring the two scanning ones onto live ground tracks.
 
 Two instrument shapes are not single strips at all, and the decomposition is the configuration:
 

@@ -16,7 +16,7 @@ The boundary is his too. Argelander accepted arcminute positions in exchange for
 
 | Path | Purpose |
 | --- | --- |
-| `packages/argelander-core` | Renderer-agnostic engine: strip schema, instrument models across 21 families, 15 family samplers, pass orchestration, validation. Zero runtime dependencies. |
+| `packages/argelander-core` | Renderer-agnostic engine: strip schema, instrument models and samplers for all 21 families, pass orchestration, validation. Zero runtime dependencies. |
 | `packages/argelander-providers` | Standalone StateProviders below the seam: near-earth SGP4 from source, pre-sampled playback, CZML, worker-port and HTTP transports (ADR-0008, ADR-0009). |
 | `packages/argelander-leaflet` | Leaflet adapter (MMGIS 2D Map first target): six treatments, the decay trail, the pass clock. Phase 1. |
 | `packages/argelander-three` | Three.js adapter (MMGIS Globe and Cosmolabe hosts). Phase 2, blocked on ADR-0006. |
