@@ -162,7 +162,9 @@ Query-time refusals are `CoverageRefusalError`, and handling one is part of conf
 
 ## Other providers
 
-**CZML playback** (`czmlProvider`, `parseCzmlStates`), the interchange format ops tools already emit. Position packets become pre-sampled tables and `PresampledProvider` does the serving:
+### CZML playback
+
+`czmlProvider` and `parseCzmlStates` read CZML, the interchange format ops tools already emit: position packets become pre-sampled tables and `PresampledProvider` does the serving.
 
 ```ts
 import { czmlProvider } from 'argelander-providers';
@@ -204,7 +206,9 @@ new AcquisitionLayer(strips).addTo(map);
 
 Scope is honest and narrow. Supported: packets carrying an ISO `epoch` plus time-tagged `cartesian` samples (offset seconds, meters, converted to kilometers), `referenceFrame` FIXED, which is the CZML default and the body-fixed reading the seam wants. Refused, each with a plain `Error` whose message names the boundary (not a typed class, unlike `CoverageRefusalError` above): INERTIAL frames (rotating them body-fixed is frames math, the non-goal), `cartographicDegrees`, constant positions, and ISO-string sample times. A zone-less epoch is read as UTC to match Cesium, and declared interpolation hints are not honored: the samples are re-interpolated by `PresampledProvider`'s cubic Hermite, and velocities are derived from them by weighted central differences, rendering grade and stated as such. Each packet's `id` is the target name you query.
 
-**GeoJSON trajectory playback** (`geoJsonStateProvider`, `parseGeoJsonStates`), the sibling of CZML for a track a planning tool exported as GeoJSON, and the inbound path the live demo's airborne platforms run. A `LineString` or `MultiPoint` of geographic positions becomes pre-sampled tables, lifted to body-fixed states through the same analytic geocentric conversion the strip codec uses. Two time sources, and never both: MMGIS Enhanced GeoJSON carries a per-vertex `event_seconds` (Unix seconds) named through `coord_properties`, while a plain GeoJSON with no per-vertex time takes a uniform `timeBase` you supply.
+### GeoJSON trajectory playback
+
+`geoJsonStateProvider` and `parseGeoJsonStates` are the sibling of CZML for a track a planning tool exported as GeoJSON, and the inbound path the live demo's airborne platforms run. A `LineString` or `MultiPoint` of geographic positions becomes pre-sampled tables, lifted to body-fixed states through the same analytic geocentric conversion the strip codec uses. Two time sources, and never both: MMGIS Enhanced GeoJSON carries a per-vertex `event_seconds` (Unix seconds) named through `coord_properties`, while a plain GeoJSON with no per-vertex time takes a uniform `timeBase` you supply.
 
 ```ts
 import { geoJsonStateProvider } from 'argelander-providers';
@@ -247,7 +251,9 @@ new AcquisitionLayer(strips).addTo(map);
 
 A plain GeoJSON `LineString` that carries no `event_seconds` is the identical call with a `timeBase` in place of the per-vertex time: `geoJsonStateProvider(track, { timeBase: { startEt: epochEt, stepSec: 15 }, bodyRadiusKm: 6371 })`, where vertex `i` lands at `startEt + i * stepSec`. Supplying both an `event_seconds` column and a `timeBase` is refused, because the epoch source would be ambiguous; a document with neither is refused for the same reason from the other side. A non-Earth track MUST set `bodyRadiusKm`, since a GeoJSON coordinate carries no radius and the codec refuses to invent one. The live demo builds its ER-2 spectrometer footprints exactly this way, the track as Enhanced GeoJSON and the swath from the source-cited instrument catalog (the interchange section below is the outbound half of the same GeoJSON seam).
 
-**The HTTP service wire** (`serveStateRequest`, `httpStateProvider`), the states-from-a-service posture. The server side is a pure request-in, response-out function you mount on any framework; the client is a `StateProvider` over `fetch`:
+### The HTTP service wire
+
+`serveStateRequest` and `httpStateProvider` are the states-from-a-service posture. The server side is a pure request-in, response-out function you mount on any framework; the client is a `StateProvider` over `fetch`:
 
 ```ts
 // server, any framework: the body in, the JSON-safe response out
