@@ -41,17 +41,22 @@ describe('parseTles: the Celestrak-shaped splitter', () => {
   });
 });
 
-/** In-memory port pair: postMessage on one side dispatches on the other. */
+/**
+ * In-memory port pair: postMessage on one side dispatches 'message' on the
+ * other. Listeners are keyed by type, so registering an 'error' listener
+ * (the connect side does) never receives message traffic; these ports never
+ * fire 'error', modelling a MessagePort rather than a Worker.
+ */
 function portPair(): [StatePortLike, StatePortLike] {
-  const listeners: [Array<(e: { data: unknown }) => void>, Array<(e: { data: unknown }) => void>] = [[], []];
+  const message: [Array<(e: { data: unknown }) => void>, Array<(e: { data: unknown }) => void>] = [[], []];
   const make = (mine: 0 | 1): StatePortLike => ({
-    postMessage(message: unknown) {
+    postMessage(msg: unknown) {
       queueMicrotask(() => {
-        for (const l of listeners[mine === 0 ? 1 : 0]) l({ data: message });
+        for (const l of message[mine === 0 ? 1 : 0]) l({ data: msg });
       });
     },
-    addEventListener(_type: 'message', listener: (e: { data: unknown }) => void) {
-      listeners[mine].push(listener);
+    addEventListener(type: 'message', listener: (e: { data: unknown }) => void) {
+      if (type === 'message') message[mine].push(listener);
     },
   });
   return [make(0), make(1)];
@@ -72,13 +77,42 @@ describe('worker wiring: the one-import worker and the ready handshake', () => {
     expect(Math.hypot(batch.states[0]!, batch.states[1]!, batch.states[2]!)).toBeGreaterThan(6000);
   });
 
-  it('rejects the connect promise when construction fails in the worker', async () => {
+  it('rejects with the marshaled error type when construction fails in the worker', async () => {
     // A deep-space period: mean motion 2 revs/day.
     const deepLine2 = '2 25544  51.6302 180.6822 0006688 282.4935  77.5305  2.00000000575496';
     const [main, worker] = portPair();
     registerSgp4Worker(worker);
-    await expect(connectSgp4Worker(main, [{ line1: ISS_LINE1, line2: deepLine2, name: 'DEEP' }]))
-      .rejects.toThrow(/deep/i);
+    const err = await connectSgp4Worker(main, [{ line1: ISS_LINE1, line2: deepLine2, name: 'DEEP' }]).catch((e: Error) => e);
+    // The type survives the port, not a bare Error (the ADR-0009 fix).
+    expect((err as Error).name).toBe('DeepSpaceUnsupportedError');
+  });
+
+  it('rejects a second connect on an already-served port instead of hanging', async () => {
+    const [main, worker] = portPair();
+    registerSgp4Worker(worker);
+    await connectSgp4Worker(main, [{ line1: ISS_LINE1, line2: ISS_LINE2, name: 'ISS' }]);
+    await expect(connectSgp4Worker(main, [{ line1: ISS_LINE1, line2: ISS_LINE2, name: 'ISS' }]))
+      .rejects.toThrow(/already initialized/);
+  });
+
+  it('rejects on the timeout backstop when the worker never acknowledges', async () => {
+    // A port with no registered worker: no ready, no error event ever.
+    const dead: StatePortLike = { postMessage() {}, addEventListener() {} };
+    await expect(connectSgp4Worker(dead, [{ line1: ISS_LINE1, line2: ISS_LINE2, name: 'ISS' }], { timeoutMs: 20 }))
+      .rejects.toThrow(/did not acknowledge/);
+  });
+
+  it('rejects on a Worker error event (a worker that fails to load)', async () => {
+    let errorListener: ((e: { message?: string }) => void) | undefined;
+    const port = {
+      postMessage() {},
+      addEventListener(type: string, listener: (e: { message?: string }) => void) {
+        if (type === 'error') errorListener = listener;
+      },
+    } as unknown as StatePortLike;
+    const connecting = connectSgp4Worker(port, [{ line1: ISS_LINE1, line2: ISS_LINE2, name: 'ISS' }]);
+    errorListener!({ message: 'Failed to load worker script' });
+    await expect(connecting).rejects.toThrow(/Failed to load worker script/);
   });
 });
 
@@ -115,6 +149,23 @@ describe('CZML playback (the ADR-0008 deferral landed)', () => {
     expect(etToUtcUnix(start)).toBeCloseTo(Date.parse('2026-07-12T00:00:00Z') / 1000, 3);
   });
 
+  it('reads a zone-less ISO epoch as UTC, not the runner local time', () => {
+    const [zoned] = parseCzmlStates(circleCzml('SAT-1', '2026-07-12T00:00:00Z'));
+    const [zoneless] = parseCzmlStates(circleCzml('SAT-1', '2026-07-12T00:00:00'));
+    // Both anchor to the same instant regardless of the host timezone.
+    expect(zoneless!.epochs[0]).toBeCloseTo(zoned!.epochs[0]!, 6);
+  });
+
+  it('skips a packet whose position is null rather than crashing', () => {
+    const doc = [
+      { id: 'document', version: '1.0' },
+      { id: 'GAP', position: null },
+      ...circleCzml('SAT-1', '2026-07-12T00:00:00Z').slice(1),
+    ];
+    const tables = parseCzmlStates(doc);
+    expect(tables.map((t) => t.body)).toEqual(['SAT-1']);
+  });
+
   it('refuses inertial frames, cartographic packets, constants, and string times', () => {
     const base = circleCzml('SAT-1', '2026-07-12T00:00:00Z') as Array<{ id: string; position?: Record<string, unknown> }>;
     const inertial = structuredClone(base);
@@ -149,14 +200,19 @@ function circularTable(): PresampledStateTable {
   return { body: 'SAT-H', observer: 'EARTH', frame: 'ITRF93', correction: 'NONE', epochs, states };
 }
 
-/** Loopback fetch: the client body goes straight into serveStateRequest. */
-function loopbackFetch(provider: PresampledProvider): typeof fetch {
+/**
+ * Loopback fetch: the client body goes straight into serveStateRequest. A
+ * host may map refusals to a non-2xx status; `refusalStatus` models that so
+ * the round-trip is exercised over both the 200 and the 4xx conventions.
+ */
+function loopbackFetch(provider: PresampledProvider, refusalStatus = 200): typeof fetch {
   return (async (_url: unknown, init?: { body?: unknown }) => {
     const request = JSON.parse(String(init?.body)) as unknown;
     const wire = await serveStateRequest(provider, request);
+    const status = wire.ok ? 200 : refusalStatus;
     return {
-      ok: true,
-      status: 200,
+      ok: status >= 200 && status < 300,
+      status,
       json: async () => wire,
     };
   }) as unknown as typeof fetch;
@@ -190,5 +246,16 @@ describe('HTTP wire: the states-from-a-service posture', () => {
       expect(err.body).toBe('SAT-H');
       expect(err.covered[0]).toEqual({ start: 0, end: 600 });
     });
+  });
+
+  it('revives the refusal even when the host maps it to a 4xx status', async () => {
+    const local = new PresampledProvider([circularTable()], { id: 'service' });
+    const remote = httpStateProvider('https://example.test/states', 'service', { fetchImpl: loopbackFetch(local, 422) });
+    const outside = remote.states({
+      targets: ['SAT-H'], observer: 'EARTH', frame: 'ITRF93', correction: 'NONE',
+      epochs: { start: 9000, end: 9300, step: 60 },
+    });
+    // A refusal is a wire body, not a transport error: still a typed refusal.
+    await expect(outside).rejects.toBeInstanceOf(CoverageRefusalError);
   });
 });

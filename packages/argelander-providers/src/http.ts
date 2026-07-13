@@ -113,6 +113,15 @@ export interface HttpStateProviderOptions {
   coverage?: boolean;
   /** Injectable fetch for tests and non-browser hosts; default globalThis.fetch. */
   fetchImpl?: typeof fetch;
+  /** AbortSignal passed to every fetch, for host-owned cancellation. */
+  signal?: AbortSignal;
+}
+
+/** Is this a marshaled wire failure body, whatever HTTP status carried it? */
+function isWireFailure(value: unknown): value is { ok: false; error: WireError } {
+  return typeof value === 'object' && value !== null
+    && (value as { ok?: unknown }).ok === false
+    && typeof (value as { error?: unknown }).error === 'object';
 }
 
 /** Client side: a StateProvider that POSTs wire requests to one endpoint. */
@@ -123,9 +132,15 @@ export function httpStateProvider(url: string, id: string, options: HttpStatePro
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(request),
+      ...(options.signal ? { signal: options.signal } : {}),
     });
+    // A refusal is a wire body, not a transport failure, so a host that maps
+    // ok: false to a non-2xx status still round-trips CoverageRefusalError:
+    // read the body first and revive a wire failure whatever the status.
+    const body = await response.json().catch(() => undefined) as unknown;
+    if (isWireFailure(body)) throw reviveError(body.error);
     if (!response.ok) throw new Error(`state service '${id}' answered ${response.status}`);
-    const wire = (await response.json()) as StateWireResponse;
+    const wire = body as StateWireResponse;
     if (!wire.ok) throw reviveError(wire.error);
     return decode(wire.value);
   };

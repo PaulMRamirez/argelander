@@ -153,27 +153,34 @@ function registerLayer(world: string, satName: string, instrument: DemoInstrumen
 async function start(): Promise<void> {
   statusLabel.textContent = 'propagating in the worker...';
   const failures: string[] = [];
-  // The worker file is one import of the shipped entry; the TLEs travel in
-  // the init message and connect resolves after the ready handshake.
-  const earthProvider = await connectSgp4Worker(
-    worker,
-    DEMO_SATS.map((s) => ({ line1: s.line1, line2: s.line2, name: s.name })),
-  );
-  for (const sat of DEMO_SATS) {
-    const epochEt = parseTle(sat.line1, sat.line2, sat.name).epochEt;
-    // One platform, several instruments: every instrument samples the same
-    // provider states, and each gets its own toggleable layer.
-    for (const instrument of sat.instruments) {
-      try {
-        const baseStrips = await instrumentStrips(earthProvider, sat.name, sat.name, instrument, epochEt, {
-          observer: 'EARTH', frame: 'ITRF93', bodyRadiusKm: EARTH_RADIUS_KM,
-        });
-        registerLayer('earth', sat.name, instrument, epochEt, baseStrips);
-      } catch (err) {
-        // One instrument failing must not take the constellation down.
-        failures.push(`${sat.name}/${instrument.id}: ${err instanceof Error ? err.message : String(err)}`);
+  // Earth's whole path is isolated: if the worker fails to connect (a bad
+  // TLE, a missing worker file), the planetary worlds, which never touch
+  // the worker, still come up. One failing world must not lose the others.
+  try {
+    // The worker file is one import of the shipped entry; the TLEs travel in
+    // the init message and connect resolves after the ready handshake.
+    const earthProvider = await connectSgp4Worker(
+      worker,
+      DEMO_SATS.map((s) => ({ line1: s.line1, line2: s.line2, name: s.name })),
+    );
+    for (const sat of DEMO_SATS) {
+      const epochEt = parseTle(sat.line1, sat.line2, sat.name).epochEt;
+      // One platform, several instruments: every instrument samples the same
+      // provider states, and each gets its own toggleable layer.
+      for (const instrument of sat.instruments) {
+        try {
+          const baseStrips = await instrumentStrips(earthProvider, sat.name, sat.name, instrument, epochEt, {
+            observer: 'EARTH', frame: 'ITRF93', bodyRadiusKm: EARTH_RADIUS_KM,
+          });
+          registerLayer('earth', sat.name, instrument, epochEt, baseStrips);
+        } catch (err) {
+          // One instrument failing must not take the constellation down.
+          failures.push(`${sat.name}/${instrument.id}: ${err instanceof Error ? err.message : String(err)}`);
+        }
       }
     }
+  } catch (err) {
+    failures.push(`earth: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   // The planetary worlds: demonstration orbits sampled into tables and

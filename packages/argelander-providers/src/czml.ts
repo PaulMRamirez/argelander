@@ -36,7 +36,11 @@ interface CzmlPacket {
 }
 
 function isoToEt(iso: string, where: string): number {
-  const unixMs = Date.parse(iso);
+  // ECMAScript reads a zone-less date-time as LOCAL time; CZML (Cesium's
+  // JulianDate.fromIso8601) reads a missing offset as UTC. Append 'Z' so a
+  // zone-less epoch does not shift the whole track by the viewer's offset.
+  const zoned = /[Zz]$|[+-]\d{2}:?\d{2}$/.test(iso.trim()) ? iso.trim() : `${iso.trim()}Z`;
+  const unixMs = Date.parse(zoned);
   if (Number.isNaN(unixMs)) throw new Error(`${where}: unparseable epoch '${iso}'`);
   return utcUnixToEt(unixMs / 1000);
 }
@@ -121,7 +125,9 @@ export function parseCzmlStates(czml: string | readonly unknown[], meta: CzmlTab
   const tables: PresampledStateTable[] = [];
   for (const raw of document) {
     const packet = raw as CzmlPacket;
-    if (packet?.id === 'document' || packet?.position === undefined) continue;
+    // A packet with no position, or an explicit null position (a CZML gap
+    // clear), carries no track: skip it rather than dereferencing null.
+    if (packet?.id === 'document' || packet?.position == null) continue;
     tables.push(packetTable(packet, resolved));
   }
   if (tables.length === 0) throw new Error('CZML carries no position packets');

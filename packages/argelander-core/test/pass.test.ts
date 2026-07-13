@@ -75,7 +75,7 @@ describe('passStrips (ADR-0009, AGE-04)', () => {
     });
     expect(provider.queries).toHaveLength(2);
     expect(strips).toHaveLength(2);
-    expect(strips.map((s) => s.id)).toEqual(['SAT-imager-w0', 'SAT-imager-w1']);
+    expect(strips.map((s) => s.id)).toEqual(['SAT-imager-pass-0-w0', 'SAT-imager-pass-0-w1']);
     expect(new Set(strips.map((s) => s.passId))).toEqual(new Set(['pass-0']));
     // The gap between windows is real: no segment falls inside it.
     const epochs = strips.flatMap((s) => s.segments.map((seg) => seg.etSec));
@@ -101,6 +101,15 @@ describe('passStrips (ADR-0009, AGE-04)', () => {
     expect(named!.id).toBe('custom-w0');
   });
 
+  it('folds the passId into the default id so two passes do not collide', async () => {
+    const provider = fakeProvider();
+    const [passA] = await passStrips(provider, { ...GEOMETRY, passId: 'orbit-1', windows: [[0, 300]] });
+    const [passB] = await passStrips(provider, { ...GEOMETRY, passId: 'orbit-2', windows: [[0, 300]] });
+    expect(passA!.id).toBe('SAT-imager-orbit-1-w0');
+    expect(passB!.id).toBe('SAT-imager-orbit-2-w0');
+    expect(passA!.id).not.toBe(passB!.id);
+  });
+
   it('decomposes the bilateral pair into two side-looking strips per window', async () => {
     const provider = fakeProvider();
     const strips = await passStrips(provider, {
@@ -109,7 +118,7 @@ describe('passStrips (ADR-0009, AGE-04)', () => {
       windows: [[0, 300]],
     });
     expect(provider.queries).toHaveLength(1);
-    expect(strips.map((s) => s.id)).toEqual(['SAT-imager-w0-left', 'SAT-imager-w0-right']);
+    expect(strips.map((s) => s.id)).toEqual(['SAT-imager-pass-0-w0-left', 'SAT-imager-pass-0-w0-right']);
     expect(strips[0]!.passId).toBe(strips[1]!.passId);
     // Both ribbons are offset from nadir; neither contains it.
     for (const strip of strips) {

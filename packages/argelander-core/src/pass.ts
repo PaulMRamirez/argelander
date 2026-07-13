@@ -29,7 +29,13 @@ export interface PassStripsOptions extends Posture {
   mode?: string;
   /** All windows share it; defaults to 'pass-0'. */
   passId?: string;
-  /** Strip id prefix; defaults to the instrumentId with '/' folded to '-'. */
+  /**
+   * Strip id prefix; defaults to the instrumentId with '/' folded to '-'
+   * joined with the passId. The fold is lossy, so sibling instruments whose
+   * ids collapse to the same prefix ('a/b' and 'a-b') must set this
+   * explicitly to keep Strip.id unique; the collision cannot be detected in
+   * one call.
+   */
   idPrefix?: string;
   /** Acquisition windows as absolute Et spans; one strip per window. */
   windows: ReadonlyArray<readonly [Et, Et]>;
@@ -47,7 +53,13 @@ export async function passStrips(provider: StateProvider, options: PassStripsOpt
   if (options.bilateralKm && (options.swathHalfWidthKm !== undefined || options.offsetRangeKm || options.scan || options.beadOffsetsKm)) {
     throw new RangeError('bilateralKm is exclusive with the single-strip postures');
   }
-  const prefix = options.idPrefix ?? options.instrumentId.replace(/\//g, '-');
+  const passId = options.passId ?? 'pass-0';
+  // The passId is folded into the default id, so the same instrument built
+  // over two passes does not emit byte-identical Strip.ids. A caller running
+  // sibling instruments whose ids fold to the same prefix (the '/'-to-'-'
+  // fold is lossy) must still set idPrefix; that collision is not locally
+  // detectable, and the JSDoc on idPrefix says so.
+  const prefix = options.idPrefix ?? `${options.instrumentId.replace(/\//g, '-')}-${passId}`;
   const common = {
     body: options.observer,
     bodyRadiusKm: options.bodyRadiusKm,
@@ -56,7 +68,7 @@ export async function passStrips(provider: StateProvider, options: PassStripsOpt
     generatedBy: options.generatedBy,
     ...(options.missionId !== undefined ? { missionId: options.missionId } : {}),
     ...(options.mode !== undefined ? { mode: options.mode } : {}),
-    passId: options.passId ?? 'pass-0',
+    passId,
     ...(options.nowEtSec !== undefined ? { nowEtSec: options.nowEtSec } : {}),
   } satisfies Partial<TrackStripOptions>;
 
