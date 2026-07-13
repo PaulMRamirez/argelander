@@ -369,7 +369,7 @@ paintStrip(ctx, geo, myProjector, { treatment: 'flat-fill', worldCopies: [0] });
 
 | Symptom | Cause | Fix |
 | --- | --- | --- |
-| DeepSpaceUnsupportedError building the provider (inline), or `connectSgp4Worker` rejecting with it | TLE with a period of 225 minutes or more | Serve that object from a `PresampledProvider`; SGP4 here is near-earth only. Over the worker the error keeps its type, so `instanceof DeepSpaceUnsupportedError` still matches |
+| DeepSpaceUnsupportedError building the provider (inline), or `connectSgp4Worker` rejecting with it | TLE with a period of 225 minutes or more | Serve that object from a `PresampledProvider`; SGP4 here is near-earth only. Over the worker the message and `name` survive (match on `err.name === 'DeepSpaceUnsupportedError'`); only `CoverageRefusalError`, which carries queryable fields, is reconstructed as its class |
 | `connectSgp4Worker` promise never settles | Worker file missing its one-import of `argelander-providers/sgp4-worker`, wrong worker URL (404), or a CSP block | Fix the worker entry; on a real `Worker` the load failure rejects via its `error` event, and `timeoutMs` is the backstop for ports without one |
 | CZML packet rejected with an `Error` | INERTIAL frame, `cartographicDegrees`, a constant position, or ISO-string sample times | These are out of the honest scope; supply FIXED-frame time-tagged cartesian samples. The message names the boundary (a plain `Error`, not a typed class) |
 | HTTP provider throws a plain status Error instead of `CoverageRefusalError` | The refusal body was not returned to the client | `httpStateProvider` revives a refusal whatever the status, but the server must return the `serveStateRequest` body (do not swallow it on a 4xx) |
