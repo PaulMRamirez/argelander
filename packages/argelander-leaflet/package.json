@@ -3,6 +3,13 @@
   "version": "0.0.1",
   "description": "Leaflet adapter for argelander-core strips: MMGIS 2D Map layer with trail-decay canvas. Reserved pre-release.",
   "license": "Apache-2.0",
+  "homepage": "https://paulmramirez.github.io/argelander/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PaulMRamirez/argelander.git",
+    "directory": "packages/argelander-leaflet"
+  },
+  "bugs": "https://github.com/PaulMRamirez/argelander/issues",
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
