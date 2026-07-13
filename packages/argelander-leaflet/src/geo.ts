@@ -67,13 +67,21 @@ export interface StripToGeoOptions {
 function connectionSignature(sub: readonly SubStructure[] | undefined): string {
   if (!sub) return '';
   const swaths: number[] = [];
+  const bursts: string[] = [];
   const frames: string[] = [];
   for (const entry of sub) {
-    if (entry.kind === 'sub-swath') swaths.push(entry.index);
-    else if (entry.kind === 'frame') frames.push(entry.frameId ?? '(frame)');
+    if (entry.kind === 'sub-swath') {
+      swaths.push(entry.index);
+      // The burst id, not the sub-swath index, is what must not blend: a
+      // ScanSAR/TOPS strip with a single sub-swath hops bursts on one index,
+      // so keying only on the index would ribbon its bursts into one quad.
+      if (entry.burstId) bursts.push(entry.burstId);
+    } else if (entry.kind === 'frame') {
+      frames.push(entry.frameId ?? '(frame)');
+    }
   }
   if (!swaths.length && !frames.length) return '';
-  return `ss:${swaths.sort((a, b) => a - b).join(',')}|fr:${frames.sort().join(',')}`;
+  return `ss:${swaths.sort((a, b) => a - b).join(',')}|br:${bursts.sort().join(',')}|fr:${frames.sort().join(',')}`;
 }
 
 export function stripToGeo(strip: Strip, options: StripToGeoOptions = {}): GeoStrip {
