@@ -24,7 +24,7 @@ A `Strip` carries `id`, `body` (SPICE body name), `frame` (body-fixed frame name
 | `beads` | `points` | bead, shot, or sample center positions | profiler, pencil-beam-scatterometer, bilateral-swath (nadir chain), limb-occultation |
 | `footprint` | `center`, `semiMajorKm`, `semiMinorKm`, `rotationRad` | one resolved sample footprint ellipse; `rotationRad` turns the semi-major axis from local east, counterclockwise seen from outside the body | whiskbroom, step-scan-sounder, conical-radiometer |
 | `frame` | `corners` (4 positions), optional `frameId` | a discrete exposure, tasked patch, or sector box outline | framing, spotlight-sar, agile-tasking, target-stare, geo-raster meso boxes |
-| `event` | `center`, optional `eventId` | a point measurement event that pops into existence rather than being swept | limb-occultation |
+| `event` | `center`, optional `radiusKm`, optional `eventId` | a point measurement event that pops into existence rather than being swept; `radiusKm` is the ground radius of the event footprint when the model carries one (ADR-0010) | limb-occultation |
 | `look` | `index`, `azimuthRad` | an azimuth look direction contributing to the segment | fan-beam-scatterometer |
 | `baseline` | `companion` | the companion platform position; the baseline is the measurement | bistatic-formation |
 | `sector` | `sectorId`, optional `refreshSec` | a named raster sector with its own refresh clock | geo-raster |

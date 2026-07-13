@@ -39,6 +39,7 @@ function subErrors(sub: SubStructure, at: string): string[] {
       break;
     case 'event':
       if (!isFiniteVec(sub.center)) errors.push(`${at}: center invalid`);
+      if (sub.radiusKm !== undefined && !(sub.radiusKm > 0)) errors.push(`${at}: radiusKm must be positive`);
       if (sub.eventId !== undefined && !sub.eventId) errors.push(`${at}: eventId empty`);
       break;
     case 'look':
