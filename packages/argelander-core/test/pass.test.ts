@@ -166,6 +166,26 @@ describe('passStrips (ADR-0009, AGE-04)', () => {
     }
   });
 
+  it('forwards subSwaths and looks, including onto both sides of a bilateral pair', async () => {
+    const provider = fakeProvider();
+    const [dbf] = await passStrips(provider, {
+      ...GEOMETRY, swathHalfWidthKm: 120, subSwaths: { count: 4 }, windows: [[0, 60]],
+    });
+    for (const seg of dbf!.segments) {
+      expect(seg.sub?.filter((x) => x.kind === 'sub-swath')).toHaveLength(4);
+    }
+    // A bilateral fan-beam: both strips carry the looks.
+    const pair = await passStrips(provider, {
+      ...GEOMETRY, bilateralKm: { gapKm: 100, outerKm: 300 }, looks: { azimuthsRad: [-0.4, 0, 0.4] }, windows: [[0, 60]],
+    });
+    expect(pair).toHaveLength(2);
+    for (const strip of pair) {
+      for (const seg of strip.segments) {
+        expect(seg.sub?.filter((x) => x.kind === 'look')).toHaveLength(3);
+      }
+    }
+  });
+
   it('propagates provider refusals untouched: isolation is host policy', async () => {
     const provider = fakeProvider();
     provider.states = async () => {

@@ -12,7 +12,7 @@ import { trackStrip } from './track.js';
 import type { TrackStripOptions } from './track.js';
 import type { BodyId, Correction, Et, FrameId, StateProvider, Strip } from './types.js';
 
-type Posture = Pick<TrackStripOptions, 'swathHalfWidthKm' | 'offsetRangeKm' | 'beadOffsetsKm' | 'scan' | 'stepScan' | 'conical' | 'nowEtSec'>;
+type Posture = Pick<TrackStripOptions, 'swathHalfWidthKm' | 'offsetRangeKm' | 'beadOffsetsKm' | 'scan' | 'stepScan' | 'conical' | 'subSwaths' | 'looks' | 'nowEtSec'>;
 
 export interface PassStripsOptions extends Posture {
   target: BodyId;
@@ -84,13 +84,19 @@ export async function passStrips(provider: StateProvider, options: PassStripsOpt
     });
     if (options.bilateralKm) {
       const { gapKm, outerKm } = options.bilateralKm;
+      // Looks and sub-swaths ride each side of the pair (a twin-swath fan-beam
+      // scatterometer such as ASCAT integrates its fore/mid/aft beams on both).
+      const decor = {
+        ...(options.looks !== undefined ? { looks: options.looks } : {}),
+        ...(options.subSwaths !== undefined ? { subSwaths: options.subSwaths } : {}),
+      };
       strips.push(
         trackStrip(batch, 0, {
-          ...common, id: `${prefix}-w${w}-left`,
+          ...common, id: `${prefix}-w${w}-left`, ...decor,
           offsetRangeKm: { nearKm: gapKm, farKm: outerKm, side: 'left' },
         }),
         trackStrip(batch, 0, {
-          ...common, id: `${prefix}-w${w}-right`,
+          ...common, id: `${prefix}-w${w}-right`, ...decor,
           offsetRangeKm: { nearKm: gapKm, farKm: outerKm, side: 'right' },
         }),
       );
@@ -103,6 +109,8 @@ export async function passStrips(provider: StateProvider, options: PassStripsOpt
         ...(options.scan !== undefined ? { scan: options.scan } : {}),
         ...(options.stepScan !== undefined ? { stepScan: options.stepScan } : {}),
         ...(options.conical !== undefined ? { conical: options.conical } : {}),
+        ...(options.subSwaths !== undefined ? { subSwaths: options.subSwaths } : {}),
+        ...(options.looks !== undefined ? { looks: options.looks } : {}),
         ...(options.offsetRangeKm !== undefined ? { offsetRangeKm: options.offsetRangeKm } : {}),
       }));
     }

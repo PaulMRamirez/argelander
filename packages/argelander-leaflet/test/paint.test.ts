@@ -357,3 +357,49 @@ describe('event footprint radius (ADR-0010)', () => {
     expect(ringRadiusPx(ctx)).toBeCloseTo(5, 9);
   });
 });
+
+describe('sub-swath quilt rendering (AGE-09)', () => {
+  // A wide swath carrying N sub-swaths per segment (SweepSAR DBF receive
+  // beams / ScanSAR banding): the mechanism draws N-1 along-track dividers.
+  function bandedStrip(bandCount: number): Strip {
+    const segs = [0, 1, 2, 3].map((k): Strip['segments'][number] => ({
+      etSec: k * 10,
+      left: fromGeo(k * 0.4, -1, 6371),
+      right: fromGeo(k * 0.4, 1, 6371),
+      state: 'committed',
+      sub: Array.from({ length: bandCount }, (_, index) => ({ kind: 'sub-swath' as const, index })),
+    }));
+    return {
+      id: 'ss', body: 'EARTH', frame: 'ITRF93', instrumentId: 'test/sweepsar',
+      segments: segs, provenance: { authority: 'test', generatedBy: 'test' },
+    };
+  }
+
+  it('draws bandCount-1 dividers per connected segment pair for a divided swath', () => {
+    const ctx = new FakeCtx();
+    // makeProjector wide enough to clear the mechanism LOD gate.
+    paintStrip(ctx, stripToGeo(bandedStrip(5)), makeProjector(60), { treatment: 'mechanism' });
+    // Divider strokes are the extra along-track lines beyond the cross-track
+    // hatching; count strokes whose endpoints span along track (dlat != 0).
+    const alongLines = ctx.strokes().filter((o) => o.shape === 'path' && o.path.length === 2
+      && Math.abs(o.path[0]![1] - o.path[1]![1]) > 1);
+    // 3 connected pairs times 4 interior dividers = 12 along-track dividers.
+    expect(alongLines.length).toBeGreaterThanOrEqual(12);
+  });
+
+  it('draws no dividers for a single sub-swath per segment (a burst, not a divided swath)', () => {
+    const single: Strip = {
+      id: 'b', body: 'EARTH', frame: 'ITRF93', instrumentId: 'test/tops',
+      segments: [0, 1].map((k) => ({
+        etSec: k * 10, left: fromGeo(k * 0.4, -1, 6371), right: fromGeo(k * 0.4, 1, 6371),
+        state: 'committed' as const, sub: [{ kind: 'sub-swath' as const, index: 0 }],
+      })),
+      provenance: { authority: 'test', generatedBy: 'test' },
+    };
+    const ctx = new FakeCtx();
+    paintStrip(ctx, stripToGeo(single), makeProjector(60), { treatment: 'mechanism' });
+    const alongLines = ctx.strokes().filter((o) => o.shape === 'path' && o.path.length === 2
+      && Math.abs(o.path[0]![1] - o.path[1]![1]) > 1);
+    expect(alongLines.length).toBe(0);
+  });
+});

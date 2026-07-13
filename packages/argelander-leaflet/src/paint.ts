@@ -7,6 +7,7 @@
  * latLngToContainerPoint, so MMGIS CRS configurations flow through untouched
  * (AGE-10) and this module never sees a map.
  */
+import type { SubStructure } from 'argelander-core';
 import type { GeoPoint, GeoSegment, GeoStrip } from './geo.js';
 import { kmPerDegLat, toGeo, unwrapLon, worldCopyOffsets } from './geo.js';
 import type { Palette } from './palette.js';
@@ -303,7 +304,8 @@ function paintMechanism(ctx: Canvas2DLike, geo: GeoStrip, project: Projector, r:
       strokeLine(ctx, project, midpoint(segment.left, segment.right), companion, withAlpha(r.palette.guide, 0.6), 1, r.worldCopies);
       dot(ctx, project, companion, 2, withAlpha(color, 0.9), r.worldCopies);
     }
-    // sub-swath membership stays envelope-grade; the geo-raster sector
+    // sub-swath dividers are a strip-level pass (paintSubSwathBands), since a
+    // divider runs along track across a segment pair; the geo-raster sector
     // repaint is a recorded adapter follow-up (goals/PHASE-1.md ledger).
   }
   ctx.setLineDash([]);
@@ -312,6 +314,42 @@ function paintMechanism(ctx: Canvas2DLike, geo: GeoStrip, project: Projector, r:
 function midpoint(a: GeoPoint, b: GeoPoint): GeoPoint {
   const lonB = unwrapLon(a.lonDeg, b.lonDeg);
   return { lonDeg: (a.lonDeg + lonB) / 2, latDeg: (a.latDeg + b.latDeg) / 2 };
+}
+
+/** Cross-track point at fraction f from left (0) to right (1), rendering grade. */
+function crossLerp(a: GeoPoint, b: GeoPoint, f: number): GeoPoint {
+  const lonB = unwrapLon(a.lonDeg, b.lonDeg);
+  return { lonDeg: a.lonDeg + f * (lonB - a.lonDeg), latDeg: a.latDeg + f * (b.latDeg - a.latDeg) };
+}
+
+/** Distinct sub-swaths present in one segment; two or more means a divided swath. */
+function subSwathBands(sub: readonly SubStructure[] | undefined): number {
+  if (!sub) return 0;
+  const indexes = new Set<number>();
+  for (const entry of sub) if (entry.kind === 'sub-swath') indexes.add(entry.index);
+  return indexes.size;
+}
+
+/**
+ * Along-track dividers partitioning a wide swath into its sub-swaths, the
+ * receive-beam quilt of SweepSAR and the sub-swath banding of ScanSAR
+ * (AGE-09). A single sub-swath per segment is a burst, not a divided swath:
+ * its quad already breaks at the burst boundary through the connection rule,
+ * so only segments carrying two or more sub-swaths draw dividers here.
+ */
+function paintSubSwathBands(ctx: Canvas2DLike, geo: GeoStrip, project: Projector, r: Resolved): void {
+  for (let i = 0; i + 1 < geo.segments.length; i++) {
+    if (!geo.connect[i]) continue;
+    const a = geo.segments[i]!;
+    const b = geo.segments[i + 1]!;
+    const bands = subSwathBands(a.sub);
+    if (bands < 2) continue;
+    const color = stateColor(r.palette, a.state);
+    for (let j = 1; j < bands; j++) {
+      const f = j / bands;
+      strokeLine(ctx, project, crossLerp(a.left, a.right, f), crossLerp(b.left, b.right, f), withAlpha(color, 0.45), 1, r.worldCopies);
+    }
+  }
 }
 
 /**
@@ -564,6 +602,7 @@ export function paintStrip(ctx: Canvas2DLike, geo: GeoStrip, project: Projector,
     );
   }
   paintLoneSegments(ctx, geo, project, r, 3);
+  paintSubSwathBands(ctx, geo, project, r);
   for (const s of geo.segments) paintMechanism(ctx, geo, project, r, s);
   ctx.setLineDash([]);
 }

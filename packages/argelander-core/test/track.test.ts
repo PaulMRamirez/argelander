@@ -224,3 +224,56 @@ describe('trackStrip conical radiometer posture (tile 4 family, AGE-04)', () => 
       .toThrow(/standalone/);
   });
 });
+
+describe('trackStrip subSwaths and looks postures (radar families, AGE-04)', () => {
+  it('SweepSAR DBF: every segment carries count sub-swaths at once', () => {
+    const strip = trackStrip(equatorialBatch(4, 10), 0, {
+      ...BASE, swathHalfWidthKm: 120, subSwaths: { count: 5 },
+    });
+    expect(validateStrip(strip).errors).toEqual([]);
+    for (const s of strip.segments) {
+      const idx = (s.sub ?? []).filter((x) => x.kind === 'sub-swath').map((x) => (x.kind === 'sub-swath' ? x.index : -1));
+      expect(idx).toEqual([0, 1, 2, 3, 4]);
+    }
+  });
+
+  it('ScanSAR/TOPS bursts: one sub-swath per segment, index hopping with a burstId', () => {
+    const strip = trackStrip(equatorialBatch(9, 10), 0, {
+      ...BASE, offsetRangeKm: { nearKm: 100, farKm: 300, side: 'right' }, subSwaths: { count: 3, burstPeriodSec: 20 },
+    });
+    for (const s of strip.segments) {
+      const ss = (s.sub ?? []).filter((x) => x.kind === 'sub-swath');
+      expect(ss).toHaveLength(1);
+    }
+    // et 0,10 -> burst 0 index 0; et 20,30 -> burst 1 index 1; et 40..-> burst 2 index 2; et 60 -> burst 3 index 0.
+    const first = strip.segments[0]!.sub![0]!;
+    const later = strip.segments[6]!.sub![0]!; // et 60 -> burst 3 -> index 0, burst-03
+    if (first.kind === 'sub-swath' && later.kind === 'sub-swath') {
+      expect(first.index).toBe(0);
+      expect(first.burstId).toBe('burst-00');
+      expect(later.index).toBe(0);
+      expect(later.burstId).toBe('burst-03');
+    }
+  });
+
+  it('fan-beam looks: one look per azimuth on each segment', () => {
+    const azimuths = [-0.4, 0, 0.4];
+    const strip = trackStrip(equatorialBatch(3, 10), 0, {
+      ...BASE, swathHalfWidthKm: 250, looks: { azimuthsRad: azimuths },
+    });
+    expect(validateStrip(strip).errors).toEqual([]);
+    for (const s of strip.segments) {
+      const looks = (s.sub ?? []).filter((x) => x.kind === 'look');
+      expect(looks.map((l) => (l.kind === 'look' ? l.azimuthRad : NaN))).toEqual(azimuths);
+    }
+  });
+
+  it('requires a swath and refuses combining with the footprint postures', () => {
+    expect(() => trackStrip(equatorialBatch(3, 10), 0, { ...BASE, subSwaths: { count: 3 } }))
+      .toThrow(/decorate a swath/);
+    expect(() => trackStrip(equatorialBatch(3, 10), 0, {
+      ...BASE, swathHalfWidthKm: 100, looks: { azimuthsRad: [0] },
+      scan: { scanRateHz: 0.05, subStepSec: 2, footprintSemiMajorKm: 4, footprintSemiMinorKm: 3, footprintGrowthFactor: 0.5 },
+    })).toThrow(/exclusive with scan/);
+  });
+});
