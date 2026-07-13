@@ -8,7 +8,7 @@
   },
   "params": {
     "swathHalfWidthKm": 7.2,
-    "sourceUrl": "https://earth.jpl.nasa.gov/emit/instrument/ (AVIRIS-3, ORNL DAAC AV3_L1B)",
-    "sourceNote": "39.6 deg cross-track FOV, 1234 px (HyPlan line_scanner registry, retrieved 2026-06); swathHalfWidthKm from that FOV at a nominal 20 km airborne altitude, a demonstration value not the only platform."
+    "sourceUrl": "https://aviris.jpl.nasa.gov/",
+    "sourceNote": "39.6 deg cross-track FOV, 1234 px (HyPlan line_scanner registry, from ORNL DAAC AV3_L1B, retrieved 2026-06); swathHalfWidthKm from that FOV at a nominal 20 km airborne altitude, a demonstration value not the only platform."
   }
 }
