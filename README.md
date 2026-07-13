@@ -4,6 +4,8 @@ Acquisition geometry engine (functional identity: AGE). Instrument models and ep
 
 The product line: Cosmolabe is what you see, Bessel is what computes, Argelander is what surveys.
 
+![A constellation of SGP4 footprint strips sweeping Earth in the live Leaflet demo: committed swaths behind each platform, a bright now-line at the acquiring edge, planned coverage ahead.](docs/media/hero.gif)
+
 ## See it, use it
 
 Instrument models and ephemerides in, time-tagged footprint strips out, painted on a map. Open `apps/atlas/index.html` in a browser for the 21-family atlas: no build, no server. The live Leaflet demo (SGP4 and pre-sampled footprints over Earth, the Moon, and Mars) ships on GitHub Pages. To put your own footprint on a map, start with the [layer configuration guide](docs/configuring-layers.md); the short path is one call:
@@ -19,6 +21,12 @@ const strips = await passStrips(provider, {
 });
 new AcquisitionLayer(strips).addTo(map);
 ```
+
+The same engine paints any world its states describe, and zooming in resolves each strip into its acquisition mechanism: the individual footprints, the scan sweep, the state of every one.
+
+| Planetary reach | Mechanism texture |
+| --- | --- |
+| ![A pre-sampled orbiter track drawn over NASA Trek Mars tiles, the engine treating another world exactly as it treats Earth.](docs/media/mars.gif) | ![A zoomed whiskbroom acquisition: dense fields of individual footprint ellipses, the cross-track scan bowtie, committed footprints trailing behind the bright acquiring now-line.](docs/media/mechanism.gif) |
 
 ## The name
 
