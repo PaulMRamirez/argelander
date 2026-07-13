@@ -30,6 +30,11 @@ export {
 export type {
   BistaticScene, SpotlightPatch, SpotlightScene, StripmapScene,
 } from './samplers-radar.js';
+export {
+  AGILE_SCENE, CONICAL_SCENE, GEO_RASTER_SCENE, LIMB_SCENE, STEP_SCAN_SCENE, TARGET_STARE_SCENE,
+  generateAgileTaskingStrip, generateConicalRadiometerStrip, generateGeoRasterStrip,
+  generateLimbOccultationStrip, generateStepScanSounderStrip, generateTargetStareStrip,
+} from './samplers-exotic.js';
 export { trackStrip, withStateRule } from './track.js';
 export type { TrackStripOptions } from './track.js';
 export { passStrips } from './pass.js';

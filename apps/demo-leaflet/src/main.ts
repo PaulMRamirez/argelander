@@ -104,6 +104,8 @@ function postureOf(instrument: DemoInstrument): Record<string, unknown> {
     ...(instrument.swathHalfWidthKm !== undefined ? { swathHalfWidthKm: instrument.swathHalfWidthKm } : {}),
     ...(instrument.beadOffsetsKm !== undefined ? { beadOffsetsKm: instrument.beadOffsetsKm } : {}),
     ...(instrument.scan !== undefined ? { scan: instrument.scan } : {}),
+    ...(instrument.stepScan !== undefined ? { stepScan: instrument.stepScan } : {}),
+    ...(instrument.conical !== undefined ? { conical: instrument.conical } : {}),
     ...(instrument.offsetRangeKm !== undefined ? { offsetRangeKm: instrument.offsetRangeKm } : {}),
     ...(instrument.bilateralKm !== undefined ? { bilateralKm: instrument.bilateralKm } : {}),
   };

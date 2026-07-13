@@ -21,6 +21,21 @@ export interface DemoInstrument {
     footprintSemiMinorKm: number;
     footprintGrowthFactor: number;
   };
+  /** Cross-track step-scan sounder: ellipse rows growing off-nadir. Needs swathHalfWidthKm. */
+  stepScan?: {
+    positionsPerRow: number;
+    footprintRadiusKm: number;
+    crossGrowthFactor: number;
+    alongGrowthFactor: number;
+  };
+  /** Conical scan radiometer: a forward crescent of constant-incidence footprints. Standalone. */
+  conical?: {
+    scanRadiusKm: number;
+    sectorHalfAngleRad: number;
+    spinPeriodSec: number;
+    footprintSemiMajorKm: number;
+    footprintSemiMinorKm: number;
+  };
   /** Side-looking offset ribbon; nadir is never imaged. */
   offsetRangeKm?: { nearKm: number; farKm: number; side: 'left' | 'right' };
   /** Bilateral pair with a nadir gap: two ribbons sharing the passId. */
@@ -161,6 +176,13 @@ export const DEMO_SATS: readonly DemoSat[] = [
         bilateralKm: { gapKm: 336, outerKm: 886 },
         startOn: false,
       },
+      {
+        id: 'mhs',
+        label: 'MHS: cross-track sounder, 15 ellipse rows',
+        swathHalfWidthKm: 1075,
+        stepScan: { positionsPerRow: 15, footprintRadiusKm: 16, crossGrowthFactor: 1.7, alongGrowthFactor: 0.45 },
+        startOn: false,
+      },
     ],
   },
   {
@@ -210,6 +232,12 @@ export const DEMO_SATS: readonly DemoSat[] = [
         id: 'dpr',
         label: 'DPR: 245 km dual-frequency radar',
         swathHalfWidthKm: 122.5,
+        startOn: false,
+      },
+      {
+        id: 'gmi',
+        label: 'GMI: conical scan, forward crescent',
+        conical: { scanRadiusKm: 442, sectorHalfAngleRad: 1.2217, spinPeriodSec: 1.9, footprintSemiMajorKm: 12, footprintSemiMinorKm: 7 },
         startOn: false,
       },
     ],

@@ -48,6 +48,33 @@ export interface TrackStripOptions {
     footprintGrowthFactor: number;
   };
   /**
+   * Cross-track step-scan sounder (ATMS, CrIS): positionsPerRow footprint
+   * ellipses stepped across the swath each segment, growing off-nadir by
+   * crossGrowthFactor (cross-track) and alongGrowthFactor (along-track) with
+   * the squared normalized offset. Requires swathHalfWidthKm; exclusive with
+   * scan, conical, and offsetRangeKm.
+   */
+  stepScan?: {
+    positionsPerRow: number;
+    footprintRadiusKm: number;
+    crossGrowthFactor: number;
+    alongGrowthFactor: number;
+  };
+  /**
+   * Conical scan radiometer (GMI, AMSR2): one crescent footprint per segment
+   * on a forward circle of radius scanRadiusKm at the antenna spin phase,
+   * swept across the forward sector of half-angle sectorHalfAngleRad. Constant
+   * incidence is the mechanism. A standalone posture: exclusive with
+   * swathHalfWidthKm, scan, stepScan, offsetRangeKm, and beadOffsetsKm.
+   */
+  conical?: {
+    scanRadiusKm: number;
+    sectorHalfAngleRad: number;
+    spinPeriodSec: number;
+    footprintSemiMajorKm: number;
+    footprintSemiMinorKm: number;
+  };
+  /**
    * Engine clock for the state rule: the last segment at or before it is
    * acquiring, earlier committed, later planned. Defaults to the last epoch.
    */
@@ -157,10 +184,29 @@ export function trackStrip(batch: StateBatch, targetIndex: number, options: Trac
     throw new RangeError('scan.subStepSec must be positive');
   }
 
+  const stepScan = options.stepScan;
+  if (stepScan) {
+    if (!(halfWidth > 0)) throw new RangeError('stepScan requires a positive swathHalfWidthKm');
+    if (scan) throw new RangeError('stepScan is exclusive with scan');
+    if (!Number.isInteger(stepScan.positionsPerRow) || stepScan.positionsPerRow < 1) {
+      throw new RangeError(`stepScan.positionsPerRow must be a positive integer, got ${stepScan.positionsPerRow}`);
+    }
+  }
+
+  const conical = options.conical;
+  if (conical) {
+    if (halfWidth > 0 || scan || stepScan || options.offsetRangeKm || options.beadOffsetsKm?.length) {
+      throw new RangeError('conical is a standalone posture, exclusive with swath, scan, stepScan, offsetRangeKm, and beadOffsetsKm');
+    }
+    if (!(conical.scanRadiusKm > 0 && conical.sectorHalfAngleRad > 0 && conical.spinPeriodSec > 0)) {
+      throw new RangeError('conical requires positive scanRadiusKm, sectorHalfAngleRad, and spinPeriodSec');
+    }
+  }
+
   const offset = options.offsetRangeKm;
   if (offset) {
-    if (halfWidth > 0 || scan) {
-      throw new RangeError('offsetRangeKm is exclusive with swathHalfWidthKm and scan');
+    if (halfWidth > 0 || scan || stepScan) {
+      throw new RangeError('offsetRangeKm is exclusive with swathHalfWidthKm, scan, and stepScan');
     }
     if (!(offset.nearKm > 0 && offset.nearKm < offset.farKm)) {
       throw new RangeError(`offsetRangeKm needs 0 < nearKm < farKm, got ${offset.nearKm}, ${offset.farKm}`);
@@ -185,6 +231,20 @@ export function trackStrip(batch: StateBatch, targetIndex: number, options: Trac
         kind: 'beads',
         points: options.beadOffsetsKm.map((d) => surfacePoint(radius, nadir, cross, d)),
       });
+    }
+    if (stepScan) {
+      const rotationRad = crossTrackRotationRad(nadir, cross);
+      for (let j = 0; j < stepScan.positionsPerRow; j++) {
+        const u = -halfWidth + (j + 0.5) * (2 * halfWidth) / stepScan.positionsPerRow;
+        const q = Math.abs(u) / halfWidth;
+        sub.push({
+          kind: 'footprint',
+          center: surfacePoint(radius, nadir, cross, u),
+          semiMajorKm: stepScan.footprintRadiusKm * (1 + stepScan.crossGrowthFactor * q * q),
+          semiMinorKm: stepScan.footprintRadiusKm * (1 + stepScan.alongGrowthFactor * q * q),
+          rotationRad,
+        });
+      }
     }
     let minGrow = Infinity;
     let maxGrow = -Infinity;
@@ -217,10 +277,44 @@ export function trackStrip(batch: StateBatch, targetIndex: number, options: Trac
       }
     }
 
+    let left: Vec3;
+    let right: Vec3;
+    if (conical) {
+      // Forward tangent (along-track) is the orbit normal crossed with nadir;
+      // the crescent sits on the ground circle at the spin phase, and the
+      // envelope is the cross-track chord the sector spans on that circle.
+      const along = unit([
+        cross[1] * nadir[2] - cross[2] * nadir[1],
+        cross[2] * nadir[0] - cross[0] * nadir[2],
+        cross[0] * nadir[1] - cross[1] * nadir[0],
+      ]);
+      const dirAt = (psi: number): Vec3 => unit([
+        Math.cos(psi) * along[0] + Math.sin(psi) * cross[0],
+        Math.cos(psi) * along[1] + Math.sin(psi) * cross[1],
+        Math.cos(psi) * along[2] + Math.sin(psi) * cross[2],
+      ]);
+      const phase = ((et / conical.spinPeriodSec) % 1 + 1) % 1;
+      const psi = -conical.sectorHalfAngleRad + phase * 2 * conical.sectorHalfAngleRad;
+      const centerDir = dirAt(psi);
+      const centerPt = surfacePoint(radius, nadir, centerDir, conical.scanRadiusKm);
+      left = surfacePoint(radius, nadir, dirAt(-conical.sectorHalfAngleRad), conical.scanRadiusKm);
+      right = surfacePoint(radius, nadir, dirAt(conical.sectorHalfAngleRad), conical.scanRadiusKm);
+      sub.push({
+        kind: 'footprint',
+        center: centerPt,
+        semiMajorKm: conical.footprintSemiMajorKm,
+        semiMinorKm: conical.footprintSemiMinorKm,
+        rotationRad: crossTrackRotationRad(nadir, centerDir),
+      });
+    } else {
+      left = surfacePoint(radius, nadir, cross, leftOffsetKm);
+      right = surfacePoint(radius, nadir, cross, rightOffsetKm);
+    }
+
     segments.push({
       etSec: et,
-      left: surfacePoint(radius, nadir, cross, leftOffsetKm),
-      right: surfacePoint(radius, nadir, cross, rightOffsetKm),
+      left,
+      right,
       state: i < acquiringIndex ? 'committed' : i === acquiringIndex ? 'acquiring' : 'planned',
       ...(sub.length ? { sub } : {}),
       // Scan segments record the footprint size range they actually swept,
