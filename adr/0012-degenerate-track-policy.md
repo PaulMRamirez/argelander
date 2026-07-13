@@ -1,6 +1,6 @@
 # ADR-0012: what trackStrip renders when the along-track direction vanishes
 
-Status: proposed. Date: 2026-07-13.
+Status: accepted. Date: 2026-07-13.
 
 ## Decision
 
