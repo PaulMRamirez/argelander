@@ -334,6 +334,17 @@ describe('event footprint radius (ADR-0010)', () => {
     expect(ringRadiusPx(small)).toBeGreaterThan(3);
   });
 
+  it('sizes the ring through the projector, not just linearly in the radius', () => {
+    // Same model radius, two projector scales: the ring must scale with the
+    // projector (localScalePxPerKm), which a radius-only sizing would not do.
+    const near = new FakeCtx();
+    paintStrip(near, eventStrip(3.4), makeProjector(200), { treatment: 'flat-fill' });
+    const far = new FakeCtx();
+    paintStrip(far, eventStrip(3.4), makeProjector(400), { treatment: 'flat-fill' });
+    expect(ringRadiusPx(near)).toBeGreaterThan(3);
+    expect(ringRadiusPx(far) / ringRadiusPx(near)).toBeCloseTo(2, 5);
+  });
+
   it('floors a tiny event so it stays legible', () => {
     const tiny = new FakeCtx();
     paintStrip(tiny, eventStrip(0.001), makeProjector(1), { treatment: 'flat-fill' });

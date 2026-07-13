@@ -45,4 +45,12 @@ describe('the schema is closed (SPEC-STRIP section 6)', () => {
     const seg = { etSec: 0, left: [1, 2, 3], right: [1, 2, 3], state: 'committed', sub: [{ kind: 'nope' }] };
     expect(validateAgainstSchema(schema, { ...strip, segments: [seg] })).not.toEqual([]);
   });
+
+  it('rejects a non-positive event radiusKm at the schema layer (ADR-0010)', () => {
+    const strip = JSON.parse(readFileSync(`${fixturesDir}strips/pushbroom.json`, 'utf8')) as Record<string, unknown>;
+    const seg = { etSec: 0, left: [1, 2, 3], right: [1, 2, 3], state: 'committed', sub: [{ kind: 'event', center: [1, 2, 3], radiusKm: 0 }] };
+    expect(validateAgainstSchema(schema, { ...strip, segments: [seg] })).not.toEqual([]);
+    const ok = { etSec: 0, left: [1, 2, 3], right: [1, 2, 3], state: 'committed', sub: [{ kind: 'event', center: [1, 2, 3], radiusKm: 3.4 }] };
+    expect(validateAgainstSchema(schema, { ...strip, segments: [ok] })).toEqual([]);
+  });
 });
