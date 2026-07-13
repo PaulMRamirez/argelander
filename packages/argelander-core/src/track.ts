@@ -75,6 +75,22 @@ export interface TrackStripOptions {
     footprintSemiMinorKm: number;
   };
   /**
+   * Sub-swath banding of a wide swath (AGE-09). Without burstPeriodSec, each
+   * segment carries all `count` sub-swaths at once, the SweepSAR digital-beam
+   * receive quilt (NISAR) drawn as along-track dividers. With burstPeriodSec,
+   * each segment carries one sub-swath whose index hops per burst, the
+   * ScanSAR/TOPS azimuth burst quilt (Sentinel-1 IW): the quads break at burst
+   * boundaries through the connection rule. Decorates a swath (requires
+   * swathHalfWidthKm or offsetRangeKm); exclusive with scan, stepScan, conical.
+   */
+  subSwaths?: { count: number; burstPeriodSec?: number };
+  /**
+   * Azimuth look directions the segment integrates, radians from east, the
+   * fore/mid/aft fan beams of a fan-beam scatterometer (ASCAT). Decorates a
+   * swath; exclusive with scan, stepScan, conical.
+   */
+  looks?: { azimuthsRad: readonly number[] };
+  /**
    * Engine clock for the state rule: the last segment at or before it is
    * acquiring, earlier committed, later planned. Defaults to the last epoch.
    */
@@ -203,6 +219,26 @@ export function trackStrip(batch: StateBatch, targetIndex: number, options: Trac
     }
   }
 
+  const subSwaths = options.subSwaths;
+  const looks = options.looks;
+  for (const [name, present] of [['subSwaths', subSwaths], ['looks', looks]] as const) {
+    if (present && (scan || stepScan || conical)) {
+      throw new RangeError(`${name} is exclusive with scan, stepScan, and conical`);
+    }
+  }
+  if (subSwaths && (!Number.isInteger(subSwaths.count) || subSwaths.count < 1)) {
+    throw new RangeError(`subSwaths.count must be a positive integer, got ${subSwaths.count}`);
+  }
+  if (subSwaths?.burstPeriodSec !== undefined && !(subSwaths.burstPeriodSec > 0)) {
+    throw new RangeError('subSwaths.burstPeriodSec must be positive');
+  }
+  if (looks && looks.azimuthsRad.length === 0) {
+    throw new RangeError('looks.azimuthsRad must be non-empty');
+  }
+  if ((subSwaths || looks) && !(halfWidth > 0) && !options.offsetRangeKm) {
+    throw new RangeError('subSwaths and looks decorate a swath: set swathHalfWidthKm or offsetRangeKm');
+  }
+
   const offset = options.offsetRangeKm;
   if (offset) {
     if (halfWidth > 0 || scan || stepScan) {
@@ -231,6 +267,17 @@ export function trackStrip(batch: StateBatch, targetIndex: number, options: Trac
         kind: 'beads',
         points: options.beadOffsetsKm.map((d) => surfacePoint(radius, nadir, cross, d)),
       });
+    }
+    if (subSwaths) {
+      if (subSwaths.burstPeriodSec !== undefined) {
+        const burst = Math.floor(et / subSwaths.burstPeriodSec);
+        sub.push({ kind: 'sub-swath', index: burst % subSwaths.count, burstId: `burst-${String(burst).padStart(2, '0')}` });
+      } else {
+        for (let index = 0; index < subSwaths.count; index++) sub.push({ kind: 'sub-swath', index });
+      }
+    }
+    if (looks) {
+      looks.azimuthsRad.forEach((azimuthRad, index) => sub.push({ kind: 'look', index, azimuthRad }));
     }
     if (stepScan) {
       const rotationRad = crossTrackRotationRad(nadir, cross);

@@ -90,3 +90,34 @@ describe('antimeridian handling (AGE-10)', () => {
     }
   });
 });
+
+describe('sub-swath bursts break the ribbon (TOPS/ScanSAR)', () => {
+  // Build a swath strip whose segments carry one sub-swath tagged by burstId;
+  // consecutive segments in different bursts must not ribbon into one quad.
+  function burstStrip(burstIds: readonly string[], index: (k: number) => number): ReturnType<typeof stripToGeo> {
+    const R = 6371;
+    const fromGeo = (lat: number, lon: number): [number, number, number] => {
+      const la = (lat * Math.PI) / 180, lo = (lon * Math.PI) / 180;
+      return [R * Math.cos(la) * Math.cos(lo), R * Math.cos(la) * Math.sin(lo), R * Math.sin(la)];
+    };
+    return stripToGeo({
+      id: 'tops', body: 'EARTH', frame: 'ITRF93', instrumentId: 'test/tops',
+      segments: burstIds.map((burstId, k) => ({
+        etSec: k * 10, left: fromGeo(k * 0.4, -1), right: fromGeo(k * 0.4, 1), state: 'committed' as const,
+        sub: [{ kind: 'sub-swath' as const, index: index(k), burstId }],
+      })),
+      provenance: { authority: 'test', generatedBy: 'test' },
+    });
+  }
+
+  it('breaks at a burst boundary even when the single sub-swath index never changes', () => {
+    // count === 1: every segment is sub-swath index 0; only the burstId differs.
+    const geo = burstStrip(['b0', 'b0', 'b1', 'b1'], () => 0);
+    expect([...geo.connect]).toEqual([true, false, true]);
+  });
+
+  it('breaks at each burst hop for a multi-sub-swath TOPS strip', () => {
+    const geo = burstStrip(['b0', 'b1', 'b2', 'b0'], (k) => k % 3);
+    expect([...geo.connect]).toEqual([false, false, false]);
+  });
+});
