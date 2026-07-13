@@ -42,13 +42,6 @@ function opCount(geo: GeoStrip, options: PaintOptions): number {
   return ctx.ops.length;
 }
 
-/** Median of a sample, robust to the occasional GC pause a mean would smear. */
-function median(xs: number[]): number {
-  const s = [...xs].sort((a, b) => a - b);
-  const mid = Math.floor(s.length / 2);
-  return s.length % 2 ? s[mid]! : (s[mid - 1]! + s[mid]!) / 2;
-}
-
 describe('AGE-15 graceful degradation: LOD sheds primitives before frames', () => {
   it('every swath-bearing family emits strictly fewer ops as envelope than mechanism', () => {
     // The population is chosen independently of the outcome: a family bears a
@@ -58,14 +51,13 @@ describe('AGE-15 graceful degradation: LOD sheds primitives before frames', () =
     // which would re-check its own guard and never fail) makes the check
     // load-bearing: a swath family that stopped shedding primitives fails here
     // instead of being silently skipped.
-    const swath = [...GEOMETRY_FAMILIES].sort().filter(
-      (family) => medianProjectedWidthPx(stripToGeo(fixtureStrip(family)), PROJECT) > 0,
-    );
+    const swath = [...GEOMETRY_FAMILIES].sort()
+      .map((family) => ({ family, geo: stripToGeo(fixtureStrip(family)) }))
+      .filter(({ geo }) => medianProjectedWidthPx(geo, PROJECT) > 0);
     // Only the pure bead and point families lack a swath; if this population
     // collapses, the proof has quietly narrowed and the floor catches it.
     expect(swath.length).toBeGreaterThanOrEqual(18);
-    for (const family of swath) {
-      const geo = stripToGeo(fixtureStrip(family));
+    for (const { family, geo } of swath) {
       // 0 keeps the strip in mechanism, Infinity drops it to its envelope.
       const mechanism = opCount(geo, { treatment: 'mechanism', mechanismMinWidthPx: 0 });
       const envelope = opCount(geo, { treatment: 'mechanism', mechanismMinWidthPx: Infinity });
@@ -91,8 +83,12 @@ describe('AGE-15 frame budget: 20 layers repainted within the frame', () => {
       frame();
       samples.push(performance.now() - t0);
     }
-    const med = median(samples);
-    const p95 = samples.sort((a, b) => a - b)[Math.floor(samples.length * 0.95)]!;
+    // Sort once, then read both order statistics; the median is robust to the
+    // occasional GC pause a mean would smear.
+    const sorted = [...samples].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    const med = sorted.length % 2 ? sorted[mid]! : (sorted[mid - 1]! + sorted[mid]!) / 2;
+    const p95 = sorted[Math.floor(sorted.length * 0.95)]!;
     // Surfaced to the run log so the measured datum is recorded alongside the
     // browser fps in the phase ledger, not just asserted away.
     console.log(`AGE-15 node repaint of 20 mechanism layers: median ${med.toFixed(3)} ms, p95 ${p95.toFixed(3)} ms (budget ${FRAME_BUDGET_MS.toFixed(2)} ms)`);

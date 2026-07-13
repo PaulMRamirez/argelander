@@ -27,14 +27,15 @@ const DECOR_KEYS = ['subSwaths', 'looks'] as const satisfies readonly (keyof Tra
 
 type Posture = Pick<TrackStripOptions, typeof POSTURE_KEYS[number] | 'nowEtSec'>;
 
-/** The defined posture options among `keys`, ready to spread into trackStrip. */
-function pickPostures(options: PassStripsOptions, keys: readonly (keyof TrackStripOptions)[]): Partial<TrackStripOptions> {
-  const out: Record<string, unknown> = {};
+/** The defined entries of `obj` at `keys`, ready to spread. Generic and
+ * cast-free, so the forwarded value types are still checked against their
+ * source: the drift the key array guards against stays guarded here too. */
+function pick<T extends object, K extends keyof T>(obj: T, keys: readonly K[]): Partial<Pick<T, K>> {
+  const out: Partial<Pick<T, K>> = {};
   for (const key of keys) {
-    const value = (options as unknown as Record<string, unknown>)[key];
-    if (value !== undefined) out[key] = value;
+    if (obj[key] !== undefined) out[key] = obj[key];
   }
-  return out as Partial<TrackStripOptions>;
+  return out;
 }
 
 export interface PassStripsOptions extends Posture {
@@ -109,7 +110,7 @@ export async function passStrips(provider: StateProvider, options: PassStripsOpt
       const { gapKm, outerKm } = options.bilateralKm;
       // Looks and sub-swaths ride each side of the pair (a twin-swath fan-beam
       // scatterometer such as ASCAT integrates its fore/mid/aft beams on both).
-      const decor = pickPostures(options, DECOR_KEYS);
+      const decor = pick(options, DECOR_KEYS);
       strips.push(
         trackStrip(batch, 0, {
           ...common, id: `${prefix}-w${w}-left`, ...decor,
@@ -124,7 +125,7 @@ export async function passStrips(provider: StateProvider, options: PassStripsOpt
       strips.push(trackStrip(batch, 0, {
         ...common,
         id: `${prefix}-w${w}`,
-        ...pickPostures(options, POSTURE_KEYS),
+        ...pick(options, POSTURE_KEYS),
       }));
     }
   }

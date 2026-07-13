@@ -107,8 +107,8 @@ stroke path [3604.6,1832.3 3596.3,1834] f=rgba(240,178,85,0.13999999999999999) s
 stroke path [3604.9,1834.2 3596.7,1835.8] f=rgba(240,178,85,0.13999999999999999) s=rgba(240,178,85,0.4) w=1 dash=[1,3] comp=source-over
 stroke path [3605.3,1836 3597.1,1837.7] f=rgba(240,178,85,0.13999999999999999) s=rgba(240,178,85,0.4) w=1 dash=[1,3] comp=source-over
 stroke path [3605.7,1837.9 3597.5,1839.6] f=rgba(240,178,85,0.13999999999999999) s=rgba(240,178,85,0.4) w=1 dash=[1,3] comp=source-over
-fill arc [3592.4,1762.5 3593.9,1762.5] f=rgba(79,174,188,0.9) s=rgba(240,178,85,0.4) w=1 dash=[] comp=source-over
-fill arc [3592.6,1763.7 3594.1,1763.7] f=rgba(79,174,188,0.9) s=rgba(240,178,85,0.4) w=1 dash=[] comp=source-over
+fill arc [3592.4,1762.5 3593.9,1762.5] f=rgba(79,174,188,0.9) s=rgba(240,178,85,0.4) w=1 dash=[1,3] comp=source-over
+fill arc [3592.6,1763.7 3594.1,1763.7] f=rgba(79,174,188,0.9) s=rgba(240,178,85,0.4) w=1 dash=[1,3] comp=source-over
 fill arc [3592.9,1764.9 3594.4,1764.9] f=rgba(79,174,188,0.9) s=rgba(240,178,85,0.4) w=1 dash=[] comp=source-over
 fill arc [3593.1,1766.2 3594.6,1766.2] f=rgba(79,174,188,0.9) s=rgba(240,178,85,0.4) w=1 dash=[] comp=source-over
 fill arc [3593.4,1767.4 3594.9,1767.4] f=rgba(79,174,188,0.9) s=rgba(240,178,85,0.4) w=1 dash=[] comp=source-over
@@ -418,88 +418,88 @@ stroke path [3619.3,1833.8 3595.4,1838.7] f=rgba(240,178,85,0.13999999999999999)
 stroke path [3619.7,1835.7 3595.8,1840.5] f=rgba(240,178,85,0.13999999999999999) s=rgba(240,178,85,0.4) w=1 dash=[4,3] comp=source-over
 stroke path [3620,1837.6 3596.2,1842.4] f=rgba(240,178,85,0.13999999999999999) s=rgba(240,178,85,0.4) w=1 dash=[4,3] comp=source-over
 stroke path [3620.4,1839.4 3596.6,1844.3] f=rgba(240,178,85,0.13999999999999999) s=rgba(240,178,85,0.4) w=1 dash=[4,3] comp=source-over
-fill ellipse [3605.2,1764.4 3606.8,1765.4] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.9925
-stroke ellipse [3605.2,1764.4 3606.8,1765.4] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.9925
-fill ellipse [3583.8,1773.7 3585.4,1774.7] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-0.8109
-stroke ellipse [3583.8,1773.7 3585.4,1774.7] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-0.8109
-fill ellipse [3587,1777.6 3588.6,1778.6] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.0727
-stroke ellipse [3587,1777.6 3588.6,1778.6] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.0727
-fill ellipse [3590.5,1780.7 3592.1,1781.7] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.3345
-stroke ellipse [3590.5,1780.7 3592.1,1781.7] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.3345
-fill ellipse [3594.2,1782.9 3595.8,1783.9] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.5963
-stroke ellipse [3594.2,1782.9 3595.8,1783.9] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.5963
-fill ellipse [3598,1784.3 3599.6,1785.2] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.8580999999999999
-stroke ellipse [3598,1784.3 3599.6,1785.2] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.8580999999999999
-fill ellipse [3601.4,1784.8 3603,1785.7] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.1199
-stroke ellipse [3601.4,1784.8 3603,1785.7] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.1199
-fill ellipse [3604.4,1784.5 3606,1785.5] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.3817
-stroke ellipse [3604.4,1784.5 3606,1785.5] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.3817
-fill ellipse [3606.8,1783.7 3608.4,1784.6] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.6435
-stroke ellipse [3606.8,1783.7 3608.4,1784.6] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.6435
-fill ellipse [3608.4,1782.4 3610,1783.4] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.9053
-stroke ellipse [3608.4,1782.4 3610,1783.4] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.9053
-fill ellipse [3586.5,1789.8 3588.1,1790.8] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-0.7236
-stroke ellipse [3586.5,1789.8 3588.1,1790.8] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-0.7236
-fill ellipse [3589.4,1793.9 3591,1794.9] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-0.9853999999999999
-stroke ellipse [3589.4,1793.9 3591,1794.9] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-0.9853999999999999
-fill ellipse [3592.8,1797.3 3594.4,1798.2] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.2472
-stroke ellipse [3592.8,1797.3 3594.4,1798.2] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.2472
+fill ellipse [3605.2,1764.4 3606.8,1765.4] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.993
+stroke ellipse [3605.2,1764.4 3606.8,1765.4] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.993
+fill ellipse [3583.8,1773.7 3585.4,1774.7] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-0.811
+stroke ellipse [3583.8,1773.7 3585.4,1774.7] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-0.811
+fill ellipse [3587,1777.6 3588.6,1778.6] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.073
+stroke ellipse [3587,1777.6 3588.6,1778.6] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.073
+fill ellipse [3590.5,1780.7 3592.1,1781.7] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.334
+stroke ellipse [3590.5,1780.7 3592.1,1781.7] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.334
+fill ellipse [3594.2,1782.9 3595.8,1783.9] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.596
+stroke ellipse [3594.2,1782.9 3595.8,1783.9] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.596
+fill ellipse [3598,1784.3 3599.6,1785.2] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.858
+stroke ellipse [3598,1784.3 3599.6,1785.2] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.858
+fill ellipse [3601.4,1784.8 3603,1785.7] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.12
+stroke ellipse [3601.4,1784.8 3603,1785.7] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.12
+fill ellipse [3604.4,1784.5 3606,1785.5] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.382
+stroke ellipse [3604.4,1784.5 3606,1785.5] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.382
+fill ellipse [3606.8,1783.7 3608.4,1784.6] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.643
+stroke ellipse [3606.8,1783.7 3608.4,1784.6] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.643
+fill ellipse [3608.4,1782.4 3610,1783.4] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.905
+stroke ellipse [3608.4,1782.4 3610,1783.4] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.905
+fill ellipse [3586.5,1789.8 3588.1,1790.8] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-0.724
+stroke ellipse [3586.5,1789.8 3588.1,1790.8] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-0.724
+fill ellipse [3589.4,1793.9 3591,1794.9] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-0.985
+stroke ellipse [3589.4,1793.9 3591,1794.9] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-0.985
+fill ellipse [3592.8,1797.3 3594.4,1798.2] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.247
+stroke ellipse [3592.8,1797.3 3594.4,1798.2] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.247
 fill ellipse [3596.5,1799.8 3598.1,1800.8] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.509
 stroke ellipse [3596.5,1799.8 3598.1,1800.8] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.509
-fill ellipse [3600.3,1801.4 3601.9,1802.4] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.7708
-stroke ellipse [3600.3,1801.4 3601.9,1802.4] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.7708
-fill ellipse [3603.9,1802.2 3605.5,1803.2] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.0326
-stroke ellipse [3603.9,1802.2 3605.5,1803.2] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.0326
-fill ellipse [3607.1,1802.2 3608.7,1803.2] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.2944
-stroke ellipse [3607.1,1802.2 3608.7,1803.2] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.2944
-fill ellipse [3609.7,1801.5 3611.3,1802.5] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.5562
-stroke ellipse [3609.7,1801.5 3611.3,1802.5] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.5562
+fill ellipse [3600.3,1801.4 3601.9,1802.4] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.771
+stroke ellipse [3600.3,1801.4 3601.9,1802.4] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.771
+fill ellipse [3603.9,1802.2 3605.5,1803.2] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.033
+stroke ellipse [3603.9,1802.2 3605.5,1803.2] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.033
+fill ellipse [3607.1,1802.2 3608.7,1803.2] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.294
+stroke ellipse [3607.1,1802.2 3608.7,1803.2] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.294
+fill ellipse [3609.7,1801.5 3611.3,1802.5] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.556
+stroke ellipse [3609.7,1801.5 3611.3,1802.5] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.556
 fill ellipse [3611.5,1800.4 3613.1,1801.3] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.818
 stroke ellipse [3611.5,1800.4 3613.1,1801.3] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.818
-fill ellipse [3589.2,1805.8 3590.8,1806.8] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-0.6363
-stroke ellipse [3589.2,1805.8 3590.8,1806.8] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-0.6363
-fill ellipse [3591.9,1810.1 3593.5,1811.1] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-0.8981
-stroke ellipse [3591.9,1810.1 3593.5,1811.1] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-0.8981
-fill ellipse [3595.2,1813.7 3596.8,1814.7] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.1599000000000002
-stroke ellipse [3595.2,1813.7 3596.8,1814.7] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.1599000000000002
-fill ellipse [3598.8,1816.6 3600.4,1817.5] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.4217
-stroke ellipse [3598.8,1816.6 3600.4,1817.5] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.4217
-fill ellipse [3602.6,1818.5 3604.2,1819.5] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.6835
-stroke ellipse [3602.6,1818.5 3604.2,1819.5] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.6835
-fill ellipse [3606.3,1819.6 3607.9,1820.5] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.9453
-stroke ellipse [3606.3,1819.6 3607.9,1820.5] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.9453
-fill ellipse [3609.6,1819.8 3611.2,1820.8] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.2071
-stroke ellipse [3609.6,1819.8 3611.2,1820.8] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.2071
-fill ellipse [3612.4,1819.3 3614,1820.3] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.4689
-stroke ellipse [3612.4,1819.3 3614,1820.3] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.4689
-fill ellipse [3614.5,1818.3 3616.1,1819.3] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.7306999999999997
-stroke ellipse [3614.5,1818.3 3616.1,1819.3] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.7306999999999997
-fill ellipse [3592,1821.8 3593.6,1822.7] f=rgba(102,219,248,0.85) s=rgba(102,219,248,1) w=1 dash=[4,3] comp=source-over rot=-0.5491
-stroke ellipse [3592,1821.8 3593.6,1822.7] f=rgba(102,219,248,0.85) s=rgba(102,219,248,1) w=1 dash=[4,3] comp=source-over rot=-0.5491
-fill ellipse [3594.5,1826.3 3596.1,1827.3] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-0.8109
-stroke ellipse [3594.5,1826.3 3596.1,1827.3] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-0.8109
-fill ellipse [3597.6,1830.1 3599.2,1831.1] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-1.0727
-stroke ellipse [3597.6,1830.1 3599.2,1831.1] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-1.0727
-fill ellipse [3601.2,1833.2 3602.8,1834.2] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-1.3345
-stroke ellipse [3601.2,1833.2 3602.8,1834.2] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-1.3345
-fill ellipse [3604.9,1835.5 3606.5,1836.4] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-1.5963
-stroke ellipse [3604.9,1835.5 3606.5,1836.4] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-1.5963
-fill ellipse [3608.6,1836.8 3610.2,1837.8] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-1.8580999999999999
-stroke ellipse [3608.6,1836.8 3610.2,1837.8] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-1.8580999999999999
-fill ellipse [3612.1,1837.3 3613.7,1838.3] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-2.1199
-stroke ellipse [3612.1,1837.3 3613.7,1838.3] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-2.1199
-fill ellipse [3615.1,1837.1 3616.7,1838] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-2.3817
-stroke ellipse [3615.1,1837.1 3616.7,1838] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-2.3817
-fill ellipse [3617.5,1836.2 3619.1,1837.2] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-2.6435
-stroke ellipse [3617.5,1836.2 3619.1,1837.2] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-2.6435
-fill ellipse [3619.1,1834.9 3620.7,1835.9] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-2.9053
-stroke ellipse [3619.1,1834.9 3620.7,1835.9] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-2.9053
-fill ellipse [3597.1,1842.3 3598.7,1843.3] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-0.7236
-stroke ellipse [3597.1,1842.3 3598.7,1843.3] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-0.7236
-fill ellipse [3600.1,1846.4 3601.7,1847.4] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-0.9853999999999999
-stroke ellipse [3600.1,1846.4 3601.7,1847.4] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-0.9853999999999999
-fill ellipse [3603.5,1849.8 3605.1,1850.8] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-1.2472
-stroke ellipse [3603.5,1849.8 3605.1,1850.8] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-1.2472"
+fill ellipse [3589.2,1805.8 3590.8,1806.8] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-0.636
+stroke ellipse [3589.2,1805.8 3590.8,1806.8] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-0.636
+fill ellipse [3591.9,1810.1 3593.5,1811.1] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-0.898
+stroke ellipse [3591.9,1810.1 3593.5,1811.1] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-0.898
+fill ellipse [3595.2,1813.7 3596.8,1814.7] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.16
+stroke ellipse [3595.2,1813.7 3596.8,1814.7] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.16
+fill ellipse [3598.8,1816.6 3600.4,1817.5] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.422
+stroke ellipse [3598.8,1816.6 3600.4,1817.5] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.422
+fill ellipse [3602.6,1818.5 3604.2,1819.5] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.684
+stroke ellipse [3602.6,1818.5 3604.2,1819.5] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.684
+fill ellipse [3606.3,1819.6 3607.9,1820.5] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.945
+stroke ellipse [3606.3,1819.6 3607.9,1820.5] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-1.945
+fill ellipse [3609.6,1819.8 3611.2,1820.8] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.207
+stroke ellipse [3609.6,1819.8 3611.2,1820.8] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.207
+fill ellipse [3612.4,1819.3 3614,1820.3] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.469
+stroke ellipse [3612.4,1819.3 3614,1820.3] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.469
+fill ellipse [3614.5,1818.3 3616.1,1819.3] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.731
+stroke ellipse [3614.5,1818.3 3616.1,1819.3] f=rgba(79,174,188,0.45) s=rgba(79,174,188,0.85) w=1 dash=[4,3] comp=source-over rot=-2.731
+fill ellipse [3592,1821.8 3593.6,1822.7] f=rgba(102,219,248,0.85) s=rgba(102,219,248,1) w=1 dash=[4,3] comp=source-over rot=-0.549
+stroke ellipse [3592,1821.8 3593.6,1822.7] f=rgba(102,219,248,0.85) s=rgba(102,219,248,1) w=1 dash=[4,3] comp=source-over rot=-0.549
+fill ellipse [3594.5,1826.3 3596.1,1827.3] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-0.811
+stroke ellipse [3594.5,1826.3 3596.1,1827.3] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-0.811
+fill ellipse [3597.6,1830.1 3599.2,1831.1] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-1.073
+stroke ellipse [3597.6,1830.1 3599.2,1831.1] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-1.073
+fill ellipse [3601.2,1833.2 3602.8,1834.2] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-1.334
+stroke ellipse [3601.2,1833.2 3602.8,1834.2] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-1.334
+fill ellipse [3604.9,1835.5 3606.5,1836.4] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-1.596
+stroke ellipse [3604.9,1835.5 3606.5,1836.4] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-1.596
+fill ellipse [3608.6,1836.8 3610.2,1837.8] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-1.858
+stroke ellipse [3608.6,1836.8 3610.2,1837.8] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-1.858
+fill ellipse [3612.1,1837.3 3613.7,1838.3] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-2.12
+stroke ellipse [3612.1,1837.3 3613.7,1838.3] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-2.12
+fill ellipse [3615.1,1837.1 3616.7,1838] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-2.382
+stroke ellipse [3615.1,1837.1 3616.7,1838] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-2.382
+fill ellipse [3617.5,1836.2 3619.1,1837.2] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-2.643
+stroke ellipse [3617.5,1836.2 3619.1,1837.2] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-2.643
+fill ellipse [3619.1,1834.9 3620.7,1835.9] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-2.905
+stroke ellipse [3619.1,1834.9 3620.7,1835.9] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-2.905
+fill ellipse [3597.1,1842.3 3598.7,1843.3] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-0.724
+stroke ellipse [3597.1,1842.3 3598.7,1843.3] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-0.724
+fill ellipse [3600.1,1846.4 3601.7,1847.4] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-0.985
+stroke ellipse [3600.1,1846.4 3601.7,1847.4] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-0.985
+fill ellipse [3603.5,1849.8 3605.1,1850.8] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-1.247
+stroke ellipse [3603.5,1849.8 3605.1,1850.8] f=rgba(240,178,85,0.45) s=rgba(240,178,85,0.85) w=1 dash=[4,3] comp=source-over rot=-1.247"
 `;
 
 exports[`golden-image visual corpus: family geometry and treatment styling (AGE-17) > geometry: fan-beam-scatterometer under mechanism 1`] = `
@@ -736,7 +736,7 @@ stroke path [3607.4,1805.6 3610.6,1805.6 3610.6,1808.8 3607.4,1808.8 3607.4,1805
 `;
 
 exports[`golden-image visual corpus: family geometry and treatment styling (AGE-17) > geometry: limb-occultation under mechanism 1`] = `
-"fill arc [3594.8,1774.5 3596.3,1774.5] f=rgba(79,174,188,0.9) s= w=1 dash=[] comp=source-over
+"fill arc [3594.8,1774.5 3596.3,1774.5] f=rgba(79,174,188,0.9) s= w=1 dash=[6,2,1,2] comp=source-over
 fill arc [3595,1775.5 3596.5,1775.5] f=rgba(79,174,188,0.9) s= w=1 dash=[] comp=source-over
 fill arc [3595.3,1776.6 3596.8,1776.6] f=rgba(79,174,188,0.9) s= w=1 dash=[] comp=source-over
 fill arc [3595.5,1777.6 3597,1777.6] f=rgba(79,174,188,0.9) s= w=1 dash=[] comp=source-over
@@ -1142,8 +1142,8 @@ stroke path [3619.7,1832.1 3594.3,1837.3] f=rgba(240,178,85,0.13999999999999999)
 stroke path [3619.9,1833.1 3594.5,1838.2] f=rgba(240,178,85,0.13999999999999999) s=rgba(240,178,85,0.4) w=1 dash=[4,3] comp=source-over
 stroke path [3620.1,1834 3594.7,1839.2] f=rgba(240,178,85,0.13999999999999999) s=rgba(240,178,85,0.4) w=1 dash=[4,3] comp=source-over
 stroke path [3620.3,1835 3594.9,1840.1] f=rgba(240,178,85,0.13999999999999999) s=rgba(240,178,85,0.4) w=1 dash=[4,3] comp=source-over
-fill arc [3583.5,1764.3 3585,1764.3] f=rgba(79,174,188,0.9) s=rgba(240,178,85,0.4) w=1 dash=[] comp=source-over
-fill arc [3602.8,1770.2 3604.3,1770.2] f=rgba(79,174,188,0.9) s=rgba(240,178,85,0.4) w=1 dash=[] comp=source-over
+fill arc [3583.5,1764.3 3585,1764.3] f=rgba(79,174,188,0.9) s=rgba(240,178,85,0.4) w=1 dash=[4,3] comp=source-over
+fill arc [3602.8,1770.2 3604.3,1770.2] f=rgba(79,174,188,0.9) s=rgba(240,178,85,0.4) w=1 dash=[4,3] comp=source-over
 fill arc [3601,1766.6 3602.5,1766.6] f=rgba(79,174,188,0.9) s=rgba(240,178,85,0.4) w=1 dash=[] comp=source-over
 fill arc [3588,1751.3 3589.5,1751.3] f=rgba(79,174,188,0.9) s=rgba(240,178,85,0.4) w=1 dash=[] comp=source-over
 fill arc [3587.4,1757.1 3588.9,1757.1] f=rgba(79,174,188,0.9) s=rgba(240,178,85,0.4) w=1 dash=[] comp=source-over
@@ -1307,12 +1307,12 @@ fill arc [3602.5,1849.4 3604,1849.4] f=rgba(240,178,85,0.9) s=rgba(240,178,85,0.
 `;
 
 exports[`golden-image visual corpus: family geometry and treatment styling (AGE-17) > geometry: profiler under mechanism 1`] = `
-"fill arc [3598.1,1761.3 3599.6,1761.3] f=rgba(79,174,188,0.9) s= w=1 dash=[] comp=source-over
-fill arc [3597.3,1761.5 3598.8,1761.5] f=rgba(79,174,188,0.9) s= w=1 dash=[] comp=source-over
-fill arc [3592.8,1762.4 3594.3,1762.4] f=rgba(79,174,188,0.9) s= w=1 dash=[] comp=source-over
-fill arc [3592,1762.5 3593.5,1762.5] f=rgba(79,174,188,0.9) s= w=1 dash=[] comp=source-over
-fill arc [3587.5,1763.5 3589,1763.5] f=rgba(79,174,188,0.9) s= w=1 dash=[] comp=source-over
-fill arc [3586.7,1763.6 3588.2,1763.6] f=rgba(79,174,188,0.9) s= w=1 dash=[] comp=source-over
+"fill arc [3598.1,1761.3 3599.6,1761.3] f=rgba(79,174,188,0.9) s= w=1 dash=[6,2,1,2] comp=source-over
+fill arc [3597.3,1761.5 3598.8,1761.5] f=rgba(79,174,188,0.9) s= w=1 dash=[6,2,1,2] comp=source-over
+fill arc [3592.8,1762.4 3594.3,1762.4] f=rgba(79,174,188,0.9) s= w=1 dash=[6,2,1,2] comp=source-over
+fill arc [3592,1762.5 3593.5,1762.5] f=rgba(79,174,188,0.9) s= w=1 dash=[6,2,1,2] comp=source-over
+fill arc [3587.5,1763.5 3589,1763.5] f=rgba(79,174,188,0.9) s= w=1 dash=[6,2,1,2] comp=source-over
+fill arc [3586.7,1763.6 3588.2,1763.6] f=rgba(79,174,188,0.9) s= w=1 dash=[6,2,1,2] comp=source-over
 fill arc [3598.3,1762.3 3599.8,1762.3] f=rgba(79,174,188,0.9) s= w=1 dash=[] comp=source-over
 fill arc [3597.5,1762.4 3599,1762.4] f=rgba(79,174,188,0.9) s= w=1 dash=[] comp=source-over
 fill arc [3593,1763.4 3594.5,1763.4] f=rgba(79,174,188,0.9) s= w=1 dash=[] comp=source-over
@@ -3669,12 +3669,12 @@ fill arc [3601.8,1838.2 3603.3,1838.2] f=rgba(240,178,85,0.9) s= w=1 dash=[] com
 `;
 
 exports[`golden-image visual corpus: family geometry and treatment styling (AGE-17) > styling: profiler under mechanism 1`] = `
-"fill arc [3598.1,1761.3 3599.6,1761.3] f=rgba(79,174,188,0.9) s= w=1 dash=[] comp=source-over
-fill arc [3597.3,1761.5 3598.8,1761.5] f=rgba(79,174,188,0.9) s= w=1 dash=[] comp=source-over
-fill arc [3592.8,1762.4 3594.3,1762.4] f=rgba(79,174,188,0.9) s= w=1 dash=[] comp=source-over
-fill arc [3592,1762.5 3593.5,1762.5] f=rgba(79,174,188,0.9) s= w=1 dash=[] comp=source-over
-fill arc [3587.5,1763.5 3589,1763.5] f=rgba(79,174,188,0.9) s= w=1 dash=[] comp=source-over
-fill arc [3586.7,1763.6 3588.2,1763.6] f=rgba(79,174,188,0.9) s= w=1 dash=[] comp=source-over
+"fill arc [3598.1,1761.3 3599.6,1761.3] f=rgba(79,174,188,0.9) s= w=1 dash=[6,2,1,2] comp=source-over
+fill arc [3597.3,1761.5 3598.8,1761.5] f=rgba(79,174,188,0.9) s= w=1 dash=[6,2,1,2] comp=source-over
+fill arc [3592.8,1762.4 3594.3,1762.4] f=rgba(79,174,188,0.9) s= w=1 dash=[6,2,1,2] comp=source-over
+fill arc [3592,1762.5 3593.5,1762.5] f=rgba(79,174,188,0.9) s= w=1 dash=[6,2,1,2] comp=source-over
+fill arc [3587.5,1763.5 3589,1763.5] f=rgba(79,174,188,0.9) s= w=1 dash=[6,2,1,2] comp=source-over
+fill arc [3586.7,1763.6 3588.2,1763.6] f=rgba(79,174,188,0.9) s= w=1 dash=[6,2,1,2] comp=source-over
 fill arc [3598.3,1762.3 3599.8,1762.3] f=rgba(79,174,188,0.9) s= w=1 dash=[] comp=source-over
 fill arc [3597.5,1762.4 3599,1762.4] f=rgba(79,174,188,0.9) s= w=1 dash=[] comp=source-over
 fill arc [3593,1763.4 3594.5,1763.4] f=rgba(79,174,188,0.9) s= w=1 dash=[] comp=source-over

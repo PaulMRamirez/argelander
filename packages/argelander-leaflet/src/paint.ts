@@ -311,15 +311,15 @@ function paintMechanism(ctx: Canvas2DLike, geo: GeoStrip, project: Projector, r:
   ctx.setLineDash([]);
 }
 
-function midpoint(a: GeoPoint, b: GeoPoint): GeoPoint {
-  const lonB = unwrapLon(a.lonDeg, b.lonDeg);
-  return { lonDeg: (a.lonDeg + lonB) / 2, latDeg: (a.latDeg + b.latDeg) / 2 };
-}
-
 /** Cross-track point at fraction f from left (0) to right (1), rendering grade. */
 function crossLerp(a: GeoPoint, b: GeoPoint, f: number): GeoPoint {
   const lonB = unwrapLon(a.lonDeg, b.lonDeg);
   return { lonDeg: a.lonDeg + f * (lonB - a.lonDeg), latDeg: a.latDeg + f * (b.latDeg - a.latDeg) };
+}
+
+/** Cross-track midpoint: the f=0.5 case, kept named for its many call sites. */
+function midpoint(a: GeoPoint, b: GeoPoint): GeoPoint {
+  return crossLerp(a, b, 0.5);
 }
 
 /** Distinct sub-swaths present in one segment; two or more means a divided swath. */
@@ -341,6 +341,9 @@ function paintSubSwathBands(
   ctx: Canvas2DLike, geo: GeoStrip, project: Projector, r: Resolved,
   fromEtSec: number, toEtSec: number, stateOverride?: GeoSegment['state'],
 ): void {
+  // The many families with no sub-swath never divide; skip the per-pair walk
+  // and its throwaway Sets for them rather than looping to find nothing.
+  if (!geo.hasSubSwaths) return;
   // Own the dash so a solid divider does not inherit the mechanism hatch
   // pattern from whatever ran before it.
   ctx.setLineDash([]);
@@ -354,10 +357,10 @@ function paintSubSwathBands(
     const bands = subSwathBands(a.sub);
     if (bands < 2) continue;
     // Later-segment state, the quad the dividers subdivide (quadState).
-    const color = stateColor(r.palette, stateOverride ?? b.state);
+    const color = withAlpha(stateColor(r.palette, stateOverride ?? b.state), 0.45);
     for (let j = 1; j < bands; j++) {
       const f = j / bands;
-      strokeLine(ctx, project, crossLerp(a.left, a.right, f), crossLerp(b.left, b.right, f), withAlpha(color, 0.45), 1, r.worldCopies);
+      strokeLine(ctx, project, crossLerp(a.left, a.right, f), crossLerp(b.left, b.right, f), color, 1, r.worldCopies);
     }
   }
 }
