@@ -12,7 +12,30 @@ import { trackStrip } from './track.js';
 import type { TrackStripOptions } from './track.js';
 import type { BodyId, Correction, Et, FrameId, StateProvider, Strip } from './types.js';
 
-type Posture = Pick<TrackStripOptions, 'swathHalfWidthKm' | 'offsetRangeKm' | 'beadOffsetsKm' | 'scan' | 'stepScan' | 'conical' | 'subSwaths' | 'looks' | 'nowEtSec'>;
+/**
+ * The trackStrip posture options passStrips forwards, in one list so the
+ * type and the forwarding cannot drift: adding a posture to trackStrip means
+ * adding it here, and both the Posture type and the forwarding derive from
+ * this array. DECOR_KEYS are the subset that also rides each side of a
+ * bilateral pair (the rest describe a single-strip envelope the bilateral
+ * decomposition owns itself).
+ */
+const POSTURE_KEYS = [
+  'swathHalfWidthKm', 'offsetRangeKm', 'beadOffsetsKm', 'scan', 'stepScan', 'conical', 'subSwaths', 'looks',
+] as const satisfies readonly (keyof TrackStripOptions)[];
+const DECOR_KEYS = ['subSwaths', 'looks'] as const satisfies readonly (keyof TrackStripOptions)[];
+
+type Posture = Pick<TrackStripOptions, typeof POSTURE_KEYS[number] | 'nowEtSec'>;
+
+/** The defined posture options among `keys`, ready to spread into trackStrip. */
+function pickPostures(options: PassStripsOptions, keys: readonly (keyof TrackStripOptions)[]): Partial<TrackStripOptions> {
+  const out: Record<string, unknown> = {};
+  for (const key of keys) {
+    const value = (options as unknown as Record<string, unknown>)[key];
+    if (value !== undefined) out[key] = value;
+  }
+  return out as Partial<TrackStripOptions>;
+}
 
 export interface PassStripsOptions extends Posture {
   target: BodyId;
@@ -86,10 +109,7 @@ export async function passStrips(provider: StateProvider, options: PassStripsOpt
       const { gapKm, outerKm } = options.bilateralKm;
       // Looks and sub-swaths ride each side of the pair (a twin-swath fan-beam
       // scatterometer such as ASCAT integrates its fore/mid/aft beams on both).
-      const decor = {
-        ...(options.looks !== undefined ? { looks: options.looks } : {}),
-        ...(options.subSwaths !== undefined ? { subSwaths: options.subSwaths } : {}),
-      };
+      const decor = pickPostures(options, DECOR_KEYS);
       strips.push(
         trackStrip(batch, 0, {
           ...common, id: `${prefix}-w${w}-left`, ...decor,
@@ -104,14 +124,7 @@ export async function passStrips(provider: StateProvider, options: PassStripsOpt
       strips.push(trackStrip(batch, 0, {
         ...common,
         id: `${prefix}-w${w}`,
-        ...(options.swathHalfWidthKm !== undefined ? { swathHalfWidthKm: options.swathHalfWidthKm } : {}),
-        ...(options.beadOffsetsKm !== undefined ? { beadOffsetsKm: options.beadOffsetsKm } : {}),
-        ...(options.scan !== undefined ? { scan: options.scan } : {}),
-        ...(options.stepScan !== undefined ? { stepScan: options.stepScan } : {}),
-        ...(options.conical !== undefined ? { conical: options.conical } : {}),
-        ...(options.subSwaths !== undefined ? { subSwaths: options.subSwaths } : {}),
-        ...(options.looks !== undefined ? { looks: options.looks } : {}),
-        ...(options.offsetRangeKm !== undefined ? { offsetRangeKm: options.offsetRangeKm } : {}),
+        ...pickPostures(options, POSTURE_KEYS),
       }));
     }
   }

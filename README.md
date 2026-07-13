@@ -4,6 +4,22 @@ Acquisition geometry engine (functional identity: AGE). Instrument models and ep
 
 The product line: Cosmolabe is what you see, Bessel is what computes, Argelander is what surveys.
 
+## See it, use it
+
+Instrument models and ephemerides in, time-tagged footprint strips out, painted on a map. Open `apps/atlas/index.html` in a browser for the 21-family atlas: no build, no server. The live Leaflet demo (SGP4 and pre-sampled footprints over Earth, the Moon, and Mars) ships on GitHub Pages. To put your own footprint on a map, start with the [layer configuration guide](docs/configuring-layers.md); the short path is one call:
+
+```ts
+import { passStrips } from 'argelander-core';
+import { AcquisitionLayer } from 'argelander-leaflet';
+
+const strips = await passStrips(provider, {
+  target: 'ISS', observer: 'EARTH', frame: 'ITRF93', bodyRadiusKm: 6371,
+  instrumentId: 'ISS/imager', generatedBy: 'my-app',
+  swathHalfWidthKm: 80, windows: [[epochEt, epochEt + 5400]], stepSec: 15,
+});
+new AcquisitionLayer(strips).addTo(map);
+```
+
 ## The name
 
 Friedrich Wilhelm Argelander (1799 to 1875) was Bessel's doctoral student and assistant at Konigsberg, and the maker of the Bonner Durchmusterung, the survey that fixed 324,198 stars from the north celestial pole down to two degrees below the equator, complete to about magnitude 9.5, positions good to roughly an arcminute. It was the last great star map made without photography, and its method is why this engine carries his name. Argelander held a meridian telescope fixed at the mean declination of a zone and let the Earth's rotation carry stars across a stationary reticle line, recording each transit's time and where along the line it crossed. A fixed cross-track line, along-track motion supplied by the platform, coverage accumulated as time-tagged crossings: that is a pushbroom sensor, and the Bonner Durchmusterung is its ur-form. Atlas tile 1, the family every other family is measured against, is exactly this geometry.

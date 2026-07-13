@@ -52,6 +52,8 @@ const map = L.map('map').setView([25, 0], 2);   // #map must have a height
 new AcquisitionLayer([strip]).addTo(map);
 ```
 
+In a hurry: `passStrips` (in the "Shaping the footprint" section) collapses the `states()` query and the provenance defaults into that one call, so the identical render is `passStrips(provider, { target, observer, frame, bodyRadiusKm, instrumentId, generatedBy, swathHalfWidthKm, windows: [[epochEt, epochEt + 5400]], stepSec: 15 })`. The staged form below is kept because it shows the three seams (states, strip, layer) one at a time.
+
 Everything after this section is optional refinement. A strip with a swath half-width paints as a ribbon; the default `flat-fill` treatment hues each segment by its acquisition state using the atlas palette.
 
 Three fields deserve a note before moving on. `authority` is provenance, not decoration: it names the computing authority that produced the states (AGE-20), and the convention is to pass the provider's own `id`. `bodyRadiusKm` is explicit because a StateBatch does not carry one; the geometry is an analytic spherical footprint, rendering grade by design. And `trackStrip` applies a state rule at build time: its `nowEtSec` option defaults to the batch's last epoch, so a freshly built strip arrives fully committed with the final segment acquiring. Hosts that drive a live clock re-state segments later (the clock section below); hosts that render a finished pass can leave the default alone.
