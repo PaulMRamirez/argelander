@@ -228,7 +228,9 @@ async function start(): Promise<void> {
     ? `${new Set(satLayers.map((s) => s.satName)).size} satellites, ${satLayers.length} instruments, ${new Set(satLayers.map((s) => s.world)).size} worlds`
     : 'no instruments loaded';
   const failed = failures.length ? `  |  failed: ${failures.join('; ')}` : '';
-  statusLabel.textContent = `${names}  |  simulated plan: the clock executes it (amber ahead, teal behind)  |  zoom in for the scan mechanism${failed}`;
+  // The color meaning lives in the legend; the status keeps the volatile
+  // counts and the one durable hint a newcomer needs to find the detail.
+  statusLabel.textContent = `${names}  |  a simulated acquisition plan the clock plays forward: zoom in and switch a layer to MECHANISM TEXTURE to see the scan${failed}`;
 
   // The promoted loop: setNow per frame, boundary-gated updateStates
   // through withStateRule, clock before states (AGE-13, AGE-16).

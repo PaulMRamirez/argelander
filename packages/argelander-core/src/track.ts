@@ -170,11 +170,6 @@ export function trackStrip(batch: StateBatch, targetIndex: number, options: Trac
   const halfWidth = options.swathHalfWidthKm ?? 0;
   const nowEtSec = options.nowEtSec ?? batch.epochs[n - 1]!;
 
-  let acquiringIndex = -1;
-  for (let i = 0; i < n; i++) {
-    if (batch.epochs[i]! <= nowEtSec + 1e-9) acquiringIndex = i;
-  }
-
   const nadirs: Vec3[] = [];
   const crosses: Vec3[] = [];
   for (let i = 0; i < n; i++) {
@@ -362,7 +357,9 @@ export function trackStrip(batch: StateBatch, targetIndex: number, options: Trac
       etSec: et,
       left,
       right,
-      state: i < acquiringIndex ? 'committed' : i === acquiringIndex ? 'acquiring' : 'planned',
+      // Planned by default; withStateRule below owns the acquiring/committed
+      // rule, so it lives in exactly one place (segment order matches epochs).
+      state: 'planned',
       ...(sub.length ? { sub } : {}),
       // Scan segments record the footprint size range they actually swept,
       // in meters, which gives the quality-gradient treatment real variation.
@@ -377,7 +374,7 @@ export function trackStrip(batch: StateBatch, targetIndex: number, options: Trac
     });
   }
 
-  return {
+  const strip: Strip = {
     id: options.id,
     body: options.body,
     frame: batch.frame,
@@ -393,4 +390,5 @@ export function trackStrip(batch: StateBatch, targetIndex: number, options: Trac
       inputs: [`target:${batch.targets[targetIndex] ?? targetIndex}`],
     },
   };
+  return withStateRule(strip, nowEtSec);
 }
