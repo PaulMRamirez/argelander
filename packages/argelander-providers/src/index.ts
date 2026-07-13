@@ -4,12 +4,18 @@ export { PresampledProvider, parsePresampledCsv } from './presampled.js';
 export type {
   PresampledCsvMeta, PresampledProviderOptions, PresampledQuatTable, PresampledStateTable,
 } from './presampled.js';
-export { remoteStateProvider, serveStateProvider } from './port.js';
+export { marshalError, remoteStateProvider, reviveError, serveStateProvider } from './port.js';
 export type {
-  RemoteStateProviderOptions, ServeStateProviderOptions, StatePortLike,
+  RemoteStateProviderOptions, ServeStateProviderOptions, StatePortLike, WireError,
 } from './port.js';
-export { parseTle } from './tle.js';
-export type { Tle } from './tle.js';
+export { connectSgp4Worker, registerSgp4Worker } from './worker-wiring.js';
+export type { ConnectSgp4Options } from './worker-wiring.js';
+export { czmlProvider, parseCzmlStates } from './czml.js';
+export type { CzmlTableMeta } from './czml.js';
+export { httpStateProvider, serveStateRequest } from './http.js';
+export type { HttpStateProviderOptions, StateWireRequest, StateWireResponse } from './http.js';
+export { parseTle, parseTles } from './tle.js';
+export type { Tle, TleSet } from './tle.js';
 export {
   DeepSpaceUnsupportedError, Sgp4PropagationError,
   WGS72_MU_KM3_S2, WGS72_RADIUS_KM, sgp4Init, sgp4PropagateInto,
