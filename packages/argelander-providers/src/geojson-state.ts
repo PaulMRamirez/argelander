@@ -36,7 +36,12 @@ export interface GeoJsonStateMeta {
   /** The label for the body-fixed geographic frame in your host; default ITRF93. */
   frame?: FrameId;
   correction?: Correction;
-  /** Reference sphere radius for the geographic conversion, km; default Earth's 6371. */
+  /**
+   * Reference sphere radius for the geographic conversion, km. Defaults to
+   * Earth's mean radius 6371, matching this provider's EARTH observer and
+   * ITRF93 frame defaults (the CZML sibling defaults to Earth the same way); a
+   * non-Earth track MUST set this, or its positions land at the wrong radius.
+   */
   bodyRadiusKm?: number;
   /**
    * Uniform time base for a plain GeoJSON that carries no per-vertex time:
@@ -58,7 +63,7 @@ interface ResolvedMeta {
 }
 
 interface GjGeometry { type?: unknown; coordinates?: unknown }
-interface GjFeature { type?: unknown; coord_properties?: unknown; properties?: unknown; geometry?: GjGeometry }
+interface GjFeature { type?: unknown; id?: unknown; coord_properties?: unknown; properties?: unknown; geometry?: GjGeometry }
 interface GjDocument { type?: unknown; coord_properties?: unknown; features?: unknown }
 
 function asStringArray(v: unknown): readonly string[] | undefined {
@@ -67,9 +72,13 @@ function asStringArray(v: unknown): readonly string[] | undefined {
 
 function featureTable(feature: GjFeature, fileNames: readonly string[] | undefined, meta: ResolvedMeta, index: number): PresampledStateTable {
   const props = (feature.properties && typeof feature.properties === 'object' ? feature.properties : {}) as Record<string, unknown>;
+  // The RFC 7946 feature identifier lives at the top level; properties.target
+  // and properties.id are the Argelander conventions. Try all before a
+  // synthetic name so a foreign track keeps its own id.
+  const featureId = typeof feature.id === 'string' || typeof feature.id === 'number' ? String(feature.id) : undefined;
   const target = typeof props.target === 'string' ? props.target
     : typeof props.id === 'string' ? props.id
-      : meta.target ?? `geojson-track-${index}`;
+      : featureId ?? meta.target ?? `geojson-track-${index}`;
 
   const geometry = feature.geometry;
   const type = geometry?.type;
@@ -84,6 +93,11 @@ function featureTable(feature: GjFeature, fileNames: readonly string[] | undefin
   const names = asStringArray(feature.coord_properties) ?? fileNames;
   const eventIdx = names ? names.indexOf('event_seconds') : -1;
   const hasEvent = eventIdx >= 0;
+  // Elevation is read by name when coord_properties is present, the same way
+  // event_seconds is, so a reordered or elevation-less layout does not misread
+  // some other member (an unix time) as an altitude. Plain GeoJSON with no
+  // coord_properties takes the RFC 7946 position order [lon, lat, elevation].
+  const elevIdx = names ? names.indexOf('elevation') : 2;
   const base = meta.timeBase;
   if (hasEvent && base) {
     throw new Error(`track '${target}': both event_seconds and a time base supplied; the epoch source is ambiguous, provide one`);
@@ -101,7 +115,7 @@ function featureTable(feature: GjFeature, fileNames: readonly string[] | undefin
     if (!Array.isArray(c) || typeof c[0] !== 'number' || typeof c[1] !== 'number') {
       throw new Error(`track '${target}': position ${i} must be [longitude, latitude, ...] numbers`);
     }
-    const elevationM = typeof c[2] === 'number' ? c[2] : 0;
+    const elevationM = elevIdx >= 0 && typeof c[elevIdx] === 'number' ? c[elevIdx] : 0;
     const v = geographicToVec3(c[0], c[1], elevationM, meta.bodyRadiusKm);
     positions[i * 3 + 0] = v[0];
     positions[i * 3 + 1] = v[1];

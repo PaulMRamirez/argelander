@@ -59,6 +59,44 @@ describe('GeoJSON state provider: Enhanced GeoJSON with per-vertex event_seconds
     const [table] = parseGeoJsonStates(doc);
     expect(table!.body).toBe('FROM-ID');
   });
+
+  it('resolves the target from a top-level RFC 7946 feature id', () => {
+    const doc = {
+      type: 'Feature', id: 'RFC-ID',
+      coord_properties: ['longitude', 'latitude', 'elevation', 'event_seconds'],
+      properties: {},
+      geometry: { type: 'LineString', coordinates: [[0, 0, 0, 0], [1, 0, 0, 10]] },
+    };
+    const [table] = parseGeoJsonStates(doc);
+    expect(table!.body).toBe('RFC-ID');
+  });
+
+  const radiusAt = (table: { states: Float64Array }): number =>
+    Math.hypot(table.states[0]!, table.states[1]!, table.states[2]!);
+
+  it('reads elevation by name, not misreading event_seconds as an altitude when index 2 is not elevation', () => {
+    // event_seconds sits at index 2 and there is no elevation member: elevation
+    // must default to 0, not read the unix value as 1000 m.
+    const doc = {
+      type: 'Feature',
+      coord_properties: ['longitude', 'latitude', 'event_seconds'],
+      properties: { target: 'T' },
+      geometry: { type: 'LineString', coordinates: [[0, 0, 1000], [1, 0, 1010]] },
+    };
+    const [table] = parseGeoJsonStates(doc, { bodyRadiusKm: 6371 });
+    expect(radiusAt(table!)).toBeCloseTo(6371, 6);
+  });
+
+  it('reads elevation by name when it comes after event_seconds', () => {
+    const doc = {
+      type: 'Feature',
+      coord_properties: ['longitude', 'latitude', 'event_seconds', 'elevation'],
+      properties: { target: 'T' },
+      geometry: { type: 'LineString', coordinates: [[0, 0, 0, 20000], [1, 0, 10, 20000]] },
+    };
+    const [table] = parseGeoJsonStates(doc, { bodyRadiusKm: 6371 });
+    expect(radiusAt(table!)).toBeCloseTo(6391, 6); // 20000 m above the 6371 km radius
+  });
 });
 
 describe('GeoJSON state provider: plain GeoJSON with a time base', () => {

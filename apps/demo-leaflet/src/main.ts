@@ -234,9 +234,18 @@ async function start(): Promise<void> {
       // GeoJSON is absent or fails to parse, so one bad track never grounds it.
       if (platform.trackGeoJson) {
         try {
-          provider = geoJsonStateProvider(platform.trackGeoJson, {
+          const gj = geoJsonStateProvider(platform.trackGeoJson, {
             observer: platform.line.body, frame: platform.line.frame, bodyRadiusKm: platform.line.bodyRadiusKm,
           }, { id });
+          // A track that parses but does not span the demo window would refuse
+          // at query time, which the construction guard alone misses; probe
+          // coverage and fall back to the sampler before that strands the
+          // platform.
+          const windows = await gj.coverage(platform.line.target);
+          if (!windows.some((w) => w.start <= 0 && w.end >= PASS_WINDOW_SEC)) {
+            throw new RangeError(`geojson track does not cover [0, ${PASS_WINDOW_SEC}]`);
+          }
+          provider = gj;
         } catch (err) {
           failures.push(`${platform.name} geojson track, using sampler: ${err instanceof Error ? err.message : String(err)}`);
           provider = sampler();
