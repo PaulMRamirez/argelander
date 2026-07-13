@@ -165,3 +165,62 @@ describe('trackStrip: the provider-to-strip bridge (AGE-04)', () => {
     expect(() => trackStrip(equatorialBatch(1, 10), 0, { ...BASE, bodyRadiusKm: 0 })).toThrow(/positive/);
   });
 });
+
+describe('trackStrip step-scan sounder posture (tile 3 family, AGE-04)', () => {
+  const STEP = { positionsPerRow: 15, footprintRadiusKm: 4.6, crossGrowthFactor: 1.7, alongGrowthFactor: 0.45 };
+
+  it('emits positionsPerRow footprints per segment, growing off-nadir', () => {
+    const strip = trackStrip(equatorialBatch(4, 10), 0, { ...BASE, swathHalfWidthKm: 67.2, stepScan: STEP });
+    expect(validateStrip(strip).errors).toEqual([]);
+    for (const s of strip.segments) {
+      const fps = (s.sub ?? []).filter((x) => x.kind === 'footprint');
+      expect(fps).toHaveLength(15);
+    }
+    const majors = strip.segments[0]!.sub!.filter((x) => x.kind === 'footprint')
+      .map((f) => (f.kind === 'footprint' ? f.semiMajorKm : 0));
+    const qEdge = (15 - 1) / 15;
+    expect(Math.min(...majors)).toBeLessThan(4.6 * 1.1);
+    expect(Math.max(...majors)).toBeCloseTo(4.6 * (1 + 1.7 * qEdge * qEdge), 6);
+  });
+
+  it('requires a swath and refuses combining with scan', () => {
+    expect(() => trackStrip(equatorialBatch(3, 10), 0, { ...BASE, stepScan: STEP })).toThrow(/swathHalfWidthKm/);
+    expect(() => trackStrip(equatorialBatch(3, 10), 0, {
+      ...BASE, swathHalfWidthKm: 50, stepScan: STEP,
+      scan: { scanRateHz: 0.05, subStepSec: 2, footprintSemiMajorKm: 4, footprintSemiMinorKm: 3, footprintGrowthFactor: 0.5 },
+    })).toThrow(/exclusive with scan/);
+  });
+});
+
+describe('trackStrip conical radiometer posture (tile 4 family, AGE-04)', () => {
+  const CONE = { scanRadiusKm: 72, sectorHalfAngleRad: 1.2217, spinPeriodSec: 0.28, footprintSemiMajorKm: 6.4, footprintSemiMinorKm: 3.9 };
+
+  it('holds constant incidence: the crescent sits scanRadiusKm from nadir', () => {
+    const strip = trackStrip(equatorialBatch(6, 10), 0, { ...BASE, conical: CONE });
+    expect(validateStrip(strip).errors).toEqual([]);
+    const theta = 72 / R_BODY; // the great-circle angle for a 72 km offset
+    strip.segments.forEach((s, i) => {
+      const fps = (s.sub ?? []).filter((x) => x.kind === 'footprint');
+      expect(fps).toHaveLength(1);
+      const fp = fps[0]!;
+      if (fp.kind !== 'footprint') throw new Error('footprint expected');
+      expect(Math.hypot(...fp.center)).toBeCloseTo(R_BODY, 6);
+      // The equatorial nadir at epoch i is known analytically; the crescent
+      // centre is exactly the scan radius away, every segment (constant
+      // incidence), and both envelope edges are too (the sector chord).
+      const a = OMEGA * i * 10;
+      const nadir: [number, number, number] = [R_BODY * Math.cos(a), R_BODY * Math.sin(a), 0];
+      const dot = (fp.center[0] * nadir[0] + fp.center[1] * nadir[1] + fp.center[2] * nadir[2]) / (R_BODY * R_BODY);
+      expect(Math.acos(Math.min(1, dot))).toBeCloseTo(theta, 6);
+      for (const edge of [s.left, s.right]) {
+        const ed = (edge[0] * nadir[0] + edge[1] * nadir[1] + edge[2] * nadir[2]) / (R_BODY * R_BODY);
+        expect(Math.acos(Math.min(1, ed))).toBeCloseTo(theta, 6);
+      }
+    });
+  });
+
+  it('is standalone: refuses combining with a swath', () => {
+    expect(() => trackStrip(equatorialBatch(3, 10), 0, { ...BASE, swathHalfWidthKm: 50, conical: CONE }))
+      .toThrow(/standalone/);
+  });
+});
