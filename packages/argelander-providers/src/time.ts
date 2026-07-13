@@ -9,8 +9,6 @@ import type { Et } from 'argelander-core';
 /** 2000-01-01T12:00:00 UTC as unix seconds; J2000 TT is 64.184 s earlier on the UTC scale. */
 const J2000_UNIX_S = 946728000;
 const TT_MINUS_TAI_S = 32.184;
-/** TAI minus UTC at the J2000 epoch. */
-const DELTA_AT_2000 = 32;
 
 /** [year, monthIndex, TAI-UTC seconds effective from that UTC month start]. */
 const LEAP_STEPS: ReadonlyArray<readonly [number, number, number]> = [
@@ -39,10 +37,23 @@ export function utcUnixToEt(utcUnixSec: number): Et {
   return utcUnixSec - J2000_UNIX_S + TT_MINUS_TAI_S + deltaAtSeconds(utcUnixSec);
 }
 
-/** Et to UTC unix seconds; the leap value is refined in a second pass. */
+/**
+ * Et to UTC unix seconds. `base` is the unix instant plus its leap offset;
+ * the offset is iterated to a fixed point so the leap-table lookup lands on
+ * the true instant. A single pass seeded from a fixed year-2000 offset lands
+ * on the wrong side of a boundary (and drops a whole second) for an epoch in
+ * the last few seconds before a leap step, once the era's offset has drifted
+ * from that seed; the fixed point removes that. It stays off by a second only
+ * inside a true inserted leap second, an inherent UTC ambiguity.
+ */
 export function etToUtcUnix(et: Et): number {
-  let unix = et + J2000_UNIX_S - TT_MINUS_TAI_S - DELTA_AT_2000;
-  unix = et + J2000_UNIX_S - TT_MINUS_TAI_S - deltaAtSeconds(unix);
+  const base = et + J2000_UNIX_S - TT_MINUS_TAI_S;
+  let unix = base - deltaAtSeconds(base);
+  for (let i = 0; i < 4; i++) {
+    const refined = base - deltaAtSeconds(unix);
+    if (refined === unix) break;
+    unix = refined;
+  }
   return unix;
 }
 
