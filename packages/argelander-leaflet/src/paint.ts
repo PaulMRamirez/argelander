@@ -337,14 +337,24 @@ function subSwathBands(sub: readonly SubStructure[] | undefined): number {
  * its quad already breaks at the burst boundary through the connection rule,
  * so only segments carrying two or more sub-swaths draw dividers here.
  */
-function paintSubSwathBands(ctx: Canvas2DLike, geo: GeoStrip, project: Projector, r: Resolved): void {
+function paintSubSwathBands(
+  ctx: Canvas2DLike, geo: GeoStrip, project: Projector, r: Resolved,
+  fromEtSec: number, toEtSec: number, stateOverride?: GeoSegment['state'],
+): void {
+  // Own the dash so a solid divider does not inherit the mechanism hatch
+  // pattern from whatever ran before it.
+  ctx.setLineDash([]);
   for (let i = 0; i + 1 < geo.segments.length; i++) {
     if (!geo.connect[i]) continue;
     const a = geo.segments[i]!;
     const b = geo.segments[i + 1]!;
+    // Window on the later segment, matching the quad-fill convention, so the
+    // trail draws only the dividers of the coverage it has swept.
+    if (b.etSec <= fromEtSec || b.etSec > toEtSec) continue;
     const bands = subSwathBands(a.sub);
     if (bands < 2) continue;
-    const color = stateColor(r.palette, a.state);
+    // Later-segment state, the quad the dividers subdivide (quadState).
+    const color = stateColor(r.palette, stateOverride ?? b.state);
     for (let j = 1; j < bands; j++) {
       const f = j / bands;
       strokeLine(ctx, project, crossLerp(a.left, a.right, f), crossLerp(b.left, b.right, f), withAlpha(color, 0.45), 1, r.worldCopies);
@@ -493,6 +503,8 @@ export function paintTrailWindow(
       paintMechanism(ctx, geo, project, r, s, 'committed');
     }
   }
+  // The sub-swath quilt rides the trail like the rest of the mechanism.
+  paintSubSwathBands(ctx, geo, project, r, fromEtSec, toEtSec, 'committed');
   ctx.setLineDash([]);
   return painted;
 }
@@ -602,7 +614,7 @@ export function paintStrip(ctx: Canvas2DLike, geo: GeoStrip, project: Projector,
     );
   }
   paintLoneSegments(ctx, geo, project, r, 3);
-  paintSubSwathBands(ctx, geo, project, r);
+  paintSubSwathBands(ctx, geo, project, r, -Infinity, Infinity);
   for (const s of geo.segments) paintMechanism(ctx, geo, project, r, s);
   ctx.setLineDash([]);
 }

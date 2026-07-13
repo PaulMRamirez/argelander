@@ -403,3 +403,44 @@ describe('sub-swath quilt rendering (AGE-09)', () => {
     expect(alongLines.length).toBe(0);
   });
 });
+
+describe('sub-swath quilt: the review fixes', () => {
+  function bandedMixed(bandCount: number, acquiringIndex: number): Strip {
+    const segs = [0, 1, 2, 3].map((k): Strip['segments'][number] => ({
+      etSec: k * 10,
+      left: fromGeo(k * 0.4, -1, 6371),
+      right: fromGeo(k * 0.4, 1, 6371),
+      state: k < acquiringIndex ? 'committed' : k === acquiringIndex ? 'acquiring' : 'planned',
+      sub: Array.from({ length: bandCount }, (_, index) => ({ kind: 'sub-swath' as const, index })),
+    }));
+    return {
+      id: 'ss', body: 'EARTH', frame: 'ITRF93', instrumentId: 'test/sweepsar',
+      segments: segs, provenance: { authority: 'test', generatedBy: 'test' },
+    };
+  }
+  const alongLines = (ctx: FakeCtx) => ctx.strokes().filter((o) => o.shape === 'path' && o.path.length === 2
+    && Math.abs(o.path[0]![1] - o.path[1]![1]) > 1);
+
+  it('colors dividers by the later segment state (the quad-fill convention)', () => {
+    // The pair (committed seg 0, acquiring seg 1) subdivides an acquiring quad.
+    const ctx = new FakeCtx();
+    paintStrip(ctx, stripToGeo(bandedMixed(4, 1)), makeProjector(60), { treatment: 'mechanism' });
+    // The divider drawn between seg0 and seg1 must use the acquiring hue.
+    const acquiringDividers = alongLines(ctx).filter((o) => sameHue(o.strokeStyle, ATLAS_PALETTE.acquiring));
+    expect(acquiringDividers.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('draws solid dividers regardless of the instrument dash pattern', () => {
+    const ctx = new FakeCtx();
+    paintStrip(ctx, stripToGeo(bandedMixed(4, 2)), makeProjector(60), { treatment: 'mechanism' });
+    // Every along-track divider stroke carries the solid (empty) dash.
+    for (const d of alongLines(ctx)) expect(d.dash).toEqual([]);
+  });
+
+  it('shows the sub-swath quilt under the now-trail treatment', () => {
+    const ctx = new FakeCtx();
+    // now-trail extrudes the whole strip when nowEtSec is the last epoch.
+    paintStrip(ctx, stripToGeo(bandedMixed(5, 3)), makeProjector(60), { treatment: 'now-trail', nowEtSec: 30 });
+    expect(alongLines(ctx).length).toBeGreaterThanOrEqual(8);
+  });
+});
