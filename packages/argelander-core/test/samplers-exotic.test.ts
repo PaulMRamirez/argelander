@@ -92,6 +92,11 @@ describe('limb occultation mechanism (tile 13)', () => {
     }
     const events = strip.segments.flatMap((s) => s.sub!.filter((x) => x.kind === 'event'));
     expect(events).toHaveLength(3);
+    // Each event carries the model's footprint radius (ADR-0010), no longer inert.
+    const eventRadius = param('limb-occultation', 'eventRadiusKm');
+    for (const e of events) {
+      if (e.kind === 'event') expect(e.radiusKm).toBeCloseTo(eventRadius, 9);
+    }
     // The tangent bead leads the subsatellite point by tangentLeadSec of travel.
     const lead = param('limb-occultation', 'tangentLeadSec');
     const speed = LIMB_SCENE.trackLengthKm / LIMB_SCENE.passSec;

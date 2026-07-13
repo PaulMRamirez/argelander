@@ -184,13 +184,13 @@ export function generateConicalRadiometerStrip(model: InstrumentModel, scene: Al
  * single bead at the tangent point displaced tangentLeadSec ahead of the
  * subsatellite point, decoupling the measurement chain from the ground
  * track. Three occultation events pop into existence, offset from the track,
- * as SubEvent markers (eventRadiusKm is declarative for the renderer).
+ * as SubEvent markers carrying the model's eventRadiusKm (ADR-0010).
  */
 export function generateLimbOccultationStrip(model: InstrumentModel, scene: AlongTrackScene): Strip {
   requireKind(model, 'limb-occultation');
   const lead = numberParam(model, 'tangentLeadSec');
   const beadStep = numberParam(model, 'tangentBeadStepKm');
-  numberParam(model, 'eventRadiusKm');
+  const eventRadius = numberParam(model, 'eventRadiusKm');
   const b = trackBasis(scene);
   const speed = scene.trackLengthKm / scene.passSec;
   const count = Math.floor(scene.trackLengthKm / beadStep) + 1;
@@ -209,7 +209,7 @@ export function generateLimbOccultationStrip(model: InstrumentModel, scene: Alon
     const sub: SubStructure[] = [{ kind: 'beads', points: [planeToBody(scene, [tx, ty])] }];
     const offset = eventAt.get(k);
     if (offset !== undefined) {
-      sub.push({ kind: 'event', center: planeToBody(scene, [px + offset * b.nrmX, py + offset * b.nrmY]), eventId: `occ-${k}` });
+      sub.push({ kind: 'event', center: planeToBody(scene, [px + offset * b.nrmX, py + offset * b.nrmY]), radiusKm: eventRadius, eventId: `occ-${k}` });
     }
     segments.push({ etSec: et, left: nadir, right: nadir, state: stateAt(k, scene.acquiringIndex), sub });
   }

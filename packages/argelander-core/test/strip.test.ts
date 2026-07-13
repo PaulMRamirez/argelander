@@ -38,6 +38,19 @@ describe('SPEC-STRIP invariants', () => {
     expect(r.errors).toEqual(['segment 0 sub 0: corners invalid']);
   });
 
+  it('rejects a non-positive event radiusKm (ADR-0010)', () => {
+    for (const bad of [0, -1]) {
+      const seg = {
+        ...strip.segments[0]!,
+        left: strip.segments[0]!.left,
+        right: strip.segments[0]!.left,
+        sub: [{ kind: 'event', center: strip.segments[0]!.left, radiusKm: bad }],
+      } as unknown as Strip['segments'][number];
+      const r = validateStrip({ ...strip, segments: [seg] });
+      expect(r.errors).toContain('segment 0 sub 0: radiusKm must be positive');
+    }
+  });
+
   it('rejects unordered quality tuples and negative look counts', () => {
     const base = strip.segments[0]!;
     const badRange = { ...base, quality: { incidenceDeg: [50, 20] as const } };

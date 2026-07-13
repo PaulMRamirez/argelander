@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import type { Strip } from 'argelander-core';
 import { stripToGeo } from '../src/geo.js';
 import { decideLod, medianProjectedWidthPx, nowMarkerIndex, paintNowLine, paintStrip, paintTrailWindow } from '../src/paint.js';
 import type { PaintOptions, Treatment } from '../src/paint.js';
 import { ATLAS_PALETTE, dashPatternFor } from '../src/palette.js';
-import { FakeCtx, alphaOf, fixtureStrip, makeProjector, sameHue, syntheticStrip } from './fake-ctx.js';
+import { FakeCtx, alphaOf, fixtureStrip, fromGeo, makeProjector, sameHue, syntheticStrip } from './fake-ctx.js';
 
 const WIDE = makeProjector(20);
 
@@ -298,5 +299,61 @@ describe('nowMarkerIndex: the static repaint gate (AGE-16)', () => {
     const ctx = new FakeCtx();
     paintNowLine(ctx, geo, WIDE, { treatment: 'flat-fill', nowEtSec: 46 });
     expect(ctx.ops).toHaveLength(0);
+  });
+});
+
+describe('event footprint radius (ADR-0010)', () => {
+  // A zero-width strip carrying one event; the ring is stroked, so it shows
+  // up as a stroke op with shape 'arc' (the center dot is a fill arc).
+  function eventStrip(radiusKm?: number) {
+    const nadir = fromGeo(0, 0, 6371);
+    const strip: Strip = {
+      id: 'ev', body: 'EARTH', frame: 'ITRF93', instrumentId: 'test/limb',
+      segments: [{
+        etSec: 0, left: nadir, right: nadir, state: 'committed',
+        sub: [{ kind: 'event', center: fromGeo(0.02, 0.02, 6371), ...(radiusKm !== undefined ? { radiusKm } : {}), eventId: 'e0' }],
+      }],
+      provenance: { authority: 'test', generatedBy: 'test' },
+    };
+    return stripToGeo(strip);
+  }
+
+  function ringRadiusPx(ctx: FakeCtx): number {
+    const ring = ctx.strokes().find((o) => o.shape === 'arc')!;
+    return Math.abs(ring.path[1]![0] - ring.path[0]![0]);
+  }
+
+  it('sizes the ring to radiusKm through the projector, proportional to the radius', () => {
+    const wide = makeProjector(200); // px per degree; well above the floor
+    const small = new FakeCtx();
+    paintStrip(small, eventStrip(3.4), wide, { treatment: 'flat-fill' });
+    const large = new FakeCtx();
+    paintStrip(large, eventStrip(6.8), wide, { treatment: 'flat-fill' });
+    // Twice the model radius, twice the projected ring (both clear of the floor).
+    expect(ringRadiusPx(large) / ringRadiusPx(small)).toBeCloseTo(2, 5);
+    expect(ringRadiusPx(small)).toBeGreaterThan(3);
+  });
+
+  it('sizes the ring through the projector, not just linearly in the radius', () => {
+    // Same model radius, two projector scales: the ring must scale with the
+    // projector (localScalePxPerKm), which a radius-only sizing would not do.
+    const near = new FakeCtx();
+    paintStrip(near, eventStrip(3.4), makeProjector(200), { treatment: 'flat-fill' });
+    const far = new FakeCtx();
+    paintStrip(far, eventStrip(3.4), makeProjector(400), { treatment: 'flat-fill' });
+    expect(ringRadiusPx(near)).toBeGreaterThan(3);
+    expect(ringRadiusPx(far) / ringRadiusPx(near)).toBeCloseTo(2, 5);
+  });
+
+  it('floors a tiny event so it stays legible', () => {
+    const tiny = new FakeCtx();
+    paintStrip(tiny, eventStrip(0.001), makeProjector(1), { treatment: 'flat-fill' });
+    expect(ringRadiusPx(tiny)).toBeCloseTo(3, 9);
+  });
+
+  it('falls back to the fixed 5 px ring when the event declares no radius', () => {
+    const ctx = new FakeCtx();
+    paintStrip(ctx, eventStrip(undefined), makeProjector(200), { treatment: 'flat-fill' });
+    expect(ringRadiusPx(ctx)).toBeCloseTo(5, 9);
   });
 });

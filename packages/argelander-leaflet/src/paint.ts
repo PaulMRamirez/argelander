@@ -228,7 +228,7 @@ export function qualityAlphaScale(geo: GeoStrip): (s: GeoSegment) => number {
 }
 
 /** Beads and events paint at any LOD and any treatment; never ribbons (AGE-09). */
-function paintSparse(ctx: Canvas2DLike, project: Projector, r: Resolved, segment: GeoSegment, stateOverride?: GeoSegment['state']): void {
+function paintSparse(ctx: Canvas2DLike, geo: GeoStrip, project: Projector, r: Resolved, segment: GeoSegment, stateOverride?: GeoSegment['state']): void {
   if (!segment.sub) return;
   const color = stateColor(r.palette, stateOverride ?? segment.state);
   for (const entry of segment.sub) {
@@ -237,12 +237,18 @@ function paintSparse(ctx: Canvas2DLike, project: Projector, r: Resolved, segment
     } else if (entry.kind === 'event') {
       const g = toGeo(entry.center);
       dot(ctx, project, g, 2, withAlpha(color, 0.9), r.worldCopies);
+      // Size the ring to the model radius when it carries one (ADR-0010),
+      // with a floor so a small event stays legible; the fixed 5 px ring is
+      // the fallback when the event declares no radius.
+      const ringPx = entry.radiusKm !== undefined
+        ? Math.max(entry.radiusKm * localScalePxPerKm(geo, project, g), 3)
+        : 5;
       ctx.strokeStyle = withAlpha(color, 0.7);
       ctx.lineWidth = 1;
       for (const offset of r.worldCopies) {
         const [x, y] = project({ lonDeg: g.lonDeg + offset, latDeg: g.latDeg });
         ctx.beginPath();
-        ctx.arc(x, y, 5, 0, 2 * Math.PI);
+        ctx.arc(x, y, ringPx, 0, 2 * Math.PI);
         ctx.stroke();
       }
     }
@@ -251,7 +257,7 @@ function paintSparse(ctx: Canvas2DLike, project: Projector, r: Resolved, segment
 
 /** Mechanism grade: draw the sub-structure detail of one segment (AGE-09). */
 function paintMechanism(ctx: Canvas2DLike, geo: GeoStrip, project: Projector, r: Resolved, segment: GeoSegment, stateOverride?: GeoSegment['state']): void {
-  paintSparse(ctx, project, r, segment, stateOverride);
+  paintSparse(ctx, geo, project, r, segment, stateOverride);
   if (!segment.sub) return;
   const color = stateColor(r.palette, stateOverride ?? segment.state);
   ctx.setLineDash(r.dash);
@@ -471,14 +477,14 @@ export function paintStrip(ctx: Canvas2DLike, geo: GeoStrip, project: Projector,
       strokeLine(ctx, project, a.right, b.right, style, width, r.worldCopies);
     }
     paintLoneSegments(ctx, geo, project, r, r.lineWidthPx);
-    for (const s of geo.segments) paintSparse(ctx, project, r, s);
+    for (const s of geo.segments) paintSparse(ctx, geo, project, r, s);
     return;
   }
 
   if (treatment === 'flat-fill') {
     paintQuads(ctx, geo, project, r, () => 1, -Infinity, Infinity);
     paintLoneSegments(ctx, geo, project, r, 3);
-    for (const s of geo.segments) paintSparse(ctx, project, r, s);
+    for (const s of geo.segments) paintSparse(ctx, geo, project, r, s);
     return;
   }
 
@@ -506,7 +512,7 @@ export function paintStrip(ctx: Canvas2DLike, geo: GeoStrip, project: Projector,
       }, r.worldCopies);
     }
     paintLoneSegments(ctx, geo, project, r, 3);
-    for (const s of geo.segments) paintSparse(ctx, project, r, s);
+    for (const s of geo.segments) paintSparse(ctx, geo, project, r, s);
     return;
   }
 
@@ -522,7 +528,7 @@ export function paintStrip(ctx: Canvas2DLike, geo: GeoStrip, project: Projector,
       fillQuad(ctx, project, geo.segments[i]!, later, `hsla(${196 + 92 * frac},65%,60%,${r.fillAlpha})`, r.worldCopies);
     }
     paintLoneSegments(ctx, geo, project, r, 3);
-    for (const s of geo.segments) paintSparse(ctx, project, r, s);
+    for (const s of geo.segments) paintSparse(ctx, geo, project, r, s);
     return;
   }
 
@@ -539,7 +545,7 @@ export function paintStrip(ctx: Canvas2DLike, geo: GeoStrip, project: Projector,
   if (decideLod(widthPx, r.mechanismMinWidthPx) === 'envelope' && widthPx > 0) {
     paintQuads(ctx, geo, project, r, () => 1, -Infinity, Infinity);
     paintLoneSegments(ctx, geo, project, r, 3);
-    for (const s of geo.segments) paintSparse(ctx, project, r, s);
+    for (const s of geo.segments) paintSparse(ctx, geo, project, r, s);
     return;
   }
   // The atlas mechanism texture: a faint backdrop with cross-track hatching

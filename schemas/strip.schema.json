@@ -129,6 +129,7 @@
       "properties": {
         "kind": { "const": "event" },
         "center": { "$ref": "#/definitions/vec3" },
+        "radiusKm": { "type": "number", "exclusiveMinimum": 0 },
         "eventId": { "type": "string", "minLength": 1 }
       }
     },

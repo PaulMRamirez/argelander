@@ -156,6 +156,8 @@ export interface SubFrame {
 export interface SubEvent {
   kind: 'event';
   center: Vec3;
+  /** Ground radius of the event footprint, km; the renderer sizes the ring to it. */
+  radiusKm?: number;
   eventId?: string;
 }
 
