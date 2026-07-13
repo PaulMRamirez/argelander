@@ -43,6 +43,16 @@ code{background:var(--panel);padding:1px 5px;border-radius:4px;font-size:.9em}
 pre{background:var(--panel);padding:12px;border-radius:8px;overflow:auto}
 blockquote{border-left:3px solid var(--line);margin:0;padding:2px 14px;color:var(--dim)}
 nav{font-size:13px;color:var(--dim);margin-bottom:10px}
+.toc{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 16px;margin:16px 0 30px}
+.toc .toc-h{margin:0 0 8px;color:var(--dim);font:11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;text-transform:uppercase;letter-spacing:.1em}
+.toc ul{list-style:none;margin:0;padding:0;columns:2;column-gap:26px}
+.toc li{margin:4px 0;break-inside:avoid;font-size:14px}
+.toc li.toc-l3{padding-left:14px;font-size:13px}
+.toc li.toc-l3 a{color:var(--dim)}
+.toc a{color:var(--teal);text-decoration:none}
+.toc a:hover{text-decoration:underline}
+h2,h3{scroll-margin-top:14px}
+@media(max-width:640px){.toc ul{columns:1}}
 `;
 
 function page(title, bodyHtml, depth = 0) {
@@ -58,10 +68,47 @@ function firstHeading(md) {
   return m ? m[1] : null;
 }
 
+function stripTags(html) {
+  return html.replace(/<[^>]+>/g, '');
+}
+
+// GitHub-style heading slug: lowercased text, punctuation dropped, spaces to hyphens.
+function slugify(text) {
+  return stripTags(text).toLowerCase().trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+// Give every h2 and h3 a stable id so a URL can deep-link a section, and build
+// an "On this page" table of contents from them. Long pages get the nav; short
+// ones (most ADRs) do not, so the block never dwarfs the page it heads. Slugs
+// are de-duplicated the way GitHub does, with a numeric suffix on a repeat.
+function anchorAndToc(html) {
+  const toc = [];
+  const seen = new Map();
+  const withIds = html.replace(/<h([23])>([\s\S]*?)<\/h\1>/g, (_m, level, inner) => {
+    const text = stripTags(inner).trim();
+    let slug = slugify(text) || 'section';
+    const n = (seen.get(slug) ?? -1) + 1;
+    seen.set(slug, n);
+    if (n) slug = `${slug}-${n}`;
+    toc.push({ level: Number(level), slug, text });
+    return `<h${level} id="${slug}">${inner}</h${level}>`;
+  });
+  if (toc.filter((h) => h.level === 2).length < 4) return withIds;
+  const items = toc
+    .map((h) => `<li class="toc-l${h.level}"><a href="#${h.slug}">${h.text}</a></li>`)
+    .join('');
+  const nav = `<nav class="toc" aria-label="On this page"><p class="toc-h">On this page</p><ul>${items}</ul></nav>`;
+  return withIds.replace('</h1>', `</h1>${nav}`);
+}
+
 function render(srcPath, outPath, depth = 0) {
   const md = readFileSync(srcPath, 'utf8');
   const title = firstHeading(md) ?? basename(srcPath, '.md');
-  writeFileSync(outPath, page(title, marked.parse(md), depth));
+  writeFileSync(outPath, page(title, anchorAndToc(marked.parse(md)), depth));
   return title;
 }
 
