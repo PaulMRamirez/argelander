@@ -55,6 +55,8 @@ export class AcquisitionClock {
   private lastStateTick = -1;
   private handle = 0;
   private lastFrameMs: number | undefined;
+  private running = false;
+  private disposed = false;
 
   constructor(entries: readonly ClockEntry[], options: AcquisitionClockOptions) {
     this.entries = entries;
@@ -76,7 +78,8 @@ export class AcquisitionClock {
   }
 
   setPaused(paused: boolean): void {
-    if (paused === this.paused) return;
+    // A disposed clock is terminal: no resurrection through resume.
+    if (this.disposed || paused === this.paused) return;
     this.paused = paused;
     for (const e of this.entries) e.layer.setPaused(paused);
     if (paused) this.stop();
@@ -96,6 +99,7 @@ export class AcquisitionClock {
   }
 
   dispose(): void {
+    this.disposed = true;
     this.stop();
   }
 
@@ -114,18 +118,24 @@ export class AcquisitionClock {
 
   private start(): void {
     this.stop();
+    this.running = true;
     this.lastFrameMs = undefined;
     const frame = (nowMs: number): void => {
       const dtSec = this.lastFrameMs === undefined ? 0 : (nowMs - this.lastFrameMs) / 1000;
       this.lastFrameMs = nowMs;
       this.tau = (this.tau + dtSec * this.speed) % this.windowSec;
       this.apply();
-      this.handle = this.schedule(frame);
+      // apply() runs onTick, which may pause or dispose the clock from
+      // inside the frame; only re-arm if that did not stop us. Otherwise a
+      // stop from onTick cancels this frame's own handle (a no-op, we are
+      // in it) and the reschedule would silently resurrect the loop.
+      if (this.running) this.handle = this.schedule(frame);
     };
     this.handle = this.schedule(frame);
   }
 
   private stop(): void {
+    this.running = false;
     if (this.handle) this.cancel(this.handle);
     this.handle = 0;
   }

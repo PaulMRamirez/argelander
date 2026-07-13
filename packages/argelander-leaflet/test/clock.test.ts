@@ -31,20 +31,30 @@ function recordingLayer(): ClockDrivenLayer & Recorded {
   };
 }
 
-function manualScheduler(): { frames: Array<(nowMs: number) => void>; step: (nowMs: number) => void; schedule: (cb: (nowMs: number) => void) => number; cancel: (h: number) => void } {
-  const frames: Array<(nowMs: number) => void> = [];
+/**
+ * A requestAnimationFrame-faithful fake: handles are unique, cancel removes
+ * only the matching one (a scheduler that cleared every pending frame would
+ * mask a stale-handle cancel), and pending frames stay queued until stepped.
+ */
+function manualScheduler(): { pending: () => number; step: (nowMs: number) => void; schedule: (cb: (nowMs: number) => void) => number; cancel: (h: number) => void } {
+  const frames = new Map<number, (nowMs: number) => void>();
+  let nextHandle = 1;
   return {
-    frames,
+    pending: () => frames.size,
     step(nowMs) {
-      const cb = frames.shift();
-      cb?.(nowMs);
+      const [handle, cb] = frames.entries().next().value ?? [];
+      if (handle !== undefined) {
+        frames.delete(handle);
+        cb!(nowMs);
+      }
     },
     schedule(cb) {
-      frames.push(cb);
-      return frames.length;
+      const handle = nextHandle++;
+      frames.set(handle, cb);
+      return handle;
     },
-    cancel() {
-      frames.length = 0;
+    cancel(handle) {
+      frames.delete(handle);
     },
   };
 }
@@ -65,7 +75,7 @@ describe('AcquisitionClock (ADR-0009, AGE-13, AGE-16)', () => {
     });
     expect(layer.calls[0]).toEqual({ kind: 'now', etSec: 100 });
     expect(layer.calls[1]).toEqual({ kind: 'states', acquiring: 0 });
-    expect(scheduler.frames).toHaveLength(0);
+    expect(scheduler.pending()).toBe(0);
   });
 
   it('sets the clock every frame but re-states only on segment boundaries, clock first', () => {
@@ -135,12 +145,54 @@ describe('AcquisitionClock (ADR-0009, AGE-13, AGE-16)', () => {
     scheduler.step(5000);
     clock.setPaused(true);
     expect(layer.calls.at(-1)).toEqual({ kind: 'paused', paused: true });
-    expect(scheduler.frames).toHaveLength(0);
+    expect(scheduler.pending()).toBe(0);
     clock.setPaused(false);
     const tauAtResume = clock.tauSec;
     // The first resumed frame carries no wall-clock gap: dt is zero, so a
     // long pause never teleports the clock.
     scheduler.step(90000);
     expect(clock.tauSec).toBeCloseTo(tauAtResume, 9);
+  });
+
+  it('dispose() from inside onTick terminates the loop, no zombie frame', () => {
+    const layer = recordingLayer();
+    const scheduler = manualScheduler();
+    let ticks = 0;
+    let clock!: AcquisitionClock;
+    clock = new AcquisitionClock([{ layer, epochEt: 0, baseStrips: [baseStrip()] }], {
+      windowSec: 40, stepSec: 10, speed: 1, schedule: scheduler.schedule, cancel: scheduler.cancel,
+      onTick: () => {
+        ticks++;
+        if (ticks === 2) clock.dispose();
+      },
+    });
+    // Drain every frame the scheduler still holds; a resurrected loop would
+    // keep re-arming and never empty.
+    for (let i = 0; i < 10 && scheduler.pending() > 0; i++) scheduler.step(i * 1000);
+    expect(scheduler.pending()).toBe(0);
+    expect(ticks).toBe(2);
+    // A disposed clock stays down: resume is a no-op.
+    clock.setPaused(false);
+    expect(scheduler.pending()).toBe(0);
+  });
+
+  it('setPaused(true) from inside onTick stops cleanly and does not advance past the pause', () => {
+    const layer = recordingLayer();
+    const scheduler = manualScheduler();
+    let clock!: AcquisitionClock;
+    let pauseAtTick = -1;
+    clock = new AcquisitionClock([{ layer, epochEt: 0, baseStrips: [baseStrip()] }], {
+      windowSec: 40, stepSec: 10, speed: 1, schedule: scheduler.schedule, cancel: scheduler.cancel,
+      onTick: (tau) => {
+        if (tau >= 5 && pauseAtTick < 0) {
+          pauseAtTick = tau;
+          clock.setPaused(true);
+        }
+      },
+    });
+    for (let i = 0; i < 10 && scheduler.pending() > 0; i++) scheduler.step(i * 1000);
+    expect(scheduler.pending()).toBe(0);
+    // The clock froze at the pause point; no zombie frame advanced it.
+    expect(clock.tauSec).toBeCloseTo(pauseAtTick, 9);
   });
 });
