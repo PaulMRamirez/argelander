@@ -139,6 +139,33 @@ describe('passStrips (ADR-0009, AGE-04)', () => {
     await expect(passStrips(provider, { ...GEOMETRY, windows: [] })).rejects.toThrow(/at least one window/);
   });
 
+  it('forwards the stepScan and conical postures to trackStrip (regression)', async () => {
+    // The demo builds its scanning instruments through passStrips, so a
+    // posture the Pick type drops renders as a plain ribbon (stepScan) or a
+    // degenerate zero-width line (conical), invisibly. Assert the sub-structure
+    // actually arrives.
+    const provider = fakeProvider();
+    const [stepped] = await passStrips(provider, {
+      ...GEOMETRY,
+      swathHalfWidthKm: 1075,
+      stepScan: { positionsPerRow: 15, footprintRadiusKm: 16, crossGrowthFactor: 1.7, alongGrowthFactor: 0.45 },
+      windows: [[0, 60]],
+    });
+    for (const seg of stepped!.segments) {
+      expect(seg.sub?.filter((x) => x.kind === 'footprint')).toHaveLength(15);
+    }
+    const [cone] = await passStrips(provider, {
+      ...GEOMETRY,
+      conical: { scanRadiusKm: 442, sectorHalfAngleRad: 1.2217, spinPeriodSec: 1.9, footprintSemiMajorKm: 12, footprintSemiMinorKm: 7 },
+      windows: [[0, 60]],
+    });
+    for (const seg of cone!.segments) {
+      expect(seg.sub?.filter((x) => x.kind === 'footprint')).toHaveLength(1);
+      // The conical envelope is a real chord, never a degenerate zero-width line.
+      expect(seg.left).not.toEqual(seg.right);
+    }
+  });
+
   it('propagates provider refusals untouched: isolation is host policy', async () => {
     const provider = fakeProvider();
     provider.states = async () => {

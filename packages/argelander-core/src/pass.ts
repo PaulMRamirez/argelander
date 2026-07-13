@@ -12,7 +12,7 @@ import { trackStrip } from './track.js';
 import type { TrackStripOptions } from './track.js';
 import type { BodyId, Correction, Et, FrameId, StateProvider, Strip } from './types.js';
 
-type Posture = Pick<TrackStripOptions, 'swathHalfWidthKm' | 'offsetRangeKm' | 'beadOffsetsKm' | 'scan' | 'nowEtSec'>;
+type Posture = Pick<TrackStripOptions, 'swathHalfWidthKm' | 'offsetRangeKm' | 'beadOffsetsKm' | 'scan' | 'stepScan' | 'conical' | 'nowEtSec'>;
 
 export interface PassStripsOptions extends Posture {
   target: BodyId;
@@ -50,7 +50,7 @@ export interface PassStripsOptions extends Posture {
 
 export async function passStrips(provider: StateProvider, options: PassStripsOptions): Promise<Strip[]> {
   if (options.windows.length === 0) throw new RangeError('passStrips requires at least one window');
-  if (options.bilateralKm && (options.swathHalfWidthKm !== undefined || options.offsetRangeKm || options.scan || options.beadOffsetsKm)) {
+  if (options.bilateralKm && (options.swathHalfWidthKm !== undefined || options.offsetRangeKm || options.scan || options.stepScan || options.conical || options.beadOffsetsKm)) {
     throw new RangeError('bilateralKm is exclusive with the single-strip postures');
   }
   const passId = options.passId ?? 'pass-0';
@@ -101,6 +101,8 @@ export async function passStrips(provider: StateProvider, options: PassStripsOpt
         ...(options.swathHalfWidthKm !== undefined ? { swathHalfWidthKm: options.swathHalfWidthKm } : {}),
         ...(options.beadOffsetsKm !== undefined ? { beadOffsetsKm: options.beadOffsetsKm } : {}),
         ...(options.scan !== undefined ? { scan: options.scan } : {}),
+        ...(options.stepScan !== undefined ? { stepScan: options.stepScan } : {}),
+        ...(options.conical !== undefined ? { conical: options.conical } : {}),
         ...(options.offsetRangeKm !== undefined ? { offsetRangeKm: options.offsetRangeKm } : {}),
       }));
     }
