@@ -166,11 +166,86 @@ Query-time refusals are `CoverageRefusalError`, and handling one is part of conf
 
 ```ts
 import { czmlProvider } from 'argelander-providers';
+import { passStrips } from 'argelander-core';
+import { AcquisitionLayer } from 'argelander-leaflet';
 
-const provider = czmlProvider(czmlText, { observer: 'EARTH', frame: 'ITRF93' }, { id: 'ops-czml' });
+// One position packet: an ISO epoch, then time-tagged cartesian samples as
+// flat quadruples (offset seconds, x, y, z in meters) in the FIXED body-fixed
+// frame. The document packet is ignored; every other packet is one track.
+const czml = [
+  { id: 'document', name: 'ops export', version: '1.0' },
+  {
+    id: 'OPS-SAT',
+    position: {
+      epoch: '2026-07-11T00:00:00Z',
+      referenceFrame: 'FIXED',
+      cartesian: [
+        0,    -4400000, 4900000, 1600000,
+        600,  -3900000, 5300000, 2050000,
+        1200, -3300000, 5650000, 2470000,
+        1800, -2600000, 5950000, 2860000,
+      ],
+    },
+  },
+];
+
+const provider = czmlProvider(czml, { observer: 'EARTH', frame: 'ITRF93' }, { id: 'ops-czml' });
+// The packet's samples define the servable window; anchor passStrips to it
+// (via the provider's coverage) rather than converting the ISO epoch to Et by hand.
+const [cover] = await provider.coverage('OPS-SAT');
+if (!cover) throw new Error('CZML packet served no coverage window');
+const strips = await passStrips(provider, {
+  target: 'OPS-SAT', observer: 'EARTH', frame: 'ITRF93', bodyRadiusKm: 6371,
+  instrumentId: 'OPS-SAT/imager', generatedBy: 'my-app',
+  swathHalfWidthKm: 120, windows: [[cover.start, cover.end]], stepSec: 30,
+});
+new AcquisitionLayer(strips).addTo(map);
 ```
 
 Scope is honest and narrow. Supported: packets carrying an ISO `epoch` plus time-tagged `cartesian` samples (offset seconds, meters, converted to kilometers), `referenceFrame` FIXED, which is the CZML default and the body-fixed reading the seam wants. Refused, each with a plain `Error` whose message names the boundary (not a typed class, unlike `CoverageRefusalError` above): INERTIAL frames (rotating them body-fixed is frames math, the non-goal), `cartographicDegrees`, constant positions, and ISO-string sample times. A zone-less epoch is read as UTC to match Cesium, and declared interpolation hints are not honored: the samples are re-interpolated by `PresampledProvider`'s cubic Hermite, and velocities are derived from them by weighted central differences, rendering grade and stated as such. Each packet's `id` is the target name you query.
+
+**GeoJSON trajectory playback** (`geoJsonStateProvider`, `parseGeoJsonStates`), the sibling of CZML for a track a planning tool exported as GeoJSON, and the inbound path the live demo's airborne platforms run. A `LineString` or `MultiPoint` of geographic positions becomes pre-sampled tables, lifted to body-fixed states through the same analytic geocentric conversion the strip codec uses. Two time sources, and never both: MMGIS Enhanced GeoJSON carries a per-vertex `event_seconds` (Unix seconds) named through `coord_properties`, while a plain GeoJSON with no per-vertex time takes a uniform `timeBase` you supply.
+
+```ts
+import { geoJsonStateProvider } from 'argelander-providers';
+import { passStrips } from 'argelander-core';
+import { AcquisitionLayer } from 'argelander-leaflet';
+
+// MMGIS Enhanced GeoJSON: coord_properties names each coordinate member
+// positionally, and the first three are always longitude, latitude, elevation.
+// Here a fourth member, event_seconds, timestamps every vertex in Unix seconds.
+const track = {
+  type: 'FeatureCollection',
+  coord_properties: ['longitude', 'latitude', 'elevation', 'event_seconds'],
+  features: [{
+    type: 'Feature',
+    properties: { target: 'ER2', platform: 'ER-2' },
+    geometry: {
+      type: 'LineString',
+      coordinates: [
+        [-118.10, 34.20, 20000, 946727935.816],
+        [-116.28, 35.77, 20000, 946729135.816],
+        [-114.40, 37.30, 20000, 946730335.816],
+        [-112.44, 38.81, 20000, 946731535.816],
+      ],
+    },
+  }],
+};
+
+const provider = geoJsonStateProvider(
+  track, { observer: 'EARTH', frame: 'ITRF93', bodyRadiusKm: 6371 }, { id: 'hyplan-track' },
+);
+const [cover] = await provider.coverage('ER2');
+if (!cover) throw new Error('GeoJSON track served no coverage window');
+const strips = await passStrips(provider, {
+  target: 'ER2', observer: 'EARTH', frame: 'ITRF93', bodyRadiusKm: 6371,
+  instrumentId: 'ER2/aviris-3', generatedBy: 'my-app',
+  swathHalfWidthKm: 7.2, windows: [[cover.start, cover.end]], stepSec: 15,
+});
+new AcquisitionLayer(strips).addTo(map);
+```
+
+A plain GeoJSON `LineString` that carries no `event_seconds` is the identical call with a `timeBase` in place of the per-vertex time: `geoJsonStateProvider(track, { timeBase: { startEt: epochEt, stepSec: 15 }, bodyRadiusKm: 6371 })`, where vertex `i` lands at `startEt + i * stepSec`. Supplying both an `event_seconds` column and a `timeBase` is refused, because the epoch source would be ambiguous; a document with neither is refused for the same reason from the other side. A non-Earth track MUST set `bodyRadiusKm`, since a GeoJSON coordinate carries no radius and the codec refuses to invent one. The live demo builds its ER-2 spectrometer footprints exactly this way, the track as Enhanced GeoJSON and the swath from the source-cited instrument catalog (the interchange section below is the outbound half of the same GeoJSON seam).
 
 **The HTTP service wire** (`serveStateRequest`, `httpStateProvider`), the states-from-a-service posture. The server side is a pure request-in, response-out function you mount on any framework; the client is a `StateProvider` over `fetch`:
 
@@ -358,6 +433,34 @@ The record carries `epochEt` and `baseStrips` precisely so it also feeds the clo
 
 Every UI handler writes a field and calls `reconcile` plus a render; nothing queries the map for truth.
 
+## Interchange: publishing and re-ingesting strips
+
+The provider seam above is inbound: states become strips. The strip is also a publishable product (SPEC-STRIP, AGE-14), and the same GeoJSON that carried a track inbound is the wire it travels outbound. The codec lives at the providers layer (`argelander-providers`), so `argelander-core` keeps its zero dependencies and the frozen strip schema never widens: this is a serialization to and from the strip, not an extension of it. Keep the two roles distinct: `geoJsonStateProvider` (in the providers section above) reads a platform track in, while `stripToGeoJson` (here) writes a finished strip out.
+
+Two outbound formats, one for each audience. Standard GeoJSON (RFC 7946) is the universal, lossy path: `stripToGeoJson` collapses a strip to a single outline feature (a Polygon for a swath, a LineString for a zero-width track) carrying the provenance at the feature level, which any GIS reads. MMGIS Enhanced GeoJSON is the lossless render-host path: `stripToEnhancedGeoJson` writes the two swath edges as a MultiLineString whose every vertex carries the per-segment epoch, acquisition state, and quality through a file-level `coord_properties` array, the same convention the state provider reads inbound.
+
+```ts
+import {
+  stripToGeoJson, stripToEnhancedGeoJson, enhancedGeoJsonToStrip, geoJsonToStrip,
+} from 'argelander-providers';
+
+// Universal outline for a GIS: one feature, provenance in its properties.
+// Sub-structure and per-segment epochs are dropped; the outline itself is exact.
+const outline = stripToGeoJson(strip);
+
+// Lossless envelope for a render host: edges, epoch, state, and quality per vertex.
+const enhanced = stripToEnhancedGeoJson(strip);
+
+// Re-ingest, carrying a producer's own coordinate columns through untouched.
+// Ingest returns the strip plus a passthrough sidecar of every column the
+// closed strip schema has no room for; export reattaches it, so an extra column
+// (say a per-vertex sensor temperature) round-trips byte for byte.
+const { strip: reingested, passthrough } = enhancedGeoJsonToStrip(enhanced);
+const republished = stripToEnhancedGeoJson(reingested, passthrough ? { passthrough } : {});
+```
+
+Re-ingest is honest about grade. `enhancedGeoJsonToStrip` reconstructs epoch, state, and quality from the reserved members and returns every unmodeled column in the `passthrough` sidecar; a foreign document that lacks the `bodyRadiusKm` property Argelander writes must pass it as `enhancedGeoJsonToStrip(fc, { bodyRadiusKm })`, because a coordinate carries no radius and the codec refuses to fabricate one. `geoJsonToStrip` takes a plain outline back to a strip at outline grade: a Polygon or LineString has no epochs, so its segments take a unit time base and the committed state, and the provenance records that. What no round trip carries is the mechanism sub-structure (footprints, beads, frames, looks): a strip that had it returns at envelope grade, disclosed on the reconstructed provenance rather than hidden.
+
 ## Advanced: painting without Leaflet
 
 The painters are pure modules over two small abstractions: a `Projector` (geographic point to container pixels) and a `Canvas2DLike` (the subset of CanvasRenderingContext2D the painters call). `AcquisitionLayer` is a thin binding that supplies both from a Leaflet map; a different host, a test, or a server-side renderer supplies its own:
@@ -378,6 +481,8 @@ paintStrip(ctx, geo, myProjector, { treatment: 'flat-fill', worldCopies: [0] });
 | DeepSpaceUnsupportedError building the provider (inline), or `connectSgp4Worker` rejecting with it | TLE with a period of 225 minutes or more | Serve that object from a `PresampledProvider`; SGP4 here is near-earth only. Over the worker the message and `name` survive (match on `err.name === 'DeepSpaceUnsupportedError'`); only `CoverageRefusalError`, which carries queryable fields, is reconstructed as its class |
 | `connectSgp4Worker` promise never settles | Worker file missing its one-import of `argelander-providers/sgp4-worker`, wrong worker URL (404), or a CSP block | Fix the worker entry; on a real `Worker` the load failure rejects via its `error` event, and `timeoutMs` is the backstop for ports without one |
 | CZML packet rejected with an `Error` | INERTIAL frame, `cartographicDegrees`, a constant position, or ISO-string sample times | These are out of the honest scope; supply FIXED-frame time-tagged cartesian samples. The message names the boundary (a plain `Error`, not a typed class) |
+| GeoJSON track refused with an `Error` | Ambiguous or absent epoch source (both `event_seconds` and a `timeBase`, or neither), a `Point`, or a track under two vertices | Supply exactly one time source: Enhanced GeoJSON's per-vertex `event_seconds`, or a `timeBase` of `startEt` and `stepSec`; pass a `LineString` or `MultiPoint` of at least two positions |
+| Enhanced GeoJSON ingest throws "needs a positive bodyRadiusKm" | A foreign document lacking the `bodyRadiusKm` feature property Argelander writes | Pass it in the options: `enhancedGeoJsonToStrip(fc, { bodyRadiusKm })` (and `geoJsonToStrip` takes it in its meta). Your own exports carry it, so round-tripping Argelander strips needs nothing |
 | HTTP provider throws a plain status Error instead of `CoverageRefusalError` | The refusal body was not returned to the client | `httpStateProvider` revives a refusal whatever the status, but the server must return the `serveStateRequest` body (do not swallow it on a 4xx) |
 | CoverageRefusalError on load | Query outside the TLE fence or the pre-sampled table | Anchor to `parseTle(..).epochEt` for TLEs, the table's first epoch for pre-sampled; `coverage(body)` names the servable window |
 | Ribbon drawn across an ocean the instrument never imaged | One continuous batch sliced into windows | One `states()` query per tasked window, strips share a `passId` |
