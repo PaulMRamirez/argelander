@@ -1,6 +1,10 @@
 # ADR-0012: what trackStrip renders when the along-track direction vanishes
 
-Status: accepted. Date: 2026-07-13.
+Status: accepted, superseded in part by ADR-0015. Date: 2026-07-13.
+
+## Amendment (2026-07-13, ADR-0015)
+
+This policy is the fallback for the assumed-nadir path only, where the pointing is synthesized from position and velocity. For the atmospheric and ballistic classes named in the rationale below (aircraft, UAVs, balloons, sounding rockets), a vanishing or velocity-divergent state is resolved by measured attitude per ADR-0015, not by carrying the cross-track direction forward, because a held-orientation guess is epistemically overconfident for a platform whose real pointing is inertial and measured. Read the decision and rationale below as the assumed-nadir fallback, and read ADR-0015 as the answer for those classes.
 
 ## Decision
 
