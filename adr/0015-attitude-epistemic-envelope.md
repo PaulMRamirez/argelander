@@ -1,6 +1,6 @@
 # ADR-0015: the attitude epistemic envelope
 
-Status: proposed. Date: 2026-07-13.
+Status: accepted. Date: 2026-07-13.
 
 ## Context
 
@@ -34,6 +34,6 @@ Continue patching the velocity degeneracy with ADR-0012 alone is rejected: carry
 
 ## Consequences
 
-The suborbital and balloon classes become renderable honestly, with measured attitude where it exists and an explicit assumed or planned mark where it does not, which is the gate the state-source phase's breadth actually depends on. The documentation reframe's suborbital and balloon examples can then show real or explicitly-assumed pointing rather than the silent velocity-derived version. The change is small and additive on the provider side, but it does touch a frozen, Bessel-subset contract, so it must be drafted against the Bessel orientation shape and land with a SPEC-PROVIDER revision; and it demotes ADR-0012 from the answer to the fallback for one path. The concrete live attitude source, a Yamcs telemetry bridge, remains PHASE-3; this ADR fixes the contract it will implement.
+The suborbital and balloon classes become renderable honestly, with measured attitude where it exists and an explicit assumed or planned mark where it does not, which is the gate the state-source phase's breadth actually depends on. The documentation reframe's suborbital and balloon examples can then show real or explicitly-assumed pointing rather than the silent velocity-derived version. The change is small and additive on the provider side, but it does touch a frozen, Bessel-subset contract, so it must be drafted against the Bessel orientation shape and land with a SPEC-PROVIDER revision; and it demotes ADR-0012 from the answer to the fallback for one path. The concrete live attitude source, a Yamcs telemetry bridge, remains PHASE-3; this ADR fixes the contract it will implement. Suborbital and balloon support is a confirmed delivery target rather than an aspiration, so the additive facets are verified against, and updated in if the subset requires it, the Bessel orientation contract, which is owned and checked out locally, rather than deferred.
 
 References: `docs/what-the-engine-must-know.md`; SPEC-PROVIDER sections 1 and 4; ADR-0012; the acquisition geometry survey section 9.2; requirements AGE-04, AGE-06, AGE-19.

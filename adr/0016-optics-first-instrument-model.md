@@ -1,6 +1,6 @@
 # ADR-0016: the optics-first instrument model
 
-Status: proposed. Date: 2026-07-13.
+Status: accepted. Date: 2026-07-13.
 
 ## Context
 
