@@ -16,6 +16,7 @@ export { httpStateProvider, serveStateRequest } from './http.js';
 export type { HttpStateProviderOptions, StateWireRequest, StateWireResponse } from './http.js';
 export { parseTle, parseTles } from './tle.js';
 export type { Tle, TleSet } from './tle.js';
+export { parseOmm, parseOmms } from './omm.js';
 export {
   DeepSpaceUnsupportedError, Sgp4PropagationError,
   WGS72_MU_KM3_S2, WGS72_RADIUS_KM, sgp4Init, sgp4PropagateInto,

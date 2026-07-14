@@ -47,13 +47,15 @@ export class Sgp4Provider implements StateProvider {
   private readonly deltaUt1Sec: number;
   private readonly sats = new Map<string, Registered>();
 
-  constructor(tles: readonly Sgp4TleInput[], options: Sgp4ProviderOptions = {}) {
+  constructor(elements: readonly (Sgp4TleInput | Tle)[], options: Sgp4ProviderOptions = {}) {
     this.id = options.id ?? 'sgp4';
     this.fenceSec = options.fenceSec ?? DEFAULT_FENCE_SEC;
     this.deltaUt1Sec = options.deltaUt1Sec ?? 0;
-    if (tles.length === 0) throw new Error('Sgp4Provider requires at least one TLE');
-    for (const input of tles) {
-      const tle = parseTle(input.line1, input.line2, input.name);
+    if (elements.length === 0) throw new Error('Sgp4Provider requires at least one element set');
+    for (const input of elements) {
+      // TLE line strings, or a pre-parsed Tle from parseTle or parseOmm; the
+      // modern OMM element container feeds the same path once parsed.
+      const tle = 'line1' in input ? parseTle(input.line1, input.line2, input.name) : input;
       const entry: Registered = { tle, satrec: sgp4Init(tle) };
       this.register(tle.satnum, entry);
       const stripped = tle.satnum.replace(/^0+(?=.)/, '');

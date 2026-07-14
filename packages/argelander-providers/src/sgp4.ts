@@ -25,7 +25,7 @@ export class DeepSpaceUnsupportedError extends Error {
   readonly periodMin: number;
 
   constructor(satnum: string, periodMin: number) {
-    super(`TLE ${satnum} has a ${periodMin.toFixed(1)} min period; deep-space elements (225 min or longer, SDP4) are not supported (ADR-0008)`);
+    super(`element set ${satnum} has a ${periodMin.toFixed(1)} min period; deep-space elements (225 min or longer, SDP4) are not supported (ADR-0008)`);
     this.name = 'DeepSpaceUnsupportedError';
     this.satnum = satnum;
     this.periodMin = periodMin;

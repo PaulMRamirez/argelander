@@ -1,0 +1,39 @@
+# ADR-0015: the attitude epistemic envelope
+
+Status: proposed. Date: 2026-07-13.
+
+## Context
+
+The platform-and-payload study (`docs/what-the-engine-must-know.md`) found that the state seam is already the right shape, the SPICE and CCSDS separation of ephemeris from attitude, but that supporting the atmospheric and ballistic platform classes honestly is gated on attitude rather than on more state formats. The engine today derives pointing as `unit(position x velocity)`, the orbital-world construction that assumes nadir and takes the cross-track direction from the velocity. This collapses for exactly the classes the state-source phase advertises: at a sounding rocket's apogee the velocity nulls and turns through the vertical, a station-keeping balloon has near-zero wind-driven groundspeed and a free azimuth, and a banking aircraft's boresight leaves the velocity vector. ADR-0012 (carry the last valid cross forward, or emit a zero-width stare) is a patch over the symptom, not the fix; the fix the whole community uses is measured attitude, which for these classes is inertially referenced and intermittent, real only in a rocket's science window and taken from a balloon's star camera rather than its track.
+
+The seam cannot currently state the trust around that attitude. SPEC-PROVIDER's `orientation(body, frame, epochs)` returns a `QuatBatch` unconditionally: there is no attitude coverage or refusal contract as there is for state (`coverage`, `CoverageRefusalError`), no field distinguishing a measured solution from a synthesized nadir assumption from a dropout, and no angular rate, though SPICE CK carries angular velocity for a reason. SPEC-PROVIDER is frozen and a strict subset of the Bessel contract (AGE-19), and it already added two additive facets, `id` and `coverage`, that section 1 records as not subset violations. This ADR proposes the attitude epistemic envelope as the same kind of additive facets, on the attitude side only, so measured attitude becomes first-class and velocity-derived pointing stops being the silent default.
+
+## Decision
+
+The rules, numbered because they are a contract, and all additive to the attitude call so that the state batch and the geometric core are untouched.
+
+1. Attitude carries a source and quality tag. An orientation result tags each sample, or the batch, as one of measured, assumed-nadir, or unknown, so the engine and the strip provenance can distinguish a real star-tracker or attitude-control solution from a nadir assumption synthesized from position and velocity from a dropout. A footprint may then refuse to render committed on a pointing that was guessed.
+
+2. Attitude coverage is advertised and refused, symmetric to state coverage. An optional `attitudeCoverage(body)` returns the windows where attitude is real, and `orientation` refuses epochs outside them with a structured refusal mirroring `CoverageRefusalError`, because a rocket's attitude window is a strict subinterval of its ephemeris and the seam must be able to say attitude is unavailable there rather than return a synthesized quaternion as if it were measured.
+
+3. Attitude angular rate is available. `QuatBatch` gains an optional angular-velocity component, the SPICE CK angular velocity, so the smear during coning, despin, and pendulation is read from the provider rather than finite-differenced across sparse quaternions at the very discontinuities these classes are full of.
+
+4. Velocity-null semantics are explicit. The contract states that velocity-derived pointing is valid only where the ground velocity is well conditioned, and that a consumer must not silently fall back to it outside that regime; a provider for a class where velocity is unreliable as a pointing basis, balloon and suborbital in particular, must supply measured attitude or mark the pointing assumed, never let the velocity path stand in silently.
+
+5. The additions are additive facets, not a reshape. Each rides the attitude call the way `id` and `coverage` did, is checked against the Bessel orientation contract so convergence stays a binding rather than a port, and leaves the default behavior intact: for a well-conditioned nadir-pointing orbital platform the assumed-nadir path remains, so nothing that works today breaks.
+
+6. The engine gains an attitude path, which is the capability this envelope exists to enable. The samplers, which today take the cross-track direction from `unit(position x velocity)`, gain a path to consume `orientation` with the source and coverage envelope, using measured attitude where it is real, marking the segment assumed where the pointing was synthesized, and refusing or planning where attitude is unavailable. ADR-0012's degenerate-track policy is retained as the fallback for the assumed-nadir path but is no longer the answer for the atmospheric and ballistic classes; measured attitude is.
+
+## Rationale
+
+The community architecture is the argument. SPICE, GMAT, STK, Orekit, and CCSDS all separate ephemeris from attitude and all distinguish attitude that is measured from attitude that is derived from the trajectory, and CK carries both a coverage window and an angular velocity precisely because attitude is intermittent and slews. The seam already matches the separation; it is missing only the trust envelope that the separation exists to carry. Adding it as facets rather than a reshape keeps the frozen contract a subset of Bessel, keeps the merge a binding, and keeps the geometric core untouched, since a quaternion is consumed, never computed, and no frames math is introduced. Leaving the default unchanged means the orbital path, which is well served by the assumed-nadir construction, pays nothing, while the atmospheric and ballistic path gains the ability to be honest instead of confidently wrong.
+
+## Alternatives rejected
+
+Continue patching the velocity degeneracy with ADR-0012 alone is rejected: carrying the last cross forward or emitting a stare is geometrically plausible and epistemically overconfident for a platform whose real pointing is inertial and measured, which is the failure the study names. Fusing attitude into the state batch is rejected: every reference architecture ships orbit and attitude as separate records with separate coverage and separate clocks, and fusing them would both duplicate the SPICE separation wrongly and violate the Bessel subset. Requiring inertial attitude only is rejected: aircraft and balloon gimbals are naturally referenced to a local geodetic frame, so the attitude reference must remain the named frame the seam already carries, not a fixed inertial one.
+
+## Consequences
+
+The suborbital and balloon classes become renderable honestly, with measured attitude where it exists and an explicit assumed or planned mark where it does not, which is the gate the state-source phase's breadth actually depends on. The documentation reframe's suborbital and balloon examples can then show real or explicitly-assumed pointing rather than the silent velocity-derived version. The change is small and additive on the provider side, but it does touch a frozen, Bessel-subset contract, so it must be drafted against the Bessel orientation shape and land with a SPEC-PROVIDER revision; and it demotes ADR-0012 from the answer to the fallback for one path. The concrete live attitude source, a Yamcs telemetry bridge, remains PHASE-3; this ADR fixes the contract it will implement.
+
+References: `docs/what-the-engine-must-know.md`; SPEC-PROVIDER sections 1 and 4; ADR-0012; the acquisition geometry survey section 9.2; requirements AGE-04, AGE-06, AGE-19.

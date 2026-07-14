@@ -6,6 +6,8 @@ Standing constraints, true of every slice and not repeated in each prompt: sign 
 
 Definition of done for a slice: new behavior covered by a test, the spec or docs updated in the same change if a contract moved, the adversarial review run and its confirmed findings fixed, `pnpm verify` green, and the merge ritual complete.
 
+Blocked on ADR A. Two items below are held until the attitude epistemic envelope (`adr/0015-attitude-epistemic-envelope.md`, proposed) lands, because they would otherwise ship suborbital and balloon geometry on the velocity-derived pointing that collapses for those classes (the study `docs/what-the-engine-must-know.md`, section 9). Slice 5, the live-telemetry contract, is where attitude push is specified, so it depends on ADR A directly. Slice 6's planetary-orbiter example may proceed, but its suborbital and balloon examples wait for ADR A so they show measured or explicitly-assumed pointing rather than the overconfident version. Build the unblocked slices (1, 2, 3, 4) first, and return to the held items once ADR A is accepted.
+
 ## Slice 1: parseOmm, the modern element container
 
 Goal: parse a satellite's orbital mean elements from the containers Celestrak and Space-Track publish, so their exports feed `Sgp4Provider` unchanged and TLE stops being the only way in.
@@ -83,6 +85,8 @@ pnpm verify                                       # green
 
 ## Slice 5: the live-telemetry contract, specified not built
 
+Blocked on ADR A. This contract carries platform and mount attitude, so it must incorporate the attitude epistemic envelope of `adr/0015`; draft it only after ADR A is accepted.
+
 Goal: write down the live-telemetry provider shape as a contract for PHASE-3 to implement. A push or subscription shape is a new wire shape, so it is a proposed ADR, drafted and confirmed before it lands.
 
 Prompt:
@@ -101,6 +105,8 @@ node scripts/check-style.mjs                       # style clean (this slice shi
 ```
 
 ## Slice 6: rewrite the docs to lead with the seam
+
+Partially blocked on ADR A. The planetary-orbiter example may proceed, but the suborbital and balloon examples wait for `adr/0015` so they show measured or explicitly-assumed pointing, not the velocity-derived pointing that collapses for those classes.
 
 Goal: rebalance the documentation so the source-agnostic seam leads and SGP4/TLE is one authority among many, with the breadth of platforms shown by real examples.
 
