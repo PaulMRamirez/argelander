@@ -1,6 +1,6 @@
 # ADR-0014: the frame boundary, and how inertial states enter the seam
 
-Status: proposed. Date: 2026-07-13.
+Status: accepted. Date: 2026-07-13.
 
 ## Context
 
