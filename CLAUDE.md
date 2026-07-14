@@ -33,4 +33,4 @@ Commands: `pnpm install`, `pnpm verify`, `pnpm -r test`, `pnpm -r typecheck`, `n
 
 ## Current phase
 
-Phase 0. Subject: freeze the three specs, generate types, schema, and fixtures for all 21 geometry families, and land the conformance test that replays atlas tiles 1 (pushbroom) and 21 (flyby) numerically. Exit criteria in `goals/PHASE-0.md`. Foundational reference: `docs/acquisition-geometry-survey.md`.
+Phase 5. Subject: State authorities. Broaden the inbound-state sources beyond near-Earth mean elements (OMM elements with Celestrak and Space-Track as first-class element data, OEM tabulated ephemerides, a SPICE-first sampling recipe over the HTTP wire) and rebalance the documentation to lead with the source-agnostic seam rather than SGP4, governed by ADR-0014 (the frame boundary: the core stays body-fixed at the seam, rotation lives only in a provider at rendering grade, interchange refuses inertial by default). Exit criteria in `goals/PHASE-5.md`; the ordered slices, prompts, and verification are in `goals/PHASE-5-implementation.md`. Foundational reference: `docs/acquisition-geometry-survey.md`.
